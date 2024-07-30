@@ -26,10 +26,10 @@ public class ShippingInfor implements Serializable {
     String address;
 
     @ManyToOne
-    @JoinColumn(name = "userId")
+    @JoinColumn(name = "userid")
     User user;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "shippingInfor")
+    @OneToMany(mappedBy = "shippinginfor")
     List<Order> orders;
 }

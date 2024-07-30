@@ -26,24 +26,24 @@ public class Order implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    String orderStatus;
+    String orderstatus;
     @Temporal(TemporalType.TIMESTAMP)
-    Date paymentDate;
+    Date paymentdate;
 
     @ManyToOne
-    @JoinColumn(name = "paymentMethodId")
-    PaymentMethod paymentMethod;
+    @JoinColumn(name = "paymentMethodid")
+    PaymentMethod paymentmethod;
 
     @ManyToOne
-    @JoinColumn(name = "userId")
+    @JoinColumn(name = "userid")
     User user;
 
     @ManyToOne
-    @JoinColumn(name = "shippingAddressId")
-    ShippingInfor shippingInfor;
+    @JoinColumn(name = "shippingaddressid")
+    ShippingInfor shippinginfor;
 
     @ManyToOne
-    @JoinColumn(name = "feeId")
+    @JoinColumn(name = "feeid")
     Fee fee;
 
     @JsonIgnore
@@ -52,6 +52,6 @@ public class Order implements Serializable {
 
     @JsonIgnore
     @OneToMany(mappedBy = "order")
-    List<OrderDetail> orderDetails;
+    List<OrderDetail> orderdetails;
 
 }

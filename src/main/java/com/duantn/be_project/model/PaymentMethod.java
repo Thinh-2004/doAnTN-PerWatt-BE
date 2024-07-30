@@ -24,7 +24,7 @@ public class PaymentMethod implements Serializable {
     String type;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "paymentMethod")
+    @OneToMany(mappedBy = "paymentmethod")
     List<Order> orders;
     
 }

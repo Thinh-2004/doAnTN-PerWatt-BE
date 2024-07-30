@@ -26,17 +26,17 @@ public class Store implements Serializable{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    String nameStore;
+    String namestore;
     String address;
     String email;
     String phone;
-    Integer cccdNumber;
+    Integer cccdnumber;
     @Temporal(TemporalType.TIMESTAMP)
-    Date createdTime;
-    String imgBackgound;
+    Date createdtime;
+    String imgbackgound;
 
     @ManyToOne
-    @JoinColumn(name = "userId")
+    @JoinColumn(name = "userid")
     User user;
 
     @JsonIgnore

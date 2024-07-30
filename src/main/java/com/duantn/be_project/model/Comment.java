@@ -25,15 +25,15 @@ public class Comment implements Serializable {
     String content;
 
     @ManyToOne
-    @JoinColumn(name = "productId")
+    @JoinColumn(name = "productid")
     Product product;
 
     @ManyToOne
-    @JoinColumn(name = "userId")
+    @JoinColumn(name = "userid")
     User user;
 
     @Temporal(TemporalType.TIME)
-    Date commentDate;
+    Date commentdate;
     Integer rating;
     
 }

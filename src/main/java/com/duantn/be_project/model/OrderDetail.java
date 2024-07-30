@@ -22,11 +22,11 @@ public class OrderDetail implements Serializable {
     Integer quantity;
 
     @ManyToOne
-    @JoinColumn(name = "orderId")
+    @JoinColumn(name = "orderid")
     Order order;
 
     @ManyToOne
-    @JoinColumn(name = "productId")
+    @JoinColumn(name = "productid")
     Product product;
     
     Float price;

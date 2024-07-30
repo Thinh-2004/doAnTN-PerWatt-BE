@@ -14,6 +14,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 import lombok.Data;
 
 @SuppressWarnings("serial")
@@ -24,14 +26,15 @@ public class User implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    String fullName;
+    String fullname;
     String password;
     String email;
-    Date bithDate;
+    @Temporal(TemporalType.DATE)
+    Date birthdate;
     Boolean gender;
 
     @ManyToOne
-    @JoinColumn(name = "roleId")
+    @JoinColumn(name = "roleid")
     Role role;
 
     String address;

@@ -24,10 +24,10 @@ public class CartItem implements Serializable{
     Integer quantity;
 
     @ManyToOne
-    @JoinColumn(name = "userId")
+    @JoinColumn(name = "userid")
     User user;
 
     @ManyToOne
-    @JoinColumn(name = "productId")
+    @JoinColumn(name = "productid")
     Product product;
 }

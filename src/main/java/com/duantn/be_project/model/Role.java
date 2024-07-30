@@ -21,11 +21,11 @@ public class Role implements Serializable{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    String nameRole;
+    String namerole;
 
     @JsonIgnore
     @OneToMany(mappedBy = "role")
-    List<RolePermission> rolePermissions;
+    List<RolePermission> rolepermissions;
 
     @JsonIgnore
     @OneToMany(mappedBy = "role")

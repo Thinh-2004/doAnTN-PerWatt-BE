@@ -25,5 +25,5 @@ public class Permission implements Serializable {
 
     @JsonIgnore
     @OneToMany(mappedBy = "permission")
-    List<RolePermission> rolePermissions;
+    List<RolePermission> rolepermissions;
 }
