@@ -21,10 +21,10 @@ public class Follow implements Serializable{
     Integer id;
 
     @ManyToOne
-    @JoinColumn(name = "userId")
+    @JoinColumn(name = "userid")
     User user;
 
     @ManyToOne
-    @JoinColumn(name = "storeId")
+    @JoinColumn(name = "storeid")
     Store store;
 }

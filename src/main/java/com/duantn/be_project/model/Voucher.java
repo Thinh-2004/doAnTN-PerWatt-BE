@@ -22,18 +22,18 @@ public class Voucher implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    String voucherName;
+    String vouchername;
 
     @ManyToOne
-    @JoinColumn(name = "idOrder")
+    @JoinColumn(name = "idorder")
     Order order;
 
     @ManyToOne
-    @JoinColumn(name = "idStore")
+    @JoinColumn(name = "idstore")
     Store store;
 
     @Temporal(TemporalType.TIMESTAMP)
-    Date startDay;
+    Date startday;
     @Temporal(TemporalType.TIMESTAMP)
-    Date endDay;
+    Date endday;
 }

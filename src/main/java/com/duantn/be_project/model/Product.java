@@ -27,38 +27,38 @@ public class Product implements Serializable {
     String name;
 
     @ManyToOne
-    @JoinColumn(name = "categoryId")
-    ProductCategory productCategory;
+    @JoinColumn(name = "categoryid")
+    ProductCategory productcategory;
 
     @ManyToOne
-    @JoinColumn(name = "trademarkId")
+    @JoinColumn(name = "trademarkid")
     TradeMark trademark;
 
     @ManyToOne
-    @JoinColumn(name = "warrantiesId")
+    @JoinColumn(name = "warrantiesid")
     Warranties warranties;
 
     BigDecimal price;
     Integer quantity;
     String size;
-    String specializedGame;
+    String specializedgame;
     String description;
 
     @ManyToOne
-    @JoinColumn(name = "storeId")
+    @JoinColumn(name = "storeid")
     Store store;
 
     @JsonIgnore
     @OneToMany(mappedBy = "product")
-    List<ChatMessage> chatMessages;
+    List<ChatMessage> chatmessages;
 
     @JsonIgnore
     @OneToMany(mappedBy = "product")
-    List<CartItem> cartItems;
+    List<CartItem> cartitems;
 
     @JsonIgnore
     @OneToMany(mappedBy = "product")
-    List<OrderDetail> orderDetails;
+    List<OrderDetail> orderdetails;
 
     @JsonIgnore
     @OneToMany(mappedBy = "product")
