@@ -21,15 +21,15 @@ public class ChatMessage implements Serializable{
     Integer id;
 
     @ManyToOne
-    @JoinColumn(name = "senderId")
+    @JoinColumn(name = "senderid")
     User user1;
 
     @ManyToOne
-    @JoinColumn(name = "receiverId")
+    @JoinColumn(name = "receiverid")
     User user2;
 
     @ManyToOne
-    @JoinColumn(name = "productId")
+    @JoinColumn(name = "productid")
     Product product;
     
 

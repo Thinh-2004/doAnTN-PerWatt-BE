@@ -15,6 +15,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Temporal;
+import jakarta.persistence.TemporalType;
 import lombok.Data;
 
 @SuppressWarnings("serial")
@@ -28,6 +30,10 @@ public class User implements Serializable {
     String fullname;
     String password;
     String email;
+<<<<<<< HEAD
+=======
+    @Temporal(TemporalType.DATE)
+>>>>>>> origin/thinhtq
     Date birthdate;
     Boolean gender;
 

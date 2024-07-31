@@ -23,7 +23,7 @@ public class Fee implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    Float taxMoney;
+    Float taxmoney;
     Float commission;
 
     @JsonIgnore

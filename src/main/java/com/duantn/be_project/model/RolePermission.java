@@ -21,10 +21,10 @@ public class RolePermission implements Serializable{
     Integer id;
 
     @ManyToOne
-    @JoinColumn(name = "roleId")
+    @JoinColumn(name = "roleid")
     Role role;
 
     @ManyToOne
-    @JoinColumn(name = "permissionId")
+    @JoinColumn(name = "permissionid")
     Permission permission;
 }
