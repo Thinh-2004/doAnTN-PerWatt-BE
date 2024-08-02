@@ -1,7 +1,7 @@
 package com.duantn.be_project.model;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -16,10 +16,18 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @SuppressWarnings("serial")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 @Entity
 @Table(name = "Stores")
 public class Store implements Serializable{
@@ -30,9 +38,9 @@ public class Store implements Serializable{
     String address;
     String email;
     String phone;
-    Integer cccdnumber;
+    String cccdnumber;
     @Temporal(TemporalType.TIMESTAMP)
-    Date createdtime;
+    LocalDateTime createdtime;
     String imgbackgound;
 
     @ManyToOne
@@ -45,9 +53,17 @@ public class Store implements Serializable{
 
     @JsonIgnore
     @OneToMany(mappedBy = "store")
+    List<Comment> comments;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "store")
     List<Voucher> vouchers;
 
     @JsonIgnore
     @OneToMany(mappedBy = "store")
     List<Follow> follows;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "store")
+    List<Order> orders;
 }

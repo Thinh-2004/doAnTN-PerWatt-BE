@@ -14,10 +14,18 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @SuppressWarnings("serial")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 @Entity
 @Table(name = "Products")
 public class Product implements Serializable {
@@ -47,10 +55,6 @@ public class Product implements Serializable {
     @ManyToOne
     @JoinColumn(name = "storeid")
     Store store;
-
-    @JsonIgnore
-    @OneToMany(mappedBy = "product")
-    List<ChatMessage> chatmessages;
 
     @JsonIgnore
     @OneToMany(mappedBy = "product")
