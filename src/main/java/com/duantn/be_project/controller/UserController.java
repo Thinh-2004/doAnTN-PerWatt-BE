@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.duantn.be_project.Repository.RoleRepository;
-import com.duantn.be_project.Repository.UserRepository;
+import com.duantn.be_project.repository.RoleRepository;
+import com.duantn.be_project.repository.UserRepository;
 import com.duantn.be_project.model.Role;
 import com.duantn.be_project.model.User;
 

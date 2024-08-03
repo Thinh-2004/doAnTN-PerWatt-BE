@@ -30,10 +30,8 @@ public class User implements Serializable {
     String fullname;
     String password;
     String email;
-<<<<<<< HEAD
-=======
+
     @Temporal(TemporalType.DATE)
->>>>>>> origin/thinhtq
     Date birthdate;
     Boolean gender;
 
@@ -47,34 +45,34 @@ public class User implements Serializable {
 
     @JsonIgnore
     @OneToMany(mappedBy = "user")
-    List<Comment> comments;    
+    List<Comment> comments;
 
     @JsonIgnore
     @OneToMany(mappedBy = "user1")
-    List<ChatMessage> chatMessages1;  
+    List<ChatMessage> chatMessages1;
 
     @JsonIgnore
     @OneToMany(mappedBy = "user2")
-    List<ChatMessage> chatMessages2; 
-    
-    @JsonIgnore
-    @OneToMany(mappedBy = "user")
-    List<Store> stores;  
+    List<ChatMessage> chatMessages2;
 
     @JsonIgnore
     @OneToMany(mappedBy = "user")
-    List<Follow> follows;  
+    List<Store> stores;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "user")
+    List<Follow> follows;
 
     @JsonIgnore
     @OneToMany(mappedBy = "user")
     List<CartItem> cartItems;
-    
+
     @JsonIgnore
     @OneToMany(mappedBy = "user")
-    List<Order> orders; 
-    
+    List<Order> orders;
+
     @JsonIgnore
     @OneToMany(mappedBy = "user")
-    List<ShippingInfor> shippingInfors; 
-    
+    List<ShippingInfor> shippingInfors;
+
 }
