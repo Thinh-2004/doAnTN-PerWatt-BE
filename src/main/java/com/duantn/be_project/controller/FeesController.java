@@ -41,32 +41,32 @@ public class FeesController {
         return ResponseEntity.status(HttpStatus.CREATED).body(savedFee);
     }
 
-    // Update an existing Fee
     @PutMapping("/{id}")
     public ResponseEntity<Fee> updateFee(@PathVariable Integer id, @RequestBody Fee fee) {
-        if (!feeRepository.existsById(id)) {
+        Optional<Fee> existingFeeOptional = feeRepository.findById(id);
+        if (!existingFeeOptional.isPresent()) {
             return ResponseEntity.notFound().build();
         }
-        fee.setId(id);
-        Fee updatedFee = feeRepository.save(fee);
+    
+        Fee existingFee = existingFeeOptional.get();
+        existingFee.setTaxmoney(fee.getTaxmoney()); // Cập nhật taxmoney
+        // Không thay đổi commission
+    
+        Fee updatedFee = feeRepository.save(existingFee);
         return ResponseEntity.ok(updatedFee);
     }
+    
 
-    // Delete a Fee
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteFee(@PathVariable Integer id) {
-        if (!feeRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+   
+
+    // Get Store and Fee Details
+    @GetMapping("/store-fee-details")
+    public ResponseEntity<List<Object[]>> getStoreAndFeeDetails() {
+        try {
+            List<Object[]> storeAndFeeDetails = feeRepository.findStoreAndFeeDetails();
+            return ResponseEntity.ok(storeAndFeeDetails);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
-        feeRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    // Get total revenue after tax
-    @GetMapping("/{id}/total-revenue")
-    public ResponseEntity<Float> getTotalRevenueAfterTax(@PathVariable Integer id) {
-        int currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
-        Float totalRevenue = feeRepository.calculateTotalRevenueAfterTax(id, currentYear);
-        return ResponseEntity.ok(totalRevenue);
     }
 }
