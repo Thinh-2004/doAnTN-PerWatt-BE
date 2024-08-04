@@ -2,6 +2,8 @@ package com.duantn.be_project.model;
 
 import java.io.Serializable;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -29,6 +31,7 @@ public class Image implements Serializable{
     Integer id;
     String imagename;
 
+    @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "productid")
     Product product;

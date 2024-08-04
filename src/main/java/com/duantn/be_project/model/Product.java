@@ -5,8 +5,11 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -64,8 +67,9 @@ public class Product implements Serializable {
     @OneToMany(mappedBy = "product")
     List<OrderDetail> orderdetails;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "product")
+    // @JsonIgnore
+    @JsonManagedReference
+    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
     List<Image> images;
 
     @JsonIgnore

@@ -1,5 +1,6 @@
 package com.duantn.be_project.controller;
 
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +29,9 @@ public class CategoryController {
     // GetAll
     @GetMapping("/category")
     public ResponseEntity<List<ProductCategory>> getAll(Model model) {
-        return ResponseEntity.ok(categoryRepository.findAll());
+        List<ProductCategory> productCategories = categoryRepository.findAll();
+        productCategories.sort(Comparator.comparing((ProductCategory pc) -> pc.getName()));
+        return ResponseEntity.ok(productCategories);
     }
 
     // GetAllById
