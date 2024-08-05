@@ -16,10 +16,18 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @SuppressWarnings("serial")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 @Entity
 @Table(name = "Users")
 public class User implements Serializable {
@@ -43,34 +51,26 @@ public class User implements Serializable {
 
     @JsonIgnore
     @OneToMany(mappedBy = "user")
-    List<Comment> comments;    
-
-    @JsonIgnore
-    @OneToMany(mappedBy = "user1")
-    List<ChatMessage> chatMessages1;  
-
-    @JsonIgnore
-    @OneToMany(mappedBy = "user2")
-    List<ChatMessage> chatMessages2; 
-    
-    @JsonIgnore
-    @OneToMany(mappedBy = "user")
-    List<Store> stores;  
+    List<Comment> comments;
 
     @JsonIgnore
     @OneToMany(mappedBy = "user")
-    List<Follow> follows;  
+    List<Store> stores;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "user")
+    List<Follow> follows;
 
     @JsonIgnore
     @OneToMany(mappedBy = "user")
     List<CartItem> cartItems;
-    
+
     @JsonIgnore
     @OneToMany(mappedBy = "user")
-    List<Order> orders; 
-    
+    List<Order> orders;
+
     @JsonIgnore
     @OneToMany(mappedBy = "user")
-    List<ShippingInfor> shippingInfors; 
-    
+    List<ShippingInfor> shippingInfors;
+
 }

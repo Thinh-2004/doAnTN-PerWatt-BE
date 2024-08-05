@@ -1,5 +1,6 @@
 package com.duantn.be_project.Repository;
 
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import com.duantn.be_project.model.Store;
@@ -7,10 +8,12 @@ import com.duantn.be_project.model.Store;
 import java.util.List;
 import java.util.Map;
 
-public interface StoreRepository extends CrudRepository<Store, Integer> {
+public interface StoreRepository extends JpaRepository<Store, Integer> {
 
     @Query(value = "SELECT COUNT(*) FROM Stores", nativeQuery = true)
     long countTotalStores(); // Trả về kiểu long
+    @Query("select s from Store s where s.user.id = ?1 ")
+    public Store findStoreByIdUser(Integer idUser);
 
     @Query(value = "SELECT s.namestore AS StoreName, SUM(od.quantity * od.price) * 0.9 AS TotalRevenue " +
                    "FROM Stores s " +
@@ -24,4 +27,5 @@ public interface StoreRepository extends CrudRepository<Store, Integer> {
                    "GROUP BY YEAR(createdTime) " +
                    "ORDER BY YEAR(createdTime)", nativeQuery = true)
     List<Map<String, Object>> countStoresByYear();
+
 }

@@ -12,10 +12,18 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @SuppressWarnings("serial")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 @Entity
 @Table(name = "Comments")
 public class Comment implements Serializable {
@@ -31,6 +39,10 @@ public class Comment implements Serializable {
     @ManyToOne
     @JoinColumn(name = "userid")
     User user;
+
+    @ManyToOne
+    @JoinColumn(name = "storeid")
+    Store store;
 
     @Temporal(TemporalType.TIME)
     Date commentdate;

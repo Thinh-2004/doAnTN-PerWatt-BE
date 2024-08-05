@@ -16,10 +16,18 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @SuppressWarnings("serial")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 @Entity
 @Table(name = "Orders")
 public class Order implements Serializable {
@@ -45,6 +53,10 @@ public class Order implements Serializable {
     @ManyToOne
     @JoinColumn(name = "feeid")
     Fee fee;
+
+    @ManyToOne
+    @JoinColumn(name = "Storeid")
+    Store store;
 
     @JsonIgnore
     @OneToMany(mappedBy = "order")
