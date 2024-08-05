@@ -33,6 +33,11 @@ public class CategoryController {
         productCategories.sort(Comparator.comparing((ProductCategory pc) -> pc.getName()));
         return ResponseEntity.ok(productCategories);
     }
+    @GetMapping("/category/hot")
+    public ResponseEntity<List<ProductCategory>> getCategory(Model model) {
+        List<ProductCategory> productCategories = categoryRepository.findAll();
+        return ResponseEntity.ok(productCategories);
+    }
 
     // GetAllById
     @GetMapping("/category/{id}")

@@ -37,6 +37,17 @@ public class UserController {
         return ResponseEntity.ok(userRepository.findAll());
     }
 
+    //GetByIdUser
+    @GetMapping("/userProFile/{id}")
+    public ResponseEntity<User> getByIdUser(@PathVariable("id") Integer id) {
+        User user = userRepository.findById(id).orElseThrow();
+        if(user == null){
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(user);
+    }
+    
+
     // GetByEmail
     @GetMapping("/user/{email}")
     public ResponseEntity<User> getByEmail(Model model, @PathVariable("email") String email) {
