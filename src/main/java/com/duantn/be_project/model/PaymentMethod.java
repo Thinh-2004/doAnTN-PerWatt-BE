@@ -24,7 +24,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "PaymentMethods")
+@Table(name = "Paymentmethods")
 public class PaymentMethod implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

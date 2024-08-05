@@ -24,7 +24,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "CartItems")
+@Table(name = "Cartitems")
 public class CartItem implements Serializable{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -26,7 +26,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "ShippingInfos")
+@Table(name = "Shippinginfos")
 public class ShippingInfor implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
