@@ -10,11 +10,8 @@ import java.util.Map;
 
 @Repository
 public interface UserAdRepository extends CrudRepository<User, Integer> {
-    
-    @Query(value = "SELECT YEAR(s.createdtime) AS Year, COUNT(DISTINCT u.id) AS TotalUsers " +
-                   "FROM Stores s " +
-                   "INNER JOIN Users u ON u.id = s.userid " +
-                   "GROUP BY YEAR(s.createdtime) " +
-                   "ORDER BY Year", nativeQuery = true)
-    List<Map<String, Object>> findUsersByYear();
+
+    @Query(value = "SELECT COUNT(id) AS TotalUsers FROM Users", nativeQuery = true)
+    List<Map<String, Object>> findTotalUsers();
+
 }
