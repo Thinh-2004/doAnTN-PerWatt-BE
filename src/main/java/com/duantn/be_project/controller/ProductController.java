@@ -102,7 +102,7 @@ public class ProductController {
 
         System.out.println("Received product: " + productJson);
 
-        // Parse JSON string to Product object
+        // Tạo nơi chứa Json
         ObjectMapper objectMapper = new ObjectMapper();
         Product product;
         try {
@@ -114,7 +114,7 @@ public class ProductController {
 
         System.out.println("Parsed product: " + product);
 
-        // Save the product
+        // Lưu  product
         Product savedProduct;
         try {
             savedProduct = productRepository.save(product);
@@ -126,12 +126,12 @@ public class ProductController {
 
         System.out.println("Saved product: " + savedProduct);
 
-        // Save files and update product with image information
+        // Lưu files và update product với image 
         List<String> imageUrls = new ArrayList<>();
         for (MultipartFile file : files) {
             System.out.println("Received file: " + file.getOriginalFilename());
 
-            // Save file and get URL or filename
+            // Lưu file và get URL của filename
             String imageUrl = fileManagerService.save(file, savedProduct.getId());
 
             if (imageUrl != null) {
@@ -139,7 +139,7 @@ public class ProductController {
             }
         }
 
-        // Create Image entities for each image URL and associate with the product
+        // Tạo Image entities 
         List<Image> images = new ArrayList<>();
         for (String imageUrl : imageUrls) {
             Image image = new Image();
@@ -148,7 +148,7 @@ public class ProductController {
             images.add(image);
         }
 
-        // Save images
+        // Lưu images
         try {
             imageRepository.saveAll(images); // Ensure you have a repository to save images
             savedProduct.setImages(images); // Update product with image entities

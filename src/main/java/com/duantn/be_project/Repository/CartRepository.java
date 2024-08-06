@@ -11,4 +11,7 @@ public interface CartRepository extends JpaRepository<CartItem, Integer> {
     @Query("select od from CartItem od where od.user.id = ?1")
     List<CartItem> findAllCartItemlByIdUser(Integer idUser);
 
+    CartItem findByUserIdAndProductId(Integer userId, Integer productId);
+
+
 }
