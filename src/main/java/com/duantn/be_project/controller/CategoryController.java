@@ -35,8 +35,8 @@ public class CategoryController {
     }
     @GetMapping("/category/hot")
     public ResponseEntity<List<ProductCategory>> getCategory(Model model) {
-        List<ProductCategory> productCategories = categoryRepository.findAll();
-        return ResponseEntity.ok(productCategories);
+        List<ProductCategory> productCategories = categoryRepository.sortByPCAZ();
+        return ResponseEntity.ok(productCategories); 
     }
 
     // GetAllById

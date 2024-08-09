@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,13 +79,40 @@ public class UploadImages {
     public String saveUserImage(MultipartFile file, Integer userId) {
         return save(file, "user/" + userId);
     }
-      // Save store image
-      public String saveStoreImage(MultipartFile file, Integer storeId) {
+
+    // Save store image
+    public String saveStoreImage(MultipartFile file, Integer storeId) {
         return save(file, "store/" + storeId);
+    }
+
+    public String saveUserImageBasedOnGender(boolean isMale, Integer userId) {
+        // Đặt tên file dựa trên giới tính
+        String defaultAvatar = isMale ? "nam.jpg" : "nu.jpg";
+
+        // Tạo đường dẫn tới file mặc định
+        Path sourcePath = Paths.get("src/main/resources/static/files/images", defaultAvatar);
+
+        // Đường dẫn tới thư mục người dùng
+        Path targetDir = Paths.get(UPLOAD_DIR, "user", String.valueOf(userId));
+        Path targetPath = targetDir.resolve(defaultAvatar); //Nối đường dẫn
+
+        try {
+            // Tạo thư mục nếu chưa tồn tại
+            if (Files.notExists(targetDir)) {
+                Files.createDirectories(targetDir);
+            }
+
+            // Sao chép file từ nguồn tới đích
+            Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            return defaultAvatar;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     // // Save product image
     // public String saveProductImage(MultipartFile file, Integer productId) {
-    //     return save(file, "product/" + productId);
+    // return save(file, "product/" + productId);
     // }
 }
