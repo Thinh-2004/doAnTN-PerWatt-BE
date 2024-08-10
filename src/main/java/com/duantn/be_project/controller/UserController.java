@@ -2,12 +2,15 @@ package com.duantn.be_project.controller;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.duantn.be_project.Repository.RoleRepository;
 import com.duantn.be_project.Repository.UserRepository;
+import com.duantn.be_project.Service.SecurityConfig;
 import com.duantn.be_project.model.Role;
 import com.duantn.be_project.model.User;
 import com.duantn.be_project.untils.UploadImages;
@@ -40,6 +44,8 @@ public class UserController {
     RoleRepository roleRepository;
     @Autowired
     UploadImages uploadImages;
+    @Autowired
+    PasswordEncoder passwordEncoder;
 
     // GetAll
     @GetMapping("/user")
@@ -57,42 +63,76 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
-    // GetByEmail
-    @GetMapping("/user/{email}")
-    public ResponseEntity<User> getByEmail(Model model, @PathVariable("email") String email) {
-        User user = userRepository.findByEmail(email);
+    //checkmkProfileUser
+    @PostMapping("/checkPass")
+    public ResponseEntity<Map<String, Object>> checkPass(@RequestBody User userRequest) {
+        Map<String, Object> response = new HashMap<>();
+
+        // Tìm kiếm người dùng theo Email
+        User user = userRepository.findById(userRequest.getId()).orElseThrow();
         if (user == null) {
-            return ResponseEntity.notFound().build();
+            response.put("message", "Người dùng không tồn tại");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
-        return ResponseEntity.ok(user);
+
+        // Kiểm tra mật khẩu
+        if (passwordEncoder.matches(userRequest.getPassword(), user.getPassword())) {
+            response.put("message", "Mật khẩu chính xác");
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("message", "Mật khẩu không chính xác");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
     }
 
-        @PostMapping("/user")
-        public ResponseEntity<?> post(@RequestBody User user) {
-            // Kiểm tra email đã tồn tại
-            if (userRepository.existsByEmail(user.getEmail())) {
-                return ResponseEntity.status(HttpStatus.CONFLICT).body("Email đã tồn tại");
-            }
-
-            // Tìm role
-            Role role = roleRepository.findById(user.getRole().getId())
-                    .orElseThrow(() -> new RuntimeException("Quyền không tồn tại"));
-            user.setRole(role);
-
-            // Lưu user để lấy ID
-            User savedUser = userRepository.save(user);
-
-            // Lưu ảnh đại diện dựa trên giới tính
-            String avatarFilename = uploadImages.saveUserImageBasedOnGender(user.getGender(), savedUser.getId());
-            if (avatarFilename == null) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi lưu trữ ảnh đại diện");
-            }
-
-            savedUser.setAvatar(avatarFilename);
-            userRepository.save(savedUser);
-
-            return ResponseEntity.ok(savedUser);
+    @PostMapping("/login")
+    public ResponseEntity<Map<String, Object>> login(@RequestBody User userRequest) {
+        Map<String, Object> response = new HashMap<>();
+        User user = userRepository.findByEmail(userRequest.getEmail());
+        if (user == null) {
+            response.put("message", "Email không tồn tại");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
+
+        if (passwordEncoder.matches(userRequest.getPassword(), user.getPassword())) {
+            response.put("user", user);
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("message", "Mật khẩu không chính xác");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+    }
+
+    @PostMapping("/user")
+    public ResponseEntity<?> post(@RequestBody User user) {
+        // Kiểm tra email đã tồn tại
+        if (userRepository.existsByEmail(user.getEmail())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Email đã tồn tại");
+        }
+
+        // Tìm role
+        Role role = roleRepository.findById(user.getRole().getId())
+                .orElseThrow(() -> new RuntimeException("Quyền không tồn tại"));
+        user.setRole(role);
+
+        // Mã hóa mật khẩu trước khi lưu
+        String encodedPassword = passwordEncoder.encode(user.getPassword());
+        user.setPassword(encodedPassword);
+
+        // Lưu user để lấy ID
+        User savedUser = userRepository.save(user);
+
+        // Lưu ảnh đại diện dựa trên giới tính
+        String avatarFilename = uploadImages.saveUserImageBasedOnGender(user.getGender(), savedUser.getId());
+        if (avatarFilename == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi lưu trữ ảnh đại diện");
+        }
+
+        savedUser.setAvatar(avatarFilename);
+        userRepository.save(savedUser);
+
+        return ResponseEntity.ok(savedUser);
+    }
 
     @PutMapping("/user/{id}")
     public ResponseEntity<?> updateUser(
@@ -117,7 +157,7 @@ public class UserController {
 
         // Đảm bảo ID của người dùng khớp với biến đường dẫn
         user.setId(id);
-
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         String oldAvatarUrl = null;
 
         // Xử lý hình ảnh nếu có
