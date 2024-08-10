@@ -39,7 +39,7 @@ public class Order implements Serializable {
     Date paymentdate;
 
     @ManyToOne
-    @JoinColumn(name = "paymentMethodid")
+    @JoinColumn(name = "paymentmethodid")
     PaymentMethod paymentmethod;
 
     @ManyToOne
