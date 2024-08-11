@@ -18,4 +18,6 @@ public interface CartRepository extends JpaRepository<CartItem, Integer> {
     boolean existsById(Integer id);
 
     CartItem findByProductAndUser(Product product, User user);
+
+    
 }

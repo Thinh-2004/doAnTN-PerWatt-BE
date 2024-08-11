@@ -54,7 +54,7 @@ public class ProductController {
     // GetAll
     @GetMapping("/pageHome")
     public ResponseEntity<List<Product>> getAll(Model model) {
-        return ResponseEntity.ok(productRepository.findAll());
+        return ResponseEntity.ok(productRepository.findAllDesc());
     }
 
     // GetAllByIdStore

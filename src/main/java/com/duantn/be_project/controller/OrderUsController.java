@@ -18,68 +18,16 @@ public class OrderUsController {
     @Autowired
     private OrderUsRepository orderUsRepository;
 
-    @GetMapping("/count-store-processing")
-    public ResponseEntity<?> getOrdersByStoreAndStatusProcessing() {
+    @GetMapping("/count-orders/{storeId}")
+    public ResponseEntity<?> getOrdersByStatusForStore(@PathVariable("storeId") Integer storeId) {
         try {
-            List<Map<String, Object>> results = orderUsRepository.countOrdersByStoreAndStatusProcessing();
+            List<Map<String, Object>> results = orderUsRepository.countOrdersByStatusForStore(storeId);
             if (results.isEmpty()) {
-                return ResponseEntity.noContent().build(); // Trả về mã trạng thái 204 nếu không có dữ liệu
+                return ResponseEntity.noContent().build(); // Return 204 if no data
             }
             return ResponseEntity.ok(results);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi hệ thống: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/count-store-shipped")
-    public ResponseEntity<?> getOrdersByStoreAndStatusShipped() {
-        try {
-            List<Map<String, Object>> results = orderUsRepository.countOrdersByStoreAndStatusShipped();
-            if (results.isEmpty()) {
-                return ResponseEntity.noContent().build(); // Trả về mã trạng thái 204 nếu không có dữ liệu
-            }
-            return ResponseEntity.ok(results);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi hệ thống: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/count-store-delivered")
-    public ResponseEntity<?> getOrdersByStoreAndStatusDelivered() {
-        try {
-            List<Map<String, Object>> results = orderUsRepository.countOrdersByStoreAndStatusDelivered();
-            if (results.isEmpty()) {
-                return ResponseEntity.noContent().build(); // Trả về mã trạng thái 204 nếu không có dữ liệu
-            }
-            return ResponseEntity.ok(results);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi hệ thống: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/count-store-cancelled")
-    public ResponseEntity<?> getOrdersByStoreAndStatusCancelled() {
-        try {
-            List<Map<String, Object>> results = orderUsRepository.countOrdersByStoreAndStatusCancelled();
-            if (results.isEmpty()) {
-                return ResponseEntity.noContent().build(); // Trả về mã trạng thái 204 nếu không có dữ liệu
-            }
-            return ResponseEntity.ok(results);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi hệ thống: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/count-store-returned")
-    public ResponseEntity<?> getOrdersByStoreAndStatusReturned() {
-        try {
-            List<Map<String, Object>> results = orderUsRepository.countOrdersByStoreAndStatusReturned();
-            if (results.isEmpty()) {
-                return ResponseEntity.noContent().build(); // Trả về mã trạng thái 204 nếu không có dữ liệu
-            }
-            return ResponseEntity.ok(results);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi hệ thống: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("System error: " + e.getMessage());
         }
     }
 }

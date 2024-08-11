@@ -41,6 +41,7 @@ public class FeesController {
         return ResponseEntity.status(HttpStatus.CREATED).body(savedFee);
     }
 
+    // Update an existing Fee
     @PutMapping("/{id}")
     public ResponseEntity<Fee> updateFee(@PathVariable Integer id, @RequestBody Fee fee) {
         Optional<Fee> existingFeeOptional = feeRepository.findById(id);
@@ -55,18 +56,18 @@ public class FeesController {
         Fee updatedFee = feeRepository.save(existingFee);
         return ResponseEntity.ok(updatedFee);
     }
-    
-
-   
 
     // Get Store and Fee Details
     @GetMapping("/store-fee-details")
     public ResponseEntity<List<Object[]>> getStoreAndFeeDetails() {
-        try {
-            List<Object[]> storeAndFeeDetails = feeRepository.findStoreAndFeeDetails();
-            return ResponseEntity.ok(storeAndFeeDetails);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+        List<Object[]> results = feeRepository.findStoreAndFeeDetails();
+        return ResponseEntity.ok(results);
+    }
+
+    // Get Store Revenue
+    @GetMapping("/store-revenue")
+    public ResponseEntity<List<Object[]>> getStoreRevenue() {
+        List<Object[]> results = feeRepository.getStoreRevenue();
+        return ResponseEntity.ok(results);
     }
 }

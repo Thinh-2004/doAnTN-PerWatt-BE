@@ -20,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.duantn.be_project.Repository.RoleRepository;
 import com.duantn.be_project.Repository.UserRepository;
 import com.duantn.be_project.Service.SecurityConfig;
+import com.duantn.be_project.Service.UserService;
 import com.duantn.be_project.model.Role;
 import com.duantn.be_project.model.User;
 import com.duantn.be_project.untils.UploadImages;
@@ -46,6 +47,8 @@ public class UserController {
     UploadImages uploadImages;
     @Autowired
     PasswordEncoder passwordEncoder;
+    @Autowired
+    UserService userService;
 
     // GetAll
     @GetMapping("/user")
@@ -213,5 +216,21 @@ public class UserController {
         }
         userRepository.deleteById(id);
         return ResponseEntity.ok().build();
+    }
+
+
+
+
+    ////////
+    @GetMapping("/info/{id}")
+    public ResponseEntity<User> getUserInfo(@PathVariable Integer id) {
+        User user = userService.getUserById(id);
+        return ResponseEntity.ok(user);
+    }
+
+    @PutMapping("/info/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Integer id, @RequestBody User user) {
+        User updatedUser = userService.updateUser(id, user);
+        return ResponseEntity.ok(updatedUser);
     }
 }

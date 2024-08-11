@@ -15,4 +15,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     @Query("SELECT p FROM Product p LEFT JOIN FETCH p.images WHERE p.store.id = :idStore")
     List<Product> findAllByStoreIdWithImages(@Param("idStore") Integer idStore);
 
+    @Query("select p from Product p order by p.id desc")
+    List<Product> findAllDesc();
+
 }

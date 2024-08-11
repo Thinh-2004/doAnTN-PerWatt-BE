@@ -8,14 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RestController;
-import com.duantn.be_project.Repository.CartRepository;
-import com.duantn.be_project.Repository.ProductRepository;
-import com.duantn.be_project.Repository.UserRepository;
-import com.duantn.be_project.model.CartItem;
-import com.duantn.be_project.model.Product;
-import com.duantn.be_project.model.User;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,6 +15,14 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.duantn.be_project.Repository.CartRepository;
+import com.duantn.be_project.Repository.ProductRepository;
+import com.duantn.be_project.Repository.UserRepository;
+import com.duantn.be_project.model.CartItem;
+import com.duantn.be_project.model.Product;
+import com.duantn.be_project.model.User;
 
 @CrossOrigin("*")
 @RestController
@@ -166,5 +166,4 @@ List<CartItem> cartItems = cartRepository.findAllCartItemlByIdUser(id);
     // orderRepository.deleteById(id);
     // return ResponseEntity.ok().build();
     // }
-
 }

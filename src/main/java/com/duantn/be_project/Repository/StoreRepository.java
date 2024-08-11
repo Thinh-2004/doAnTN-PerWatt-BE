@@ -14,6 +14,7 @@ public interface StoreRepository extends JpaRepository<Store, Integer> {
     long countTotalStores(); // Trả về kiểu long
     @Query("select s from Store s where s.user.id = ?1 ")
     public Store findStoreByIdUser(Integer idUser);
+    boolean existsByNamestoreIgnoreCase(String namestore); 
 
     @Query(value = "SELECT s.namestore AS StoreName, SUM(od.quantity * od.price) * 0.9 AS TotalRevenue " +
                    "FROM Stores s " +

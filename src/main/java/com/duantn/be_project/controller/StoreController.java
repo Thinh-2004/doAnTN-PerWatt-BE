@@ -71,8 +71,11 @@ public class StoreController {
 
     // Post
     @PostMapping("/store")
-    public ResponseEntity<Store> post(@RequestBody Store store) {
+    public ResponseEntity<String> post(@RequestBody Store store) {
         // TODO: process POST request
+        if (storeRepository.existsByNamestoreIgnoreCase(store.getNamestore())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Tên cửa hàng đã tồn tại!");
+        }
         if (store.getCreatedtime() == null) {
             store.setCreatedtime(LocalDateTime.now());// Thiết lập thời gian tạo
         }
@@ -84,8 +87,8 @@ public class StoreController {
         }
         userRepository.save(user); // Cập nhật lại role khi tạo store
         store.setUser(user);// Cập nhật lại user khi tạo store
-        Store savedStore = storeRepository.save(store);
-        return ResponseEntity.ok(savedStore);
+         storeRepository.save(store);
+        return ResponseEntity.ok("savedStore");
     }
 
     @PutMapping("/store/{id}")
