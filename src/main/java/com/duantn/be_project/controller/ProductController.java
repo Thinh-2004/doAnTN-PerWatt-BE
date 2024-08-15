@@ -19,9 +19,11 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.duantn.be_project.Repository.ImageRepository;
+import com.duantn.be_project.Repository.OrderRepository;
 import com.duantn.be_project.Repository.ProductRepository;
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.model.Image;
+import com.duantn.be_project.model.Order;
 import com.duantn.be_project.model.Product;
 import com.duantn.be_project.model.Store;
 import com.duantn.be_project.untils.FileManagerService;
@@ -50,6 +52,8 @@ public class ProductController {
     FileManagerService fileManagerService;
     @Autowired
     ServletContext servletContext;
+    @Autowired
+    OrderRepository orderRepository;
 
     // GetAll
     @GetMapping("/pageHome")
@@ -279,5 +283,12 @@ public class ProductController {
         }
         return ResponseEntity.ok(store);
     }
+
+    // //CountOrderBuy
+    // @GetMapping("/countOrderSucces/{id}")
+    // public ResponseEntity<List<Order>> countOrderBuyed(@PathVariable("id") Integer idProduct) {
+    //     List<Order> order  = orderRepository.countOrderBuyed(idProduct);
+    //     return ResponseEntity.ok(order);
+    // }
 
 }
