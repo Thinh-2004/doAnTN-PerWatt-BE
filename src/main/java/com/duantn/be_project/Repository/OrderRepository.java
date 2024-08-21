@@ -22,8 +22,8 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
             "WHERE a.order_status = 'Hoàn thành' AND c.id = ?1", nativeQuery = true)
     public Long countBuyed(Integer idProduct);
 
-    ///// thịnh
-    // @Query(value = "select A.* from Orders A inner join OrderDetails B on A.id = B.orderId inner join Products C on C.id = B.productId where A.orderStatus like N'Hoàn thành' and  C.id = ?1", nativeQuery = true)
-    // public List<Order> countOrderBuyed(Integer idProduct);
+    ///// tính số lượng hóa đơn của sản phẩm
+    @Query(value = "select sum(B.quantity) from Orders A inner join OrderDetails B on A.id = B.orderId inner join Products C on C.id = B.productId where A.orderStatus like N'Hoàn thành' and  C.id = ?1", nativeQuery = true)
+    public Integer  countOrderBuyed(Integer idProduct);
 
 }

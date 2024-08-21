@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
@@ -284,11 +285,11 @@ public class ProductController {
         return ResponseEntity.ok(store);
     }
 
-    // //CountOrderBuy
-    // @GetMapping("/countOrderSucces/{id}")
-    // public ResponseEntity<List<Order>> countOrderBuyed(@PathVariable("id") Integer idProduct) {
-    //     List<Order> order  = orderRepository.countOrderBuyed(idProduct);
-    //     return ResponseEntity.ok(order);
-    // }
+    //CountOrderBuy
+    @GetMapping("/countOrderSuccess/{id}")
+    public ResponseEntity<Integer> countOrderBuyed(@PathVariable("id") Integer idProduct) {
+        Integer countOrder  = orderRepository.countOrderBuyed(idProduct);
+        return ResponseEntity.ok(countOrder);
+    }
 
 }
