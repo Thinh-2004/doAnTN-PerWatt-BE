@@ -14,6 +14,7 @@ import com.duantn.be_project.model.CartItem;
 import com.duantn.be_project.model.Order;
 import com.duantn.be_project.model.OrderDetail;
 import com.duantn.be_project.model.OrderRequest;
+import com.duantn.be_project.model.PaymentMethod;
 import com.duantn.be_project.model.Product;
 
 @CrossOrigin("*") // Cho phép tất cả các nguồn truy cập vào API
@@ -59,10 +60,12 @@ public class OrderDetailController {
     public ResponseEntity<Order> createOrder(@RequestBody OrderRequest orderRequest) {
         // Tạo đối tượng đơn hàng mới từ yêu cầu
         Order order = new Order();
+        PaymentMethod paymentMethod = new PaymentMethod();
+        paymentMethod.setId(1);
         order.setUser(orderRequest.getOrder().getUser());
-        order.setPaymentmethod(orderRequest.getOrder().getPaymentmethod());
+        order.setPaymentmethod(paymentMethod);
         order.setShippinginfor(orderRequest.getOrder().getShippinginfor());
-order.setFee(orderRequest.getOrder().getFee());
+        order.setFee(orderRequest.getOrder().getFee());
         order.setStore(orderRequest.getOrder().getStore());
         order.setPaymentdate(orderRequest.getOrder().getPaymentdate());
         order.setOrderstatus(orderRequest.getOrder().getOrderstatus());
@@ -101,5 +104,7 @@ order.setFee(orderRequest.getOrder().getFee());
 
         return ResponseEntity.ok(savedOrder); // Trả về đối tượng đơn hàng đã lưu
     }
+
+  
 
 }

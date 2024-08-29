@@ -66,7 +66,7 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
-    //checkmkProfileUser
+    // checkmkProfileUser
     @PostMapping("/checkPass")
     public ResponseEntity<Map<String, Object>> checkPass(@RequestBody User userRequest) {
         Map<String, Object> response = new HashMap<>();
@@ -160,7 +160,13 @@ public class UserController {
 
         // Đảm bảo ID của người dùng khớp với biến đường dẫn
         user.setId(id);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        User checkUser = userRepository.findById(id).orElseThrow();
+        if (checkUser.getPassword().equalsIgnoreCase(user.getPassword())) {
+            user.setPassword(user.getPassword());
+        } else {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
+
         String oldAvatarUrl = null;
 
         // Xử lý hình ảnh nếu có
@@ -179,6 +185,11 @@ public class UserController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("Không thể lưu hình ảnh: " + e.getMessage());
             }
+        } else {
+            String setOldAvatarUrl = userRepository.findById(id)
+                    .map(User::getAvatar)
+                    .orElse(null);
+            user.setAvatar(setOldAvatarUrl);
         }
 
         // Lưu người dùng đã cập nhật
@@ -217,9 +228,6 @@ public class UserController {
         userRepository.deleteById(id);
         return ResponseEntity.ok().build();
     }
-
-
-
 
     ////////
     @GetMapping("/info/{id}")

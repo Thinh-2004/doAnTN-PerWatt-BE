@@ -127,6 +127,10 @@ public class StoreController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("Không thể lưu hình ảnh: " + e.getMessage());
             }
+        }else{
+            String setOldImageUrl = storeRepository.findById(id).map(Store :: getImgbackgound).orElse(null);
+            store.setImgbackgound(setOldImageUrl);
+
         }
 
         try {
