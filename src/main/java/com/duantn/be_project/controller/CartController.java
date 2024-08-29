@@ -74,9 +74,9 @@ public class CartController {
     public ResponseEntity<List<CartItem>> getById(@PathVariable("id") Integer id) {
         List<CartItem> cartItems = cartRepository.findAllCartItemlByIdUser(id); // Tìm tất cả CartItem theo ID người
                                                                                 // dùng
-        if (cartItems.isEmpty()) { // Nếu danh sách CartItem rỗng
-            return ResponseEntity.notFound().build(); // Trả về 404
-        }
+        // if (cartItems.isEmpty()) { // Nếu danh sách CartItem rỗng
+        //     return ResponseEntity.notFound().build(); // Trả về 404
+        // }
         return ResponseEntity.ok(cartItems); // Trả về danh sách CartItem
     }
 
@@ -85,9 +85,9 @@ public class CartController {
     public ResponseEntity<List<CartItem>> getByAllCartByUserId(@PathVariable("id") Integer id) {
         List<CartItem> cartItems = cartRepository.findAllCartItemlByIdUser(id); // Tìm tất cả CartItem theo ID người
                                                                                 // dùng
-        if (cartItems.isEmpty()) { // Nếu danh sách CartItem rỗng
-            return ResponseEntity.notFound().build(); // Trả về 404
-        }
+        // if (cartItems.isEmpty()) { // Nếu danh sách CartItem rỗng
+        //     return ResponseEntity.notFound().build(); // Trả về 404
+        // }
         return ResponseEntity.ok(cartItems); // Trả về danh sách CartItem
     }
 
