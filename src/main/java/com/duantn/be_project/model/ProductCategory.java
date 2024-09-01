@@ -37,4 +37,5 @@ public class ProductCategory implements Serializable {
     List<Product> products;
 
     String imagecateproduct;
+    Float vat;
 }

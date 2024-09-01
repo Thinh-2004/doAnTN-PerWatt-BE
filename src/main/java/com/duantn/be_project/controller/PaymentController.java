@@ -135,7 +135,7 @@ public class PaymentController {
         order.setUser(orderRequest.getOrder().getUser());
         order.setPaymentmethod(paymentMethod);
         order.setShippinginfor(orderRequest.getOrder().getShippinginfor());
-        order.setFee(orderRequest.getOrder().getFee());
+        // order.setFee(orderRequest.getOrder().getFee());
         order.setStore(orderRequest.getOrder().getStore());
         order.setPaymentdate(orderRequest.getOrder().getPaymentdate());
         order.setOrderstatus(orderRequest.getOrder().getOrderstatus());

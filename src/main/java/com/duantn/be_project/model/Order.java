@@ -50,9 +50,6 @@ public class Order implements Serializable {
     @JoinColumn(name = "shippingaddressid")
     ShippingInfor shippinginfor;
 
-    @ManyToOne
-    @JoinColumn(name = "feeid")
-    Fee fee;
 
     @ManyToOne
     @JoinColumn(name = "Storeid")
@@ -65,5 +62,7 @@ public class Order implements Serializable {
     @JsonIgnore
     @OneToMany(mappedBy = "order")
     List<OrderDetail> orderdetails;
+
+    String note;
 
 }
