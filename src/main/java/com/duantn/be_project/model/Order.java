@@ -50,19 +50,21 @@ public class Order implements Serializable {
     @JoinColumn(name = "shippingaddressid")
     ShippingInfor shippinginfor;
 
-
     @ManyToOne
     @JoinColumn(name = "Storeid")
     Store store;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "order")
-    List<Voucher> vouchers;
+    @ManyToOne
+    @JoinColumn(name = "idvoucher")
+    Voucher voucher;
+
+    @ManyToOne
+    @JoinColumn(name = "idvoucheradmin")
+    VoucherAdmin voucherAdmin;
 
     @JsonIgnore
     @OneToMany(mappedBy = "order")
     List<OrderDetail> orderdetails;
 
     String note;
-
 }

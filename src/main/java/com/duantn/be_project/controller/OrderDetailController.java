@@ -87,10 +87,10 @@ public class OrderDetailController {
                 // Cập nhật số lượng sản phẩm
                 Product product = productRepository.findById(detailRequest.getProduct().getId())
                         .orElseThrow(() -> new RuntimeException("Product not found"));
-                if (product.getQuantity() < detailRequest.getQuantity()) {
-                    return ResponseEntity.badRequest().body(null); // Hoặc xử lý trường hợp không đủ hàng tồn kho
-                }
-                product.setQuantity(product.getQuantity() - detailRequest.getQuantity());
+                // if (product.getQuantity() < detailRequest.getQuantity()) {
+                //     return ResponseEntity.badRequest().body(null); // Hoặc xử lý trường hợp không đủ hàng tồn kho
+                // }
+                // product.setQuantity(product.getQuantity() - detailRequest.getQuantity());
                 productRepository.save(product); // Lưu cập nhật số lượng sản phẩm
 
                 // Xóa CartItem tương ứng với sản phẩm đã đặt

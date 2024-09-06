@@ -29,30 +29,28 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "Vouchers")
-public class Voucher implements Serializable {
+@Table(name = "Vouchersadmin")
+public class VoucherAdmin implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    String vouchername;
+    String voucherName;
 
     @ManyToOne
-    @JoinColumn(name = "idstore")
-    Store store;
+    @JoinColumn(name = "idcatevoucher")
+    VoucherAdminCategory voucherAdminCategory;
 
-    Float discountPrice;
+    String status;
 
     @Temporal(TemporalType.TIMESTAMP)
-    Date startday;
+    Date startDay;
     @Temporal(TemporalType.TIMESTAMP)
-    Date endday;
+    Date endDay;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "voucher")
-    List<VoucherDetail> voucherDetails;
-
-    @JsonIgnore
-    @OneToMany(mappedBy = "voucher")
+    @OneToMany(mappedBy = "voucherAdmin")
     List<Order> orders;
-
+    @JsonIgnore
+    @OneToMany(mappedBy = "voucherAdmin")
+    List<VoucherAdminDetail> voucherAdminDetails;
 }

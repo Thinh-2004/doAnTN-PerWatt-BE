@@ -1,7 +1,6 @@
 package com.duantn.be_project.model;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -23,17 +22,19 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "Banner")
-public class Banner implements Serializable {
-    @Id
+@Table(name = "Voucheradmindetail")
+public class VoucherAdminDetail implements Serializable {
+     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    String bannername;
-    String position;
-    LocalDateTime startdate;
-    LocalDateTime enddate;
-     
+
     @ManyToOne
-    @JoinColumn(name = "idUser")
-    User user;
+    @JoinColumn(name = "idvoucheradmin")
+    VoucherAdmin voucherAdmin;
+
+    @ManyToOne
+    @JoinColumn(name = "idproduct")
+    Product product;
+
+    Float discountPrice;
 }

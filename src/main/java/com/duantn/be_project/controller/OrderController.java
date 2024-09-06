@@ -119,7 +119,7 @@ public class OrderController {
             for (OrderDetail detail : order.getOrderdetails()) {
                 Product product = detail.getProduct();
                 int quantity = detail.getQuantity();
-                product.setQuantity(product.getQuantity() + quantity);
+                // product.setQuantity(product.getQuantity() + quantity);
                 productRepository.save(product);
             }
         }

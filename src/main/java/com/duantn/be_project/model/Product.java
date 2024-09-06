@@ -49,8 +49,6 @@ public class Product implements Serializable {
     @JoinColumn(name = "warrantiesid")
     Warranties warranties;
 
-    BigDecimal price;
-    Integer quantity;
     String size;
     String specializedgame;
     String description;
@@ -75,4 +73,12 @@ public class Product implements Serializable {
     @JsonIgnore
     @OneToMany(mappedBy = "product")
     List<Comment> comments;
+
+    @JsonManagedReference
+    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+    List<ProductDetail> productDetails;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "product")
+    List<VoucherAdminDetail> voucherAdminDetails;
 }

@@ -73,4 +73,12 @@ public class User implements Serializable {
     @OneToMany(mappedBy = "user")
     List<ShippingInfor> shippingInfors;
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "user")
+    List<Banner> banners;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "user")
+    List<VoucherDetail> voucherDetails;
+
 }
