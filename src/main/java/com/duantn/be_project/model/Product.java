@@ -75,7 +75,7 @@ public class Product implements Serializable {
     List<Comment> comments;
 
     @JsonManagedReference
-    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     List<ProductDetail> productDetails;
 
     @JsonIgnore

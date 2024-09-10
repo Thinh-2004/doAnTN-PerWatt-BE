@@ -40,7 +40,7 @@ public class Config {
     public static String hmacSHA512(final String key, final String data) {
         try {
             if (key == null || data == null) {
-                throw new NullPointerException();
+                throw new Exception();
             }
             final Mac hmac512 = Mac.getInstance("HmacSHA512");
             byte[] hmacKeyBytes = key.getBytes();

@@ -1,12 +1,16 @@
 package com.duantn.be_project.untils;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -85,6 +89,10 @@ public class UploadImages {
         return save(file, "store/" + storeId);
     }
 
+    public String saveDetailProductImage(MultipartFile file, Integer DetailProductId) {
+        return save(file, "detailProduct/" + DetailProductId);
+    }
+
     public String saveUserImageBasedOnGender(boolean isMale, Integer userId) {
         // Đặt tên file dựa trên giới tính
         String defaultAvatar = isMale ? "nam.jpg" : "nu.jpg";
@@ -94,7 +102,7 @@ public class UploadImages {
 
         // Đường dẫn tới thư mục người dùng
         Path targetDir = Paths.get(UPLOAD_DIR, "user", String.valueOf(userId));
-        Path targetPath = targetDir.resolve(defaultAvatar); //Nối đường dẫn
+        Path targetPath = targetDir.resolve(defaultAvatar); // Nối đường dẫn
 
         try {
             // Tạo thư mục nếu chưa tồn tại
@@ -111,6 +119,46 @@ public class UploadImages {
         }
     }
 
+    public void deleteFolderAndFile(String folderPath) {
+        Path folder = Paths.get(folderPath);
+        try {
+            // Kiểm tra xem thư mục có tồn tại không
+            if (Files.exists(folder) && Files.isDirectory(folder)) {
+                // Xóa tất cả các tệp trong thư mục
+                Files.walk(folder)
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(file -> {
+                            if (file.isFile()) {
+                                boolean deleted = file.delete();
+                                if (deleted) {
+                                    System.out.println("Deleted file: " + file.getPath());
+                                } else {
+                                    System.out.println("Failed to delete file: " + file.getPath());
+                                }
+                            }
+                        });
+                // Xóa tất cả các thư mục con
+                Files.walk(folder)
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(file -> {
+                            if (file.isDirectory()) {
+                                boolean deleted = file.delete();
+                                if (deleted) {
+                                    System.out.println("Deleted directory: " + file.getPath());
+                                } else {
+                                    System.out.println("Failed to delete directory: " + file.getPath());
+                                }
+                            }
+                        });
+            } else {
+                System.out.println("Folder does not exist or is not a directory: " + folderPath);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     // // Save product image
     // public String saveProductImage(MultipartFile file, Integer productId) {
     // return save(file, "product/" + productId);

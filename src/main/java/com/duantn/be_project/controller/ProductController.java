@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,13 +22,19 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.duantn.be_project.Repository.ImageRepository;
 import com.duantn.be_project.Repository.OrderRepository;
+import com.duantn.be_project.Repository.ProductDetailRepository;
 import com.duantn.be_project.Repository.ProductRepository;
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.model.Image;
 import com.duantn.be_project.model.Order;
 import com.duantn.be_project.model.Product;
+import com.duantn.be_project.model.ProductDetail;
 import com.duantn.be_project.model.Store;
 import com.duantn.be_project.untils.FileManagerService;
+import com.duantn.be_project.untils.UploadImages;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.ServletContext;
@@ -55,6 +62,10 @@ public class ProductController {
     ServletContext servletContext;
     @Autowired
     OrderRepository orderRepository;
+    @Autowired
+    ProductDetailRepository productDetailRepository;
+    @Autowired
+    UploadImages uploadImages;
 
     // GetAll
     @GetMapping("/pageHome")
@@ -89,54 +100,208 @@ public class ProductController {
         return ResponseEntity.ok(product);
     }
 
-    // // Post Store Product
+    // Post Store Product
     // @PostMapping("/productCreate")
-    // public ResponseEntity<Product> post(@RequestBody Product product) {
-    // // TODO: process POST request
-    // if (productRepository.existsById(product.getId())) {
-    // return ResponseEntity.badRequest().build();
-    // }
-    // return ResponseEntity.ok(productRepository.save(product));
+    // public ResponseEntity<?> createProduct(
+    // @RequestPart("product") String productJson,
+    // @RequestPart("files") MultipartFile[] files) {
+
+    // // Tạo nơi chứa Json
+    // ObjectMapper objectMapper = new ObjectMapper();
+    // Product product;
+
+    // try {
+    // product = objectMapper.readValue(productJson, Product.class);
+    // } catch (Exception e) {
+    // e.printStackTrace();
+    // return ResponseEntity.badRequest().body("Invalid product data: " +
+    // e.getMessage());
     // }
 
-    // Post Store Product
+    // System.out.println("Parsed product: " + product);
+
+    // // Lưu product
+    // Product savedProduct;
+    // try {
+    // savedProduct = productRepository.save(product);
+    // } catch (Exception e) {
+    // e.printStackTrace();
+    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    // .body("Failed to save product: " + e.getMessage());
+    // }
+
+    // System.out.println("Saved product: " + savedProduct);
+
+    // // Lưu files và update product với image
+    // List<String> imageUrls = new ArrayList<>();
+    // for (MultipartFile file : files) {
+    // System.out.println("Received file: " + file.getOriginalFilename());
+
+    // // Lưu file và get URL của filename
+    // String imageUrl = fileManagerService.save(file, savedProduct.getId());
+
+    // if (imageUrl != null) {
+    // imageUrls.add(imageUrl);
+    // }
+    // }
+
+    // // Tạo Image entities
+    // List<Image> images = new ArrayList<>();
+    // for (String imageUrl : imageUrls) {
+    // Image image = new Image();
+    // image.setImagename(imageUrl);
+    // image.setProduct(savedProduct);
+    // images.add(image);
+    // }
+
+    // // Lưu images
+    // try {
+    // imageRepository.saveAll(images); // Ensure you have a repository to save
+    // images
+    // savedProduct.setImages(images); // Update product with image entities
+    // productRepository.save(savedProduct); // Save updated product
+    // } catch (Exception e) {
+    // e.printStackTrace();
+    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    // .body("Failed to update product with images: " + e.getMessage());
+    // }
+
+    // return ResponseEntity.ok("Product created successfully with images");
+    // }
+
+    // @PostMapping("/productCreate")
+    // public ResponseEntity<?> createProduct(
+    // @RequestPart("product") String productJson,
+    // @RequestPart("productDetails") String productDetailsJson,
+    // @RequestPart("files") MultipartFile[] files) {
+
+    // System.out.println("Received product: " + productJson);
+    // System.out.println("Received productDetails: " + productDetailsJson);
+
+    // ObjectMapper objectMapper = new ObjectMapper();
+    // Product product;
+    // List<ProductDetail> productDetails;
+    // try {
+    // // Chuyển đổi JSON thành đối tượng Product
+    // product = objectMapper.readValue(productJson, Product.class);
+
+    // // Lưu Product trước
+    // Product savedProduct = productRepository.save(product);
+
+    // // Chuyển đổi JSON thành danh sách ProductDetail
+    // TypeReference<List<ProductDetail>> typeRef = new
+    // TypeReference<List<ProductDetail>>() {
+    // };
+    // productDetails = objectMapper.readValue(productDetailsJson, typeRef);
+
+    // // Gán Product đã lưu vào mỗi ProductDetail và lưu
+    // for (ProductDetail detail : productDetails) {
+    // detail.setProduct(savedProduct);
+
+    // }
+
+    // // Lưu danh sách ProductDetail
+    // productDetailRepository.saveAll(productDetails);
+
+    // } catch (Exception e) {
+    // e.printStackTrace();
+    // return ResponseEntity.badRequest().body("Invalid data: " + e.getMessage());
+    // }
+
+    // System.out.println("Saved product and details: " + product);
+
+    // // Lưu các ảnh
+    // List<String> imageUrls = new ArrayList<>();
+    // for (MultipartFile file : files) {
+    // System.out.println("Received file: " + file.getOriginalFilename());
+
+    // // Lưu file và lấy URL
+    // String imageUrl = fileManagerService.save(file, product.getId());
+
+    // if (imageUrl != null) {
+    // imageUrls.add(imageUrl);
+    // }
+    // }
+
+    // // Tạo các đối tượng Image
+    // List<Image> images = new ArrayList<>();
+    // for (String imageUrl : imageUrls) {
+    // Image image = new Image();
+    // image.setImagename(imageUrl);
+    // image.setProduct(product);
+    // images.add(image);
+    // }
+
+    // // Lưu ảnh
+    // try {
+    // imageRepository.saveAll(images);
+    // product.setImages(images);
+    // productRepository.save(product);
+    // } catch (Exception e) {
+    // e.printStackTrace();
+    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    // .body("Failed to update product with images: " + e.getMessage());
+    // }
+
+    // return ResponseEntity.ok("Product created successfully with images and
+    // details");
+    // }
     @PostMapping("/productCreate")
     public ResponseEntity<?> createProduct(
             @RequestPart("product") String productJson,
-            @RequestPart("files") MultipartFile[] files) {
-
-        System.out.println("Received product: " + productJson);
-
-        // Tạo nơi chứa Json
+            @RequestPart("productDetails") String productDetailsJson,
+            @RequestPart("files") MultipartFile[] files) throws JsonMappingException, JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
         Product product;
+        List<ProductDetail> productDetails;
+
+        // Chuyển đổi JSON thành đối tượng Product
+        product = objectMapper.readValue(productJson, Product.class);
+
+        // Lưu Product trước và lấy productId
+        Product savedProduct = productRepository.save(product);
         try {
-            product = objectMapper.readValue(productJson, Product.class);
+            // Chuyển đổi JSON thành danh sách ProductDetail
+            TypeReference<List<ProductDetail>> typeRef = new TypeReference<List<ProductDetail>>() {
+            };
+            productDetails = objectMapper.readValue(productDetailsJson, typeRef);
+
+            // Duyệt qua từng ProductDetail để lưu vào cơ sở dữ liệu trước để lấy id
+            for (ProductDetail detail : productDetails) {
+                detail.setProduct(savedProduct); // Gán Product đã lưu vào ProductDetail
+                ProductDetail savedDetail = productDetailRepository.save(detail); // Lưu tạm thời ProductDetail để lấy
+                                                                                  // id
+
+                // Tìm MultipartFile tương ứng dựa trên tên file hoặc đường dẫn
+                MultipartFile matchingFile = Arrays.stream(files)
+                        .filter(file -> file.getOriginalFilename().equals(detail.getImagedetail()))
+                        .findFirst()
+                        .orElse(null);
+
+                if (matchingFile != null) {
+                    // Lưu ảnh lên server với tên file là id của ProductDetail
+                    String imageDetailPath = uploadImages.saveDetailProductImage(matchingFile, savedDetail.getId());
+                    savedDetail.setImagedetail(imageDetailPath); // Cập nhật đường dẫn thực tế cho imagedetail
+                    productDetailRepository.save(savedDetail); // Lưu lại ProductDetail sau khi đã cập nhật imagedetail
+                } else {
+                    // Xử lý trường hợp không tìm thấy file tương ứng
+                    System.out.println("No matching file found for: " + detail.getImagedetail());
+                }
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("Invalid product data: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Invalid data: " + e.getMessage());
         }
 
-        System.out.println("Parsed product: " + product);
+        System.out.println("Saved product and details: " + product);
 
-        // Lưu  product
-        Product savedProduct;
-        try {
-            savedProduct = productRepository.save(product);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to save product: " + e.getMessage());
-        }
-
-        System.out.println("Saved product: " + savedProduct);
-
-        // Lưu files và update product với image 
+        // Lưu các ảnh trong files vào server và liên kết với Product
         List<String> imageUrls = new ArrayList<>();
         for (MultipartFile file : files) {
             System.out.println("Received file: " + file.getOriginalFilename());
 
-            // Lưu file và get URL của filename
+            // Lưu file và lấy URL
             String imageUrl = fileManagerService.save(file, savedProduct.getId());
 
             if (imageUrl != null) {
@@ -144,7 +309,7 @@ public class ProductController {
             }
         }
 
-        // Tạo Image entities 
+        // Tạo các đối tượng Image và liên kết với Product
         List<Image> images = new ArrayList<>();
         for (String imageUrl : imageUrls) {
             Image image = new Image();
@@ -153,18 +318,18 @@ public class ProductController {
             images.add(image);
         }
 
-        // Lưu images
+        // Lưu danh sách Image vào cơ sở dữ liệu
         try {
-            imageRepository.saveAll(images); // Ensure you have a repository to save images
-            savedProduct.setImages(images); // Update product with image entities
-            productRepository.save(savedProduct); // Save updated product
+            imageRepository.saveAll(images);
+            savedProduct.setImages(images);
+            productRepository.save(savedProduct);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Failed to update product with images: " + e.getMessage());
         }
 
-        return ResponseEntity.ok("Product created successfully with images");
+        return ResponseEntity.ok("Product created successfully with images and details");
     }
 
     // Put Store Product
@@ -254,18 +419,31 @@ public class ProductController {
             // Xóa hình ảnh từ cơ sở dữ liệu
             List<Image> images = product.getImages();
             for (Image image : images) {
-                imageRepository.delete(image); // Xóa hình ảnh khỏi cơ sở dữ liệu
-
                 // Xóa hình ảnh khỏi hệ thống tệp
-                Path imagePath = Paths
-                        .get(servletContext.getRealPath("/files/product-images/" + id + "/" + image.getImagename()));
                 try {
-                    Files.deleteIfExists(imagePath);
-                } catch (IOException e) {
+                    uploadImages.deleteFolderAndFile(
+                            Paths.get("src/main/resources/static/files/product-images/" + id).toString());
+                } catch (Exception e) {
                     // Xử lý lỗi nếu không thể xóa hình ảnh
                     e.printStackTrace();
                     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
                 }
+                imageRepository.delete(image); // Xóa hình ảnh khỏi cơ sở dữ liệu
+            }
+
+            // Xóa detailProduct từ cơ sở dữ liệu
+            List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(id);
+            for (ProductDetail detail : productDetails) {
+                // Xóa hình ảnh khỏi hệ thống tệp
+                try {
+                    uploadImages.deleteFolderAndFile(
+                            Paths.get("src/main/resources/static/files/detailProduct/" + detail.getId()).toString());
+                } catch (Exception e) {
+                    // Xử lý lỗi nếu không thể xóa hình ảnh
+                    e.printStackTrace();
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+                }
+                productDetailRepository.delete(detail); // Xóa chi tiết sản phẩm khỏi cơ sở dữ liệu
             }
         }
 
@@ -285,10 +463,10 @@ public class ProductController {
         return ResponseEntity.ok(store);
     }
 
-    //CountOrderBuy
+    // CountOrderBuy
     @GetMapping("/countOrderSuccess/{id}")
     public ResponseEntity<Integer> countOrderBuyed(@PathVariable("id") Integer idProduct) {
-        Integer countOrder  = orderRepository.countOrderBuyed(idProduct);
+        Integer countOrder = orderRepository.countOrderBuyed(idProduct);
         return ResponseEntity.ok(countOrder);
     }
 
