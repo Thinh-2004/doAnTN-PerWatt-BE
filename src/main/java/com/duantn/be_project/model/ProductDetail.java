@@ -2,6 +2,8 @@ package com.duantn.be_project.model;
 
 import java.io.Serializable;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -22,18 +24,19 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "ProductDetails")
+@Table(name = "Productdetails")
 public class ProductDetail implements Serializable{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    String nameDetail;
+    String namedetail;
     Float price;
     Integer quantity;
 
+    @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "idproduct")
     Product product;
 
-    String imageDetail;
+    String imagedetail;
 }
