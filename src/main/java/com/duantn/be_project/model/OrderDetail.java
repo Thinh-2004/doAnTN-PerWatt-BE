@@ -34,8 +34,8 @@ public class OrderDetail implements Serializable {
     Order order;
 
     @ManyToOne
-    @JoinColumn(name = "productid")
-    Product product;
+    @JoinColumn(name = "productdetailid")
+    ProductDetail productDetail;
     
     Float price;
 }

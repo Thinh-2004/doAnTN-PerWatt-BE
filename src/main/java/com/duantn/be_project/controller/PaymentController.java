@@ -149,26 +149,26 @@ public class PaymentController {
                 // Lưu chi tiết đơn hàng
                 OrderDetail detail = new OrderDetail();
                 detail.setOrder(savedOrder); // Liên kết chi tiết đơn hàng với đơn hàng đã lưu
-                detail.setProduct(detailRequest.getProduct());
+                // detail.setProduct(detailRequest.getProduct());
                 detail.setQuantity(detailRequest.getQuantity());
                 detail.setPrice(detailRequest.getPrice());
                 orderDetailRepository.save(detail); // Lưu chi tiết đơn hàng vào cơ sở dữ liệu
 
                 // Cập nhật số lượng sản phẩm
-                Product product = productRepository.findById(detailRequest.getProduct().getId())
-                        .orElseThrow(() -> new RuntimeException("Product not found"));
+                // Product product = productRepository.findById(detailRequest.getProduct().getId())
+                //         .orElseThrow(() -> new RuntimeException("Product not found"));
                 // if (product.getQuantity() < detailRequest.getQuantity()) {
                 //     return ResponseEntity.badRequest().body(null); // Hoặc xử lý trường hợp không đủ hàng tồn kho
                 // }
                 // product.setQuantity(product.getQuantity() - detailRequest.getQuantity());
-                productRepository.save(product); // Lưu cập nhật số lượng sản phẩm
+                //productRepository.save(product); // Lưu cập nhật số lượng sản phẩm
 
                 // Xóa CartItem tương ứng với sản phẩm đã đặt
-                CartItem cartItem = cartRepository.findByProductAndUser(detailRequest.getProduct(),
-                        savedOrder.getUser());
-                if (cartItem != null) {
-                    cartRepository.delete(cartItem); // Xóa CartItem để tránh trùng lặp
-                }
+                // CartItem cartItem = cartRepository.findByProductAndUser(detailRequest.getProduct(),
+                //         savedOrder.getUser());
+                // if (cartItem != null) {
+                //     cartRepository.delete(cartItem); // Xóa CartItem để tránh trùng lặp
+                // }
             }
         }
 
