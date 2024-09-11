@@ -115,14 +115,14 @@ public class OrderController {
         orderRepository.save(order);
 
         // Nếu đơn hàng bị hủy, cập nhật số lượng sản phẩm
-        if ("Hủy".equals(newStatus) && !"Hủy".equals(oldStatus)) {
-            for (OrderDetail detail : order.getOrderdetails()) {
-                Product product = detail.getProduct();
-                int quantity = detail.getQuantity();
-                // product.setQuantity(product.getQuantity() + quantity);
-                productRepository.save(product);
-            }
-        }
+        // if ("Hủy".equals(newStatus) && !"Hủy".equals(oldStatus)) {
+        //     for (OrderDetail detail : order.getOrderdetails()) {
+        //         Product product = detail.getProduct();
+        //         int quantity = detail.getQuantity();
+        //         // product.setQuantity(product.getQuantity() + quantity);
+        //         productRepository.save(product);
+        //     }
+        // }
 
         return ResponseEntity.ok(order);
     }

@@ -18,10 +18,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.duantn.be_project.Repository.CartRepository;
+import com.duantn.be_project.Repository.ProductDetailRepository;
 import com.duantn.be_project.Repository.ProductRepository;
 import com.duantn.be_project.Repository.UserRepository;
 import com.duantn.be_project.model.CartItem;
 import com.duantn.be_project.model.Product;
+import com.duantn.be_project.model.ProductDetail;
 import com.duantn.be_project.model.User;
 
 @CrossOrigin("*") // Cho phép tất cả các nguồn (origin) truy cập vào API này
@@ -35,7 +37,7 @@ public class CartController {
     private UserRepository userRepository;
 
     @Autowired // Tự động tiêm ProductRepository
-    private ProductRepository productRepository;
+    private ProductDetailRepository productRepository;
 
     //Vào trang thanh toán
     @RequestMapping("/cart") // Định nghĩa endpoint GET /cart với tham số id
@@ -92,40 +94,40 @@ public class CartController {
     }
 
     //thêm sản phẩm vào giỏ hàng
-    @PostMapping("/cart/add") // Định nghĩa endpoint POST /cart/add
-    public ResponseEntity<CartItem> addToCart(@RequestBody CartItem cartItem) {
-        try {
-            User user = userRepository.findById(cartItem.getUser().getId()).orElse(null); // Tìm người dùng theo ID
-            Product product = productRepository.findById(cartItem.getProduct().getId()).orElse(null); // Tìm sản phẩm
-                                                                                                      // theo ID
+    // @PostMapping("/cart/add") // Định nghĩa endpoint POST /cart/add
+    // public ResponseEntity<CartItem> addToCart(@RequestBody CartItem cartItem) {
+    //     try {
+    //         User user = userRepository.findById(cartItem.getUser().getId()).orElse(null); // Tìm người dùng theo ID
+    //         ProductDetail product = productRepository.findById(cartItem.getProductDetail().getId()).orElse(null); // Tìm sản phẩm
+    //                                                                                                   // theo ID
 
-            if (user == null || product == null) { // Nếu người dùng hoặc sản phẩm không tồn tại
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build(); // Trả về lỗi 400
-            }
+    //         if (user == null || product == null) { // Nếu người dùng hoặc sản phẩm không tồn tại
+    //             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build(); // Trả về lỗi 400
+    //         }
 
-            CartItem existingCartItem = cartRepository.findByUserIdAndProductId(user.getId(), product.getId()); // Tìm
-                                                                                                                // CartItem
-                                                                                                                // hiện
-                                                                                                                // có
-                                                                                                                // theo
-                                                                                                                // userId
-                                                                                                                // và
-                                                                                                                // productId
+    //         CartItem existingCartItem = cartRepository.findByUserIdAndProductId(user.getId(), product.getId()); // Tìm
+    //                                                                                                             // CartItem
+    //                                                                                                             // hiện
+    //                                                                                                             // có
+    //                                                                                                             // theo
+    //                                                                                                             // userId
+    //                                                                                                             // và
+    //                                                                                                             // productId
 
-            if (existingCartItem != null) { // Nếu CartItem đã tồn tại
-                existingCartItem.setQuantity(existingCartItem.getQuantity() + cartItem.getQuantity()); // Cập nhật số
-                                                                                                       // lượng
-                return ResponseEntity.ok(cartRepository.save(existingCartItem)); // Lưu lại và trả về CartItem đã cập
-                                                                                 // nhật
-            } else {
-                cartItem.setUser(user); // Gán người dùng cho CartItem mới
-                cartItem.setProduct(product); // Gán sản phẩm cho CartItem mới
-                return ResponseEntity.ok(cartRepository.save(cartItem)); // Lưu lại và trả về CartItem mới
-            }
-        } catch (Exception e) { // Xử lý ngoại lệ nếu có lỗi xảy ra
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // Trả về lỗi 500
-        }
-    }
+    //         if (existingCartItem != null) { // Nếu CartItem đã tồn tại
+    //             existingCartItem.setQuantity(existingCartItem.getQuantity() + cartItem.getQuantity()); // Cập nhật số
+    //                                                                                                    // lượng
+    //             return ResponseEntity.ok(cartRepository.save(existingCartItem)); // Lưu lại và trả về CartItem đã cập
+    //                                                                              // nhật
+    //         } else {
+    //             cartItem.setUser(user); // Gán người dùng cho CartItem mới
+    //             cartItem.setProductDetail(product); // Gán sản phẩm cho CartItem mới
+    //             return ResponseEntity.ok(cartRepository.save(cartItem)); // Lưu lại và trả về CartItem mới
+    //         }
+    //     } catch (Exception e) { // Xử lý ngoại lệ nếu có lỗi xảy ra
+    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // Trả về lỗi 500
+    //     }
+    // }
 
 
     //xóa sản phẩm ra khỏi giỏ hàng

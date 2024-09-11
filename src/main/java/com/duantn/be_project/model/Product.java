@@ -57,14 +57,6 @@ public class Product implements Serializable {
     @JoinColumn(name = "storeid")
     Store store;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "product")
-    List<CartItem> cartitems;
-
-    @JsonIgnore
-    @OneToMany(mappedBy = "product")
-    List<OrderDetail> orderdetails;
-
     // @JsonIgnore
     @JsonManagedReference
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
