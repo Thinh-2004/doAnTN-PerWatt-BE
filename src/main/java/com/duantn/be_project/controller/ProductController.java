@@ -272,21 +272,27 @@ public class ProductController {
                 ProductDetail savedDetail = productDetailRepository.save(detail); // Lưu tạm thời ProductDetail để lấy
                                                                                   // id
 
-                // Tìm MultipartFile tương ứng dựa trên tên file hoặc đường dẫn
-                MultipartFile matchingFile = Arrays.stream(files)
-                        .filter(file -> file.getOriginalFilename().equals(detail.getImagedetail()))
-                        .findFirst()
-                        .orElse(null);
+                try {
+                    if (detail.getImagedetail() != null && !detail.getImagedetail().isEmpty()) {
+                        // Chuyển đổi chuỗi base64 thành MultipartFile
+                        MultipartFile imageDetail = uploadImages.base64ToMultipartFile(detail.getImagedetail());
+                        // Lưu hình ảnh lên server và lấy đường dẫn lưu
+                        String imageDetailPath = uploadImages.saveDetailProductImage(imageDetail, savedDetail.getId());
+                        savedDetail.setImagedetail(imageDetailPath); // Cập nhật đường dẫn thực tế cho imagedetail
+                    }else{
+                        savedDetail.setImagedetail(null); // Cập nhật đường dẫn thực tế cho imagedetail
+                        
+                    }
 
-                if (matchingFile != null) {
-                    // Lưu ảnh lên server với tên file là id của ProductDetail
-                    String imageDetailPath = uploadImages.saveDetailProductImage(matchingFile, savedDetail.getId());
-                    savedDetail.setImagedetail(imageDetailPath); // Cập nhật đường dẫn thực tế cho imagedetail
-                    productDetailRepository.save(savedDetail); // Lưu lại ProductDetail sau khi đã cập nhật imagedetail
-                } else {
-                    // Xử lý trường hợp không tìm thấy file tương ứng
-                    System.out.println("No matching file found for: " + detail.getImagedetail());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    // Xử lý lỗi khi chuyển đổi base64 thành MultipartFile
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body("Failed to process image for ProductDetail: " + e.getMessage());
                 }
+
+                // Lưu lại ProductDetail sau khi đã cập nhật imagedetail
+                productDetailRepository.save(savedDetail);
             }
 
         } catch (Exception e) {

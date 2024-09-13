@@ -1,7 +1,9 @@
 package com.duantn.be_project.untils;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -163,4 +165,14 @@ public class UploadImages {
     // public String saveProductImage(MultipartFile file, Integer productId) {
     // return save(file, "product/" + productId);
     // }
+    public MultipartFile base64ToMultipartFile(String base64Image) throws IOException {
+        // Tách phần dữ liệu base64
+        String[] parts = base64Image.split(",");
+        String imageData = parts[1]; // Phần dữ liệu base64
+    
+        byte[] imageBytes = Base64.getDecoder().decode(imageData);
+    
+        // Tạo MultipartFile từ dữ liệu
+        return new Base64MultipartFile(imageBytes, "image.png", "image/png");
+    }
 }

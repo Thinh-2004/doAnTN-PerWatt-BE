@@ -55,9 +55,6 @@ public class Store implements Serializable{
     @OneToMany(mappedBy = "store")
     List<Comment> comments;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "store")
-    List<Voucher> vouchers;
 
     @JsonIgnore
     @OneToMany(mappedBy = "store")
