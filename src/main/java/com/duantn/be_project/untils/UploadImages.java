@@ -1,9 +1,9 @@
 package com.duantn.be_project.untils;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -121,6 +120,55 @@ public class UploadImages {
         }
     }
 
+    // Hàm tải ảnh từ URL và lưu vào server
+    public String saveImageUserByLoginGoogle(String imageUrl, Integer userId) {
+        try {
+            URL url = new URL(imageUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            InputStream inputStream = connection.getInputStream();
+
+            // Cắt chuỗi URL để lấy phần cần thiết
+            String[] parts = imageUrl.split("/");
+
+            // Kiểm tra độ dài của URL
+            if (parts.length >= 5) {
+                // Tách phần thứ 5 theo dấu '=' để lấy chuỗi trước dấu '='
+                String[] subParts = parts[4].split("=");
+                String fileNamePart = subParts[0]; // Phần tên file cần lấy
+
+                // Đường dẫn đến nơi lưu ảnh (thay đổi đường dẫn theo nhu cầu của bạn)
+                String folderPath = UPLOAD_DIR + "user/" + userId;
+                Path folder = Paths.get(folderPath);
+
+                // Tạo thư mục nếu chưa tồn tại
+                if (!Files.exists(folder)) {
+                    Files.createDirectories(folder);
+                }
+
+                // Tạo tên file với định dạng JPG
+                String filename = fileNamePart + ".jpg";
+                Path filePath = Paths.get(folderPath, filename);
+
+                // Lưu ảnh vào server
+                Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
+
+                // Đóng kết nối và input stream
+                inputStream.close();
+                connection.disconnect();
+
+                // Trả về tên file đã lưu
+                return filename;
+            } else {
+                return null; // URL không đúng định dạng
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null; // Lỗi khi tải hoặc lưu file
+        }
+    }
+
     public void deleteFolderAndFile(String folderPath) {
         Path folder = Paths.get(folderPath);
         try {
@@ -161,6 +209,7 @@ public class UploadImages {
             e.printStackTrace();
         }
     }
+
     // // Save product image
     // public String saveProductImage(MultipartFile file, Integer productId) {
     // return save(file, "product/" + productId);
@@ -169,10 +218,11 @@ public class UploadImages {
         // Tách phần dữ liệu base64
         String[] parts = base64Image.split(",");
         String imageData = parts[1]; // Phần dữ liệu base64
-    
+
         byte[] imageBytes = Base64.getDecoder().decode(imageData);
-    
+
         // Tạo MultipartFile từ dữ liệu
         return new Base64MultipartFile(imageBytes, "image.png", "image/png");
     }
+
 }

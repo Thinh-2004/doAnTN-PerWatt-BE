@@ -2,13 +2,17 @@ package com.duantn.be_project.controller;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.ui.Model;
@@ -19,18 +23,21 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.duantn.be_project.Repository.RoleRepository;
 import com.duantn.be_project.Repository.UserRepository;
-import com.duantn.be_project.Service.SecurityConfig;
 import com.duantn.be_project.Service.UserService;
+import com.duantn.be_project.Service.Security.Encryption;
 import com.duantn.be_project.model.Role;
 import com.duantn.be_project.model.User;
+import com.duantn.be_project.model.Request.TokenRequest;
 import com.duantn.be_project.untils.UploadImages;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -49,6 +56,11 @@ public class UserController {
     PasswordEncoder passwordEncoder;
     @Autowired
     UserService userService;
+    @Autowired
+    Encryption encryption;
+
+    // @Autowired
+    // private JwtDecoder jwtDecoder;
 
     // GetAll
     @GetMapping("/user")
@@ -161,10 +173,18 @@ public class UserController {
         // Đảm bảo ID của người dùng khớp với biến đường dẫn
         user.setId(id);
         User checkUser = userRepository.findById(id).orElseThrow();
-        if (checkUser.getPassword().equalsIgnoreCase(user.getPassword())) {
-            user.setPassword(user.getPassword());
+        // Kiểm tra nếu mật khẩu của người dùng mới là null hoặc rỗng
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            user.setPassword(null); // Không thay đổi mật khẩu
         } else {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            // Nếu mật khẩu không trống, so sánh mật khẩu đã mã hóa
+            if (passwordEncoder.matches(user.getPassword(), checkUser.getPassword())) {
+                // Nếu mật khẩu trùng khớp, giữ nguyên mật khẩu
+                user.setPassword(checkUser.getPassword());
+            } else {
+                // Nếu mật khẩu không trùng, mã hóa mật khẩu mới
+                user.setPassword(passwordEncoder.encode(user.getPassword()));
+            }
         }
 
         String oldAvatarUrl = null;
@@ -241,4 +261,66 @@ public class UserController {
         User updatedUser = userService.updateUser(id, user);
         return ResponseEntity.ok(updatedUser);
     }
+
+    // Login by google
+    @PostMapping("/loginByGoogle")
+    public ResponseEntity<?> googleLogin(@RequestBody TokenRequest tokenRequest) {
+        JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), jsonFactory)
+                    .setAudience(Collections
+                            .singletonList("175283151902-4ncr5sj18h9e9akpj72mmnjbcq1mqdkg.apps.googleusercontent.com"))
+                    .build();
+
+            GoogleIdToken idToken = verifier.verify(tokenRequest.getToken());
+
+            if (idToken != null) {
+                GoogleIdToken.Payload payload = idToken.getPayload();
+                String email = payload.getEmail();
+                String name = (String) payload.get("name");
+                String pictureUrl = (String) payload.get("picture");
+
+                // Kiểm tra xem người dùng đã tồn tại trong cơ sở dữ liệu chưa
+                User user = userRepository.findByEmail(email);
+                if (user == null) {
+                    // Nếu người dùng chưa tồn tại, tạo mới và lưu vào cơ sở dữ liệu
+                    user = new User();
+                    Role role = new Role();
+                    role.setId(3);
+                    user.setEmail(email);
+                    user.setFullname(name);
+                    user.setRole(role); // Đặt chức vụ là Buyer khi được tạo tài khoản
+
+                    // Lưu user tạm để lấy id
+                    User saveBeta = userRepository.save(user);
+
+                    // Tải ảnh từ URL và lưu vào server
+                    String avatarFilename = uploadImages.saveImageUserByLoginGoogle(pictureUrl, saveBeta.getId());
+                    if (avatarFilename == null) {
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body("Lỗi khi lưu trữ ảnh đại diện");
+                    }
+                    user.setAvatar(avatarFilename);
+                } else {
+                    user.setFullname(name);
+                    user.setEmail(email);
+                    userRepository.save(user);
+                }
+
+                User savedUser = userRepository.save(user);
+
+                // String jsonData = new ObjectMapper().writeValueAsString(savedUser); // Chuyển đổi đối tượng thành Json
+                // String encrytedData = encryption.encrypt(jsonData);
+                // Trả về thông tin người dùng
+                return ResponseEntity.ok(savedUser);
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid ID token.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error while verifying token: " + e.getMessage());
+        }
+    }
+
 }
