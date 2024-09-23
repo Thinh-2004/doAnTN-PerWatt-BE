@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -120,6 +122,13 @@ public class UserController {
 
     @PostMapping("/user")
     public ResponseEntity<?> post(@RequestBody User user) {
+
+        // Bắt lỗi dữ liệu yêu cầu
+        ResponseEntity<String> validateRes = validate(user);
+        if (validateRes != null) {
+            return validateRes;
+        }
+
         // Kiểm tra email đã tồn tại
         if (userRepository.existsByEmail(user.getEmail())) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Email đã tồn tại");
@@ -163,8 +172,14 @@ public class UserController {
         // Chuyển đổi
         ObjectMapper objectMapper = new ObjectMapper();
         User user;
+
         try {
             user = objectMapper.readValue(userJson, User.class);
+            // Bắt lỗi
+            ResponseEntity<String> validateRes = validate(user);
+            if (validateRes != null) {
+                return validateRes;
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.badRequest().body("Dữ liệu người dùng không hợp lệ: " + e.getMessage());
@@ -309,7 +324,8 @@ public class UserController {
 
                 User savedUser = userRepository.save(user);
 
-                // String jsonData = new ObjectMapper().writeValueAsString(savedUser); // Chuyển đổi đối tượng thành Json
+                // String jsonData = new ObjectMapper().writeValueAsString(savedUser); // Chuyển
+                // đổi đối tượng thành Json
                 // String encrytedData = encryption.encrypt(jsonData);
                 // Trả về thông tin người dùng
                 return ResponseEntity.ok(savedUser);
@@ -323,4 +339,79 @@ public class UserController {
         }
     }
 
+    public ResponseEntity<String> validate(User user) {
+        // Mẫu mật khẩu: ít nhất 8 ký tự, chứa ít nhất 1 chữ cái
+        String patternPassword = "^(?=.*[a-zA-Z]).{8,}$";
+        // Biểu thức chính quy email
+        String patternEmail = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$";
+        // Biểu thức chinh quy số điện thoại
+        String patternPhone = "0[0-9]{9}";
+
+        // Tên
+        if (user.getFullname().isEmpty()) {
+            return ResponseEntity.badRequest().body("Không được bỏ trống tên");
+        }
+
+        // Mật khẩu
+        if (user.getPassword().isEmpty()) {
+            return ResponseEntity.badRequest().body("Không được bỏ trống mật khẩu");
+        } else if (user.getPassword().length() < 8 || !user.getPassword().matches(patternPassword)) {
+            return ResponseEntity.badRequest().body("Mật khẩu phải chứa ít nhất 8 ký tự bao gồm chữ hoa hoặc thường");
+
+        }
+
+        // Email
+        if (user.getEmail().isEmpty()) {
+            return ResponseEntity.badRequest().body("Không được bỏ trống email");
+        } else if (!user.getEmail().matches(patternEmail)) {
+            return ResponseEntity.badRequest().body("Email sai định dạng");
+        }
+
+        // Ngày sinh
+        if (user.getBirthdate() == null) {
+            return ResponseEntity.badRequest().body("Không được bỏ trống ngày sinh");
+        }
+        // LocalDate dateNow = LocalDate.now(); // Lấy ngày hiện tại
+        // LocalDate dateOfBirth;
+
+        // try {
+        //     dateOfBirth = user.getBirthdate();
+        // } catch (Exception e) {
+        //     // TODO: handle exception
+        //     return ResponseEntity.badRequest().body("Ngày sinh sai định dạng");
+        // }
+
+        // // Ngày sinh không được lớn hơn hoặc bằng ngày hiện tại
+        // if (!dateOfBirth.isBefore(dateNow)) {
+        //     return ResponseEntity.badRequest().body("Ngày sinh không được bằng hoặc lớn hơn ngày hiện tại");
+        // }
+
+        // if (Period.between(dateOfBirth, dateNow).getYears() > 100) {
+        //     return ResponseEntity.badRequest().body("Tuổi không hợp lệ");
+        // }
+
+        // Giới tính
+        if (user.getGender() == null) {
+            return ResponseEntity.badRequest().body("Cần chọn giới tính");
+        }
+
+        // Vai trò
+        if (user.getRole() == null) {
+            return ResponseEntity.badRequest().body("Cần nhập vai trò");
+        }
+
+        // địa chỉ
+        if (user.getAddress().isEmpty()) {
+            return ResponseEntity.badRequest().body("Cần nhập địa chỉ");
+        }
+
+        // Số điện thoại
+        if (user.getPhone().isEmpty()) {
+            return ResponseEntity.badRequest().body("Cần nhập số điện thoại");
+        } else if (!user.getPhone().matches(patternPhone)) {
+            return ResponseEntity.badRequest().body("Số điện thoại không hợp lệ");
+        }
+
+        return null;
+    }
 }

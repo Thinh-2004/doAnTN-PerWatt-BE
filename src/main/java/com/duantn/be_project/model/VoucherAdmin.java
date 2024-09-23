@@ -34,7 +34,7 @@ public class VoucherAdmin implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    String voucherName;
+    String vouchername;
 
     @ManyToOne
     @JoinColumn(name = "idcatevoucher")
@@ -43,9 +43,9 @@ public class VoucherAdmin implements Serializable {
     String status;
 
     @Temporal(TemporalType.TIMESTAMP)
-    Date startDay;
+    Date startday;
     @Temporal(TemporalType.TIMESTAMP)
-    Date endDay;
+    Date endday;
 
     @JsonIgnore
     @OneToMany(mappedBy = "voucherAdmin")
