@@ -21,13 +21,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @SuppressWarnings("serial")
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
 @Entity
-@Table(name = "Productdetails")
+@Table(name = "productdetails")
 public class ProductDetail implements Serializable{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,19 +35,18 @@ public class ProductDetail implements Serializable{
     Float price;
     Integer quantity;
 
-    @JsonBackReference
+    // @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "idproduct")
     Product product;
 
     @JsonIgnore
     @OneToMany(mappedBy = "productDetail")
-    List<CartItem> cartitems;
+    List<OrderDetail> orderDetails;
 
     @JsonIgnore
     @OneToMany(mappedBy = "productDetail")
-    List<OrderDetail> orderDetails;
-
+    List<CartItem> cartItems;
 
     String imagedetail;
 }

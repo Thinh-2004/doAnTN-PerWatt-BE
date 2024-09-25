@@ -100,152 +100,6 @@ public class ProductController {
         return ResponseEntity.ok(product);
     }
 
-    // Post Store Product
-    // @PostMapping("/productCreate")
-    // public ResponseEntity<?> createProduct(
-    // @RequestPart("product") String productJson,
-    // @RequestPart("files") MultipartFile[] files) {
-
-    // // Tạo nơi chứa Json
-    // ObjectMapper objectMapper = new ObjectMapper();
-    // Product product;
-
-    // try {
-    // product = objectMapper.readValue(productJson, Product.class);
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // return ResponseEntity.badRequest().body("Invalid product data: " +
-    // e.getMessage());
-    // }
-
-    // System.out.println("Parsed product: " + product);
-
-    // // Lưu product
-    // Product savedProduct;
-    // try {
-    // savedProduct = productRepository.save(product);
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    // .body("Failed to save product: " + e.getMessage());
-    // }
-
-    // System.out.println("Saved product: " + savedProduct);
-
-    // // Lưu files và update product với image
-    // List<String> imageUrls = new ArrayList<>();
-    // for (MultipartFile file : files) {
-    // System.out.println("Received file: " + file.getOriginalFilename());
-
-    // // Lưu file và get URL của filename
-    // String imageUrl = fileManagerService.save(file, savedProduct.getId());
-
-    // if (imageUrl != null) {
-    // imageUrls.add(imageUrl);
-    // }
-    // }
-
-    // // Tạo Image entities
-    // List<Image> images = new ArrayList<>();
-    // for (String imageUrl : imageUrls) {
-    // Image image = new Image();
-    // image.setImagename(imageUrl);
-    // image.setProduct(savedProduct);
-    // images.add(image);
-    // }
-
-    // // Lưu images
-    // try {
-    // imageRepository.saveAll(images); // Ensure you have a repository to save
-    // images
-    // savedProduct.setImages(images); // Update product with image entities
-    // productRepository.save(savedProduct); // Save updated product
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    // .body("Failed to update product with images: " + e.getMessage());
-    // }
-
-    // return ResponseEntity.ok("Product created successfully with images");
-    // }
-
-    // @PostMapping("/productCreate")
-    // public ResponseEntity<?> createProduct(
-    // @RequestPart("product") String productJson,
-    // @RequestPart("productDetails") String productDetailsJson,
-    // @RequestPart("files") MultipartFile[] files) {
-
-    // System.out.println("Received product: " + productJson);
-    // System.out.println("Received productDetails: " + productDetailsJson);
-
-    // ObjectMapper objectMapper = new ObjectMapper();
-    // Product product;
-    // List<ProductDetail> productDetails;
-    // try {
-    // // Chuyển đổi JSON thành đối tượng Product
-    // product = objectMapper.readValue(productJson, Product.class);
-
-    // // Lưu Product trước
-    // Product savedProduct = productRepository.save(product);
-
-    // // Chuyển đổi JSON thành danh sách ProductDetail
-    // TypeReference<List<ProductDetail>> typeRef = new
-    // TypeReference<List<ProductDetail>>() {
-    // };
-    // productDetails = objectMapper.readValue(productDetailsJson, typeRef);
-
-    // // Gán Product đã lưu vào mỗi ProductDetail và lưu
-    // for (ProductDetail detail : productDetails) {
-    // detail.setProduct(savedProduct);
-
-    // }
-
-    // // Lưu danh sách ProductDetail
-    // productDetailRepository.saveAll(productDetails);
-
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // return ResponseEntity.badRequest().body("Invalid data: " + e.getMessage());
-    // }
-
-    // System.out.println("Saved product and details: " + product);
-
-    // // Lưu các ảnh
-    // List<String> imageUrls = new ArrayList<>();
-    // for (MultipartFile file : files) {
-    // System.out.println("Received file: " + file.getOriginalFilename());
-
-    // // Lưu file và lấy URL
-    // String imageUrl = fileManagerService.save(file, product.getId());
-
-    // if (imageUrl != null) {
-    // imageUrls.add(imageUrl);
-    // }
-    // }
-
-    // // Tạo các đối tượng Image
-    // List<Image> images = new ArrayList<>();
-    // for (String imageUrl : imageUrls) {
-    // Image image = new Image();
-    // image.setImagename(imageUrl);
-    // image.setProduct(product);
-    // images.add(image);
-    // }
-
-    // // Lưu ảnh
-    // try {
-    // imageRepository.saveAll(images);
-    // product.setImages(images);
-    // productRepository.save(product);
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    // .body("Failed to update product with images: " + e.getMessage());
-    // }
-
-    // return ResponseEntity.ok("Product created successfully with images and
-    // details");
-    // }
     @PostMapping("/productCreate")
     public ResponseEntity<?> createProduct(
             @RequestPart("product") String productJson,
@@ -272,21 +126,27 @@ public class ProductController {
                 ProductDetail savedDetail = productDetailRepository.save(detail); // Lưu tạm thời ProductDetail để lấy
                                                                                   // id
 
-                // Tìm MultipartFile tương ứng dựa trên tên file hoặc đường dẫn
-                MultipartFile matchingFile = Arrays.stream(files)
-                        .filter(file -> file.getOriginalFilename().equals(detail.getImagedetail()))
-                        .findFirst()
-                        .orElse(null);
+                try {
+                    if (detail.getImagedetail() != null && !detail.getImagedetail().isEmpty()) {
+                        // Chuyển đổi chuỗi base64 thành MultipartFile
+                        MultipartFile imageDetail = uploadImages.base64ToMultipartFile(detail.getImagedetail());
+                        // Lưu hình ảnh lên server và lấy đường dẫn lưu
+                        String imageDetailPath = uploadImages.saveDetailProductImage(imageDetail, savedDetail.getId());
+                        savedDetail.setImagedetail(imageDetailPath); // Cập nhật đường dẫn thực tế cho imagedetail
+                    }else{
+                        savedDetail.setImagedetail(null); // Cập nhật đường dẫn thực tế cho imagedetail
+                        
+                    }
 
-                if (matchingFile != null) {
-                    // Lưu ảnh lên server với tên file là id của ProductDetail
-                    String imageDetailPath = uploadImages.saveDetailProductImage(matchingFile, savedDetail.getId());
-                    savedDetail.setImagedetail(imageDetailPath); // Cập nhật đường dẫn thực tế cho imagedetail
-                    productDetailRepository.save(savedDetail); // Lưu lại ProductDetail sau khi đã cập nhật imagedetail
-                } else {
-                    // Xử lý trường hợp không tìm thấy file tương ứng
-                    System.out.println("No matching file found for: " + detail.getImagedetail());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    // Xử lý lỗi khi chuyển đổi base64 thành MultipartFile
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body("Failed to process image for ProductDetail: " + e.getMessage());
                 }
+
+                // Lưu lại ProductDetail sau khi đã cập nhật imagedetail
+                productDetailRepository.save(savedDetail);
             }
 
         } catch (Exception e) {
@@ -457,9 +317,9 @@ public class ProductController {
     @GetMapping("/searchStore/{id}")
     public ResponseEntity<Store> getIdStoreByIdUser(@PathVariable("id") Integer idUser) {
         Store store = storeRepository.findStoreByIdUser(idUser);
-        if (store == null) {
-            return ResponseEntity.notFound().build();
-        }
+        // if (store == null) {
+        //     return ResponseEntity.notFound().build();
+        // }
         return ResponseEntity.ok(store);
     }
 

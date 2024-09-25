@@ -36,6 +36,6 @@ public class CartItem implements Serializable{
     User user;
 
     @ManyToOne
-    @JoinColumn(name = "productDetailId")
+    @JoinColumn(name = "productdetailid")
     ProductDetail productDetail;
 }
