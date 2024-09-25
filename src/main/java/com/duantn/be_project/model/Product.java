@@ -80,4 +80,6 @@ public class Product implements Serializable {
     @JsonIgnore
     @OneToMany(mappedBy = "product")
     List<Voucher> vouchers ;
+
+    String slug;
 }

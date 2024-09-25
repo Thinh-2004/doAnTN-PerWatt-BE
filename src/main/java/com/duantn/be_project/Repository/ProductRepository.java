@@ -1,6 +1,7 @@
 package com.duantn.be_project.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -17,5 +18,10 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
     @Query("select p from Product p order by p.id desc")
     List<Product> findAllDesc();
+
+    Optional<Product> findBySlug(String slug); // Thêm phương thức tìm theo slug
+
+    // Phương thức kiểm tra tồn tại bằng slug
+    boolean existsBySlug(String slug);
 
 }

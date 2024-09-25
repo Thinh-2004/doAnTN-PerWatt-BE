@@ -77,24 +77,27 @@ public class StoreController {
     @PostMapping("/store")
     public ResponseEntity<?> post(@RequestBody Store store) {
         // TODO: process POST request
-
         // Bắt lỗi
         ResponseEntity<String> validateRes = validate(store);
         if (validateRes != null) {
-            return ResponseEntity.badRequest().build();
+            return validateRes;
         }
-
-        Integer countTaxCode = storeRepository.checkDuplicate(store.getTaxcode());
 
         if (storeRepository.existsByNamestoreIgnoreCase(store.getNamestore())) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("Tên cửa hàng đã tồn tại!");
-        } else if (countTaxCode > 0) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body("Mã số thuế không tồn tại hoặc đã được sử dụng ở nơi khác");
+        } else if (!store.getTaxcode().isEmpty()) {
+            Integer countTaxCode = storeRepository.checkDuplicate(store.getTaxcode());
+            if (countTaxCode > 0) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body("Mã số thuế không tồn tại hoặc đã được sử dụng ở nơi khác");
+            }
         }
         if (store.getCreatedtime() == null) {
             store.setCreatedtime(LocalDateTime.now());// Thiết lập thời gian tạo
+        }
+        if (store.getTaxcode() == null || store.getTaxcode().isEmpty()) {
+            store.setTaxcode(null);
         }
         // Tìm user
         User user = userRepository.findById(store.getUser().getId()).orElseThrow();
@@ -258,7 +261,7 @@ public class StoreController {
         // Mã sô thuế
         if (store.getTaxcode() == null) {
             return null;
-        } else if (!String.valueOf(store.getTaxcode()).matches("^\\d{10}$|^\\d{13}$")) {
+        } else if (!String.valueOf(store.getTaxcode()).matches("^\\d{10}$|^\\d{13}$") && !store.getTaxcode().isEmpty()) {
             return ResponseEntity.badRequest().body("Mã số thuế không hợp lệ");
         }
 
