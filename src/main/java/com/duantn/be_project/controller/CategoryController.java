@@ -59,7 +59,7 @@ public class CategoryController {
         return ResponseEntity.ok(categoryRepository.save(productCategory));
     }
 
-    // Put
+  //Put
     @PutMapping("category/{id}")
     public ResponseEntity<ProductCategory> put(@PathVariable("id") Integer id,
             @RequestBody ProductCategory productCategory) {
