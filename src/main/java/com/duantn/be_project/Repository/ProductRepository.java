@@ -13,8 +13,8 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     @Query("select p from Product p where p.store.id = ?1 ")
     List<Product> findAllByStoreId(Integer idStore);
 
-    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.images WHERE p.store.id = :idStore")
-    List<Product> findAllByStoreIdWithImages(@Param("idStore") Integer idStore);
+    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.images WHERE p.store.slug = :slugStore")
+    List<Product> findAllByStoreIdWithSlugStore(@Param("slugStore") String slugStore);
 
     @Query("select p from Product p order by p.id desc")
     List<Product> findAllDesc();

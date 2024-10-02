@@ -62,7 +62,7 @@ public class CartController {
         }
 
         cartItem.setQuantity(quantity); // Cập nhật số lượng CartItem
-        cartRepository.save(cartItem); // Lưu lại CartItem đã cập nhật
+cartRepository.save(cartItem); // Lưu lại CartItem đã cập nhật
 
         return ResponseEntity.ok(cartItem); // Trả về CartItem đã cập nhật
     }
@@ -120,8 +120,7 @@ public class CartController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi server: " + e.getMessage());
         }
     }
-
-    // xóa sản phẩm ra khỏi giỏ hàng
+// xóa sản phẩm ra khỏi giỏ hàng
     @DeleteMapping("/cartDelete/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
         cartRepository.deleteById(id);

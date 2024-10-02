@@ -65,4 +65,5 @@ public class Store implements Serializable{
     List<Order> orders;
 
     String taxcode;
+    String slug;
 }

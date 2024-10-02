@@ -33,8 +33,8 @@ public class VoucherAdminDetail implements Serializable {
     VoucherAdmin voucherAdmin;
 
     @ManyToOne
-    @JoinColumn(name = "idproduct")
-    Product product;
+    @JoinColumn(name = "idproductdetail")
+    ProductDetail productDetail;
 
     Float discountPrice;
 }

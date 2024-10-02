@@ -37,8 +37,8 @@ public class Voucher implements Serializable {
     String vouchername;
 
     @ManyToOne
-    @JoinColumn(name = "idproduct")
-    Product product;
+    @JoinColumn(name = "idproductdetail")
+    ProductDetail productDetail;
 
     Float discountprice;
 

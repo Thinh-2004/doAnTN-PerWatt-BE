@@ -73,9 +73,9 @@ public class ProductController {
     }
 
     // GetAllByIdStore
-    @GetMapping("/productStore/{id}")
-    public ResponseEntity<List<Product>> getAllProductByIdUser(@PathVariable("id") Integer storeId) {
-        List<Product> products = productRepository.findAllByStoreIdWithImages(storeId);
+    @GetMapping("/productStore/{slug}")
+    public ResponseEntity<List<Product>> getAllProductByIdStore(@PathVariable("slug") String slug) {
+        List<Product> products = productRepository.findAllByStoreIdWithSlugStore(slug);
         if (products == null || products.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
