@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +19,7 @@ import com.duantn.be_project.Repository.ForgetPasswordRepository;
 import com.duantn.be_project.Service.ForgetPasswordService;
 
 @Controller
+@CrossOrigin("*")
 @RequestMapping("/api")
 public class ForgetPasswordController {
     @Autowired

@@ -20,6 +20,8 @@ import com.duantn.be_project.Repository.CategoryRepository;
 import com.duantn.be_project.Repository.RoleRepository;
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Repository.UserRepository;
+import com.duantn.be_project.Service.SlugText.SlugText;
+import com.duantn.be_project.model.Product;
 import com.duantn.be_project.model.ProductCategory;
 import com.duantn.be_project.model.Role;
 import com.duantn.be_project.model.Store;
@@ -48,6 +50,8 @@ public class StoreController {
     UploadImages uploadImages;
     @Autowired
     CategoryRepository categoryRepository;
+    @Autowired
+    SlugText slugText;
 
     // Get All
     @GetMapping("/store")
@@ -77,25 +81,32 @@ public class StoreController {
     @PostMapping("/store")
     public ResponseEntity<?> post(@RequestBody Store store) {
         // TODO: process POST request
-
         // Bắt lỗi
         ResponseEntity<String> validateRes = validate(store);
         if (validateRes != null) {
-            return ResponseEntity.badRequest().build();
+            return validateRes;
         }
-
-        Integer countTaxCode = storeRepository.checkDuplicate(store.getTaxcode());
 
         if (storeRepository.existsByNamestoreIgnoreCase(store.getNamestore())) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("Tên cửa hàng đã tồn tại!");
-        } else if (countTaxCode > 0) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body("Mã số thuế không tồn tại hoặc đã được sử dụng ở nơi khác");
+        } else if (!store.getTaxcode().isEmpty()) {
+            Integer countTaxCode = storeRepository.checkDuplicate(store.getTaxcode());
+            if (countTaxCode > 0) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body("Mã số thuế không tồn tại hoặc đã được sử dụng ở nơi khác");
+            }
         }
         if (store.getCreatedtime() == null) {
             store.setCreatedtime(LocalDateTime.now());// Thiết lập thời gian tạo
         }
+        if (store.getTaxcode() == null || store.getTaxcode().isEmpty()) {
+            store.setTaxcode(null);
+        }
+
+        //Gán giá trị tên cửa hàng cho slug
+        store.setSlug(slugText.generateUniqueSlug(store.getNamestore()));
+
         // Tìm user
         User user = userRepository.findById(store.getUser().getId()).orElseThrow();
         if (user.getRole().getId() == 3) {
@@ -124,7 +135,7 @@ public class StoreController {
             if (validateRes != null) {
                 return validateRes;
             }
-            Integer countTaxCode = storeRepository.checkDuplicate(store.getTaxcode());
+            Integer countTaxCode = storeRepository.checkDuplicate(store.getTaxcode(), store.getId());
             if (countTaxCode > 0) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("Mã thuế đã được sử dụng");
             }
@@ -134,6 +145,10 @@ public class StoreController {
         }
 
         store.setId(id);
+        //Kiểm tra sự tồn tại của slug
+        if(!store.getSlug().isEmpty() || store.getSlug() != null){
+            store.setSlug(slugText.generateUniqueSlug(store.getNamestore()));
+        }
 
         if (store.getCreatedtime() == null) {
             store.setCreatedtime(LocalDateTime.now());
@@ -258,7 +273,7 @@ public class StoreController {
         // Mã sô thuế
         if (store.getTaxcode() == null) {
             return null;
-        } else if (!String.valueOf(store.getTaxcode()).matches("^\\d{10}$|^\\d{13}$")) {
+        } else if (!String.valueOf(store.getTaxcode()).matches("^\\d{10}$|^\\d{13}$") && !store.getTaxcode().isEmpty()) {
             return ResponseEntity.badRequest().body("Mã số thuế không hợp lệ");
         }
 

@@ -25,16 +25,18 @@ import org.springframework.web.bind.annotation.RestController;
 import com.duantn.be_project.Repository.CartRepository;
 import com.duantn.be_project.Repository.OrderDetailRepository;
 import com.duantn.be_project.Repository.OrderRepository;
+import com.duantn.be_project.Repository.ProductDetailRepository;
 import com.duantn.be_project.Repository.ProductRepository;
 import com.duantn.be_project.Service.Config;
 import com.duantn.be_project.model.CartItem;
 import com.duantn.be_project.model.Order;
 import com.duantn.be_project.model.OrderDetail;
-import com.duantn.be_project.model.OrderRequest;
 import com.duantn.be_project.model.PaymentMethod;
-import com.duantn.be_project.model.PaymentResDTO;
 import com.duantn.be_project.model.Product;
-import com.duantn.be_project.model.TotalMoneyDTO;
+import com.duantn.be_project.model.ProductDetail;
+import com.duantn.be_project.model.Request.OrderRequest;
+import com.duantn.be_project.model.Request.PaymentResDTO;
+import com.duantn.be_project.model.Request.TotalMoneyDTO;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -48,7 +50,7 @@ public class PaymentController {
     @Autowired
     CartRepository cartRepository;
     @Autowired
-    ProductRepository productRepository;
+    ProductDetailRepository productDetailRepository;
 
     @PostMapping("/create_payment")
     public ResponseEntity<PaymentResDTO> createPayment(
@@ -128,14 +130,12 @@ public class PaymentController {
     @PostMapping("/createVnPayOrder")
     public ResponseEntity<Order> createOrderVnPay(@RequestBody OrderRequest orderRequest) {
         // Tạo đối tượng đơn hàng mới từ yêu cầu
-
         Order order = new Order();
         PaymentMethod paymentMethod = new PaymentMethod();
         paymentMethod.setId(6);
         order.setUser(orderRequest.getOrder().getUser());
         order.setPaymentmethod(paymentMethod);
         order.setShippinginfor(orderRequest.getOrder().getShippinginfor());
-        // order.setFee(orderRequest.getOrder().getFee());
         order.setStore(orderRequest.getOrder().getStore());
         order.setPaymentdate(orderRequest.getOrder().getPaymentdate());
         order.setOrderstatus(orderRequest.getOrder().getOrderstatus());
@@ -146,29 +146,26 @@ public class PaymentController {
         // Lưu các chi tiết đơn hàng và cập nhật số lượng sản phẩm
         if (orderRequest.getOrderDetails() != null) {
             for (OrderDetail detailRequest : orderRequest.getOrderDetails()) {
-                // Lưu chi tiết đơn hàng
                 OrderDetail detail = new OrderDetail();
-                detail.setOrder(savedOrder); // Liên kết chi tiết đơn hàng với đơn hàng đã lưu
-                // detail.setProduct(detailRequest.getProduct());
+                detail.setOrder(savedOrder);
+                detail.setProductDetail(detailRequest.getProductDetail());
                 detail.setQuantity(detailRequest.getQuantity());
                 detail.setPrice(detailRequest.getPrice());
                 orderDetailRepository.save(detail); // Lưu chi tiết đơn hàng vào cơ sở dữ liệu
 
-                // Cập nhật số lượng sản phẩm
-                // Product product = productRepository.findById(detailRequest.getProduct().getId())
-                //         .orElseThrow(() -> new RuntimeException("Product not found"));
-                // if (product.getQuantity() < detailRequest.getQuantity()) {
-                //     return ResponseEntity.badRequest().body(null); // Hoặc xử lý trường hợp không đủ hàng tồn kho
-                // }
-                // product.setQuantity(product.getQuantity() - detailRequest.getQuantity());
-                //productRepository.save(product); // Lưu cập nhật số lượng sản phẩm
+                ProductDetail productDetail = productDetailRepository.findById(detailRequest.getProductDetail().getId())
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+                if (productDetail.getQuantity() < detailRequest.getQuantity()) {
+                    return ResponseEntity.badRequest().body(null); // Hoặc xử lý trường hợp không đủ hàng tồn kho
+                }
+                productDetail.setQuantity(productDetail.getQuantity() - detailRequest.getQuantity());
+                productDetailRepository.save(productDetail); // Lưu cập nhật số lượng sản phẩm
 
-                // Xóa CartItem tương ứng với sản phẩm đã đặt
-                // CartItem cartItem = cartRepository.findByProductAndUser(detailRequest.getProduct(),
-                //         savedOrder.getUser());
-                // if (cartItem != null) {
-                //     cartRepository.delete(cartItem); // Xóa CartItem để tránh trùng lặp
-                // }
+                CartItem cartItem = cartRepository.findByProductDetailAndUser(detailRequest.getProductDetail(),
+                        savedOrder.getUser());
+                if (cartItem != null) {
+                    cartRepository.delete(cartItem); // Xóa CartItem để tránh trùng lặp
+                }
             }
         }
 

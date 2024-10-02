@@ -1,18 +1,18 @@
 package com.duantn.be_project.controller;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
+
 import java.util.List;
+<<<<<<< HEAD
 import java.util.Map;
 import java.util.stream.Collectors;
+=======
+>>>>>>> 9788f8b256464d827fc84ddf77fc669f91ca83c3
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.repository.query.Param;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
@@ -26,6 +26,7 @@ import com.duantn.be_project.Repository.OrderRepository;
 import com.duantn.be_project.Repository.ProductDetailRepository;
 import com.duantn.be_project.Repository.ProductRepository;
 import com.duantn.be_project.Repository.StoreRepository;
+import com.duantn.be_project.Service.SlugText.SlugText;
 import com.duantn.be_project.model.Image;
 import com.duantn.be_project.model.Order;
 import com.duantn.be_project.model.Product;
@@ -43,9 +44,9 @@ import jakarta.servlet.ServletContext;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+
 import org.springframework.web.bind.annotation.RequestPart;
 
 @CrossOrigin("*")
@@ -67,6 +68,8 @@ public class ProductController {
     ProductDetailRepository productDetailRepository;
     @Autowired
     UploadImages uploadImages;
+    @Autowired
+    SlugText slugText;
 
     // GetAll
     @GetMapping("/pageHome")
@@ -75,9 +78,9 @@ public class ProductController {
     }
 
     // GetAllByIdStore
-    @GetMapping("/productStore/{id}")
-    public ResponseEntity<List<Product>> getAllProductByIdUser(@PathVariable("id") Integer storeId) {
-        List<Product> products = productRepository.findAllByStoreIdWithImages(storeId);
+    @GetMapping("/productStore/{slug}")
+    public ResponseEntity<List<Product>> getAllProductByIdStore(@PathVariable("slug") String slug) {
+        List<Product> products = productRepository.findAllByStoreIdWithSlugStore(slug);
         if (products == null || products.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -92,13 +95,21 @@ public class ProductController {
     }
 
     // GetByIdProduct
-    @GetMapping("/product/{id}")
-    public ResponseEntity<Product> getByIdProduct(@PathVariable("id") Integer id) {
-        Product product = productRepository.findById(id).orElseThrow();
-        if (product == null) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(product);
+    // @GetMapping("/product/{id}")
+    // public ResponseEntity<Product> getByIdProduct(@PathVariable("id") Integer id)
+    // {
+    // Product product = productRepository.findById(id).orElseThrow();
+    // if (product == null) {
+    // return ResponseEntity.notFound().build();
+    // }
+    // return ResponseEntity.ok(product);
+    // }
+
+    @GetMapping("/product/{slug}")
+    public ResponseEntity<Product> getBySlugNameProduct(@PathVariable("slug") String slug) {
+        return productRepository.findBySlug(slug)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/productCreate")
@@ -112,6 +123,9 @@ public class ProductController {
 
         // Chuyển đổi JSON thành đối tượng Product
         product = objectMapper.readValue(productJson, Product.class);
+
+        // Gán tên sản phẩm cho slug
+        product.setSlug(slugText.generateUniqueSlug(product.getName()));
 
         // Lưu Product trước và lấy productId
         Product savedProduct = productRepository.save(product);
@@ -134,9 +148,9 @@ public class ProductController {
                         // Lưu hình ảnh lên server và lấy đường dẫn lưu
                         String imageDetailPath = uploadImages.saveDetailProductImage(imageDetail, savedDetail.getId());
                         savedDetail.setImagedetail(imageDetailPath); // Cập nhật đường dẫn thực tế cho imagedetail
-                    }else{
+                    } else {
                         savedDetail.setImagedetail(null); // Cập nhật đường dẫn thực tế cho imagedetail
-                        
+
                     }
 
                 } catch (IOException e) {
@@ -210,13 +224,13 @@ public class ProductController {
         Product product;
         try {
             product = objectMapper.readValue(productJson, Product.class);
+            if (!product.getSlug().isEmpty() || product.getSlug() != null) {
+                product.setSlug(slugText.generateUniqueSlug(product.getName()));
+            }
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.badRequest().body("Dữ liệu sản phẩm không hợp lệ: " + e.getMessage());
         }
-
-        // Đảm bảo ID của sản phẩm khớp với biến đường dẫn
-        product.setId(id);
 
         // Lưu sản phẩm đã cập nhật
         Product updatedProduct;
@@ -319,7 +333,7 @@ public class ProductController {
     public ResponseEntity<Store> getIdStoreByIdUser(@PathVariable("id") Integer idUser) {
         Store store = storeRepository.findStoreByIdUser(idUser);
         // if (store == null) {
-        //     return ResponseEntity.notFound().build();
+        // return ResponseEntity.notFound().build();
         // }
         return ResponseEntity.ok(store);
     }

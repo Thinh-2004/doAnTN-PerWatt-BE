@@ -52,6 +52,16 @@ public class ProductDetailController {
         return ResponseEntity.ok(productDetails);
     }
 
+    // GetByIdProduct
+    @GetMapping("/findIdProductByIdProduct/{id}")
+    public ResponseEntity<List<ProductDetail>> getIdProductBySlugProduct(@PathVariable("id") Integer id) {
+        List<ProductDetail> productDetails = productDetailRepository.findIdProductByIdProduct(id);
+        if (productDetails == null | productDetails.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(productDetails);
+    }
+
     // Post
     @PostMapping("/detailProduct")
     public ResponseEntity<?> postDetailProduct(
@@ -123,7 +133,8 @@ public class ProductDetailController {
 
             // Xóa ảnh cũ sau khi cập nhật thành công ảnh mới
             if (oldImageDetail != null && !oldImageDetail.isEmpty()) {
-                String filePath = String.format("src/main/resources/static/files/detailProduct/%d/%s", id, oldImageDetail);
+                String filePath = String.format("src/main/resources/static/files/detailProduct/%d/%s", id,
+                        oldImageDetail);
                 File fileOld = new File(filePath);
                 if (fileOld.exists()) {// Nếu file tồn tại
                     fileOld.delete();

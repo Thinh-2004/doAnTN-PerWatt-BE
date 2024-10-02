@@ -72,12 +72,8 @@ public class Product implements Serializable {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     List<ProductDetail> productDetails;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "product")
-    List<VoucherAdminDetail> voucherAdminDetails;
 
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "product")
-    List<Voucher> vouchers ;
+
+    String slug;
 }

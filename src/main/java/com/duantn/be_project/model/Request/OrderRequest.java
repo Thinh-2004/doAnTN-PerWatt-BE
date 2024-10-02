@@ -1,6 +1,9 @@
-package com.duantn.be_project.model;
+package com.duantn.be_project.model.Request;
 
 import java.util.List;
+
+import com.duantn.be_project.model.Order;
+import com.duantn.be_project.model.OrderDetail;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

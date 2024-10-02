@@ -1,4 +1,4 @@
-package com.duantn.be_project.model;
+package com.duantn.be_project.model.Request;
 
 import lombok.Getter;
 import lombok.Setter;
