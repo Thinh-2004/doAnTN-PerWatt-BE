@@ -265,4 +265,57 @@ public class StoreController {
         return null;
     }
 
+      //khai
+// top 5 của hàng bán chạy nhất
+@GetMapping("/top5")
+public List<Map<String, Object>> getTop5StoresByOrdersAndRevenue() {
+    return storeRepository.findTop5StoresByOrdersAndRevenue();
+}
+// Doanh thu 
+@GetMapping("/revenue-by-year-month")
+public ResponseEntity<List<Map<String, Object>>> getRevenueByYearAndMonth() {
+    List<Map<String, Object>> revenueData = storeRepository.findRevenueByYearAndMonthForAllStores();
+    return ResponseEntity.ok(revenueData);
+}
+// Doanh thu theo năm
+@GetMapping("/revenue-by-year")
+public ResponseEntity<List<Map<String, Object>>> getRevenueByYear() {
+List<Map<String, Object>> revenueData = storeRepository.findRevenueByYear();
+return ResponseEntity.ok(revenueData);
+
+}
+//Doanh thu theo tháng
+@GetMapping("/revenue-by-month")
+public ResponseEntity<List<Map<String, Object>>> getRevenueByMonth() {
+List<Map<String, Object>> revenueData = storeRepository.findTotalRevenueByMonthAndStore();
+return ResponseEntity.ok(revenueData);
+}
+//Doanh thu theo ngày
+@GetMapping("/revenue-by-day")
+public ResponseEntity<List<Map<String, Object>>> getRevenueByDay() {
+    List<Map<String, Object>> revenueData = storeRepository.findRevenueByDay();
+    return ResponseEntity.ok(revenueData);
+}
+// Số lượng cửa hàng theo tháng
+@GetMapping("/stores-by-month")
+public ResponseEntity<List<Map<String, Object>>> getCountStoresByMonth() {
+    List<Map<String, Object>> storeCountData = storeRepository.countStoresByMonth();
+    return ResponseEntity.ok(storeCountData);
+}
+// Số lượng cửa hàng theo ngày
+@GetMapping("/stores-by-day")
+public ResponseEntity<List<Map<String, Object>>> getCountStoresByDay() {
+    List<Map<String, Object>> storeCountData = storeRepository.countStoresByDay();
+    return ResponseEntity.ok(storeCountData);
+}
+
+// Tổng cửa hàng được tạo (card số lượng cửa hàng)
+@GetMapping("/total-stores-count")
+public ResponseEntity<Map<String, Long>> getTotalStoresCount() {
+    long totalStoresCount = storeRepository.countTotalStores();
+    Map<String, Long> response = new HashMap<>();
+    response.put("totalStoresCount", totalStoresCount);
+    return ResponseEntity.ok(response);
+}
+
 }

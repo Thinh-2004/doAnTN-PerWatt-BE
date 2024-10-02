@@ -11,7 +11,6 @@ import java.util.Map;
 
 @CrossOrigin("*")
 @RestController
-@RequestMapping("/user-ads")
 public class UserAdController {
 
     @Autowired

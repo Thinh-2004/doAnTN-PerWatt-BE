@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.query.Param;
@@ -329,5 +330,123 @@ public class ProductController {
         Integer countOrder = orderRepository.countOrderBuyed(idProduct);
         return ResponseEntity.ok(countOrder);
     }
+
+      //khai
+    // top sản phẩm bán chạy
+    @GetMapping("/top-selling")
+public ResponseEntity<List<Map<String, Object>>> getTopSellingProducts() {
+    List<Object[]> topSellingProducts = productRepository.findTopSellingProducts();
+
+    // Chuyển đổi kết quả thành danh sách Map
+    List<Map<String, Object>> mappedProducts = topSellingProducts.stream().map(row -> {
+        Map<String, Object> map = new HashMap<>();
+        map.put("productId", row[0]);        // ProductId
+        map.put("productName", row[1]);      // Tên sản phẩm
+        map.put("idImage", row[2]);          // ID hình ảnh
+        map.put("imageName", row[3]);     // Hình ảnh sản phẩm
+        map.put("totalRevenue", row[4]);     // Doanh thu
+        map.put("totalQuantitySold", row[5]); // Số lượng đã bán
+        return map;
+    }).collect(Collectors.toList());
+
+    return ResponseEntity.ok(mappedProducts);
+}
+
+
+    
+
+    //voucher
+    @GetMapping("/productDetails")
+    public ResponseEntity<List<Map<String, Object>>> getAllProductDetails() {
+        List<Object[]> productDetails = productRepository.findAllProductDetails();
+    
+        if (productDetails == null || productDetails.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+    
+        List<Map<String, Object>> mappedDetails = convertToMapList(productDetails);
+        return ResponseEntity.ok(mappedDetails);
+    }
+    
+    private List<Map<String, Object>> convertToMapList(List<Object[]> results) {
+        return results.stream().map(row -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("nameProduct", row[0]);            // Tên sản phẩm
+            map.put("image", row[1]);                  // Hình ảnh chi tiết
+            map.put("price", row[2]);                  // Giá sản phẩm
+            map.put("quantityRemaining", row[3]);      // Số lượng còn lại
+            map.put("quantitySold", row[4]);          // Số lượng đã bán
+            map.put("nameCategory", row[5]);          // Tên danh mục sản phẩm
+            map.put("discount", row[6]);              // Giảm giá
+            return map;
+        }).collect(Collectors.toList());
+    }
+
+    @GetMapping("/productDetails/{id}")
+public ResponseEntity<Map<String, Object>> getProductDetailsById(@PathVariable Integer id) {
+    Object[] productDetails = productRepository.findProductDetailsById(id);
+
+    if (productDetails == null || productDetails.length == 0) {
+        return ResponseEntity.notFound().build();
+    }
+
+    Map<String, Object> mappedDetail = convertToMap(productDetails);
+    return ResponseEntity.ok(mappedDetail);
+}
+
+private Map<String, Object> convertToMap(Object[] row) {
+    Map<String, Object> map = new HashMap<>();
+    if (row.length >= 7) {
+        map.put("nameProduct", row[0] != null ? row[0] : "Unknown");            // Tên sản phẩm
+        map.put("image", row[1] != null ? row[1] : "No Image");                  // Hình ảnh chi tiết
+        map.put("price", row[2] != null ? row[2] : "Not Available");             // Giá sản phẩm
+        map.put("quantityRemaining", row[3] != null ? row[3] : 0);               // Số lượng còn lại
+        map.put("quantitySold", row[4] != null ? row[4] : 0);                    // Số lượng đã bán
+        map.put("nameCategory", row[5] != null ? row[5] : "Not Categorized");    // Tên danh mục sản phẩm
+        map.put("discount", row[6] != null ? row[6] : 0);                        // Giảm giá
+    }
+    return map;
+}
+
+// Get Top 10 Products by Store Id
+@GetMapping("/top10-products/{storeId}")
+public ResponseEntity<List<Map<String, Object>>> getTop10ProductsByStoreId(@PathVariable Integer storeId) {
+    // Kiểm tra nếu storeId hợp lệ
+    if (storeId == null || storeId <= 0) {
+        return ResponseEntity.badRequest().body(null); // Trả về lỗi nếu storeId không hợp lệ
+    }
+
+    // Lấy danh sách sản phẩm từ repository
+    List<Object[]> productDetails = productRepository.findTopSellingProductsByStoreId(storeId);
+
+    // Kiểm tra nếu danh sách trống
+    if (productDetails == null || productDetails.isEmpty()) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null); // Trả về 404 nếu không có sản phẩm nào được tìm thấy
+    }
+
+    // Chuyển đổi kết quả thành danh sách Map
+    List<Map<String, Object>> mappedDetails = convertToMapList1(productDetails);
+    return ResponseEntity.ok(mappedDetails); // Trả về kết quả với mã trạng thái 200 OK
+}
+
+// Hàm chuyển đổi danh sách Object[] sang danh sách Map
+private List<Map<String, Object>> convertToMapList1(List<Object[]> results) {
+    return results.stream().map(row -> {
+        Map<String, Object> map = new HashMap<>();
+        map.put("name", row[0]);     // Tên sản phẩm
+        map.put("price", row[1]);    // Giá sản phẩm
+        map.put("sold", row[2]);     // Số lượng đã bán
+        map.put("idImage", row[3]);  // ID hình ảnh sản phẩm
+        map.put("imageName", row[4]); // Tên hình ảnh sản phẩm
+        return map;
+    }).collect(Collectors.toList());
+}
+
+ // Phương thức mới để lấy doanh thu theo storeId
+ @GetMapping("/revenue/{storeId}")
+ public ResponseEntity<List<Object[]>> getRevenueByStoreId(@PathVariable Integer storeId) {
+     List<Object[]> revenueData = productRepository.findRevenueByStoreId(storeId);
+     return ResponseEntity.ok(revenueData);
+ }
 
 }
