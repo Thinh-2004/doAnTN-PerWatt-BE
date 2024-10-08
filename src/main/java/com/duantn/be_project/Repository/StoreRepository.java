@@ -2,7 +2,6 @@ package com.duantn.be_project.Repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import com.duantn.be_project.model.Store;
 
 import java.util.List;

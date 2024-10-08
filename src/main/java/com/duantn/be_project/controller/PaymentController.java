@@ -15,7 +15,6 @@ import java.util.TimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -26,19 +25,15 @@ import com.duantn.be_project.Repository.CartRepository;
 import com.duantn.be_project.Repository.OrderDetailRepository;
 import com.duantn.be_project.Repository.OrderRepository;
 import com.duantn.be_project.Repository.ProductDetailRepository;
-import com.duantn.be_project.Repository.ProductRepository;
 import com.duantn.be_project.Service.Config;
 import com.duantn.be_project.model.CartItem;
 import com.duantn.be_project.model.Order;
 import com.duantn.be_project.model.OrderDetail;
 import com.duantn.be_project.model.PaymentMethod;
-import com.duantn.be_project.model.Product;
 import com.duantn.be_project.model.ProductDetail;
 import com.duantn.be_project.model.Request.OrderRequest;
 import com.duantn.be_project.model.Request.PaymentResDTO;
 import com.duantn.be_project.model.Request.TotalMoneyDTO;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/payment")

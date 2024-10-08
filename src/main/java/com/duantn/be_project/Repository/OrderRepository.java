@@ -23,7 +23,9 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     public Long countBuyed(Integer idProduct);
 
     ///// tính số lượng hóa đơn của sản phẩm
-    @Query(value = "select COALESCE(sum(B.quantity), 0) from Orders A inner join OrderDetails B on A.id = B.orderId inner join ProductDetails C on C.id = B.productDetailId where A.orderStatus like N'Hoàn thành' and C.id = ?1", nativeQuery = true)
-    public Integer countOrderBuyed(Integer idProduct);
+    @Query(value = "select count(a.id) from Orders a\r\n" + //
+            "inner join OrderDetails b on a.id = b.orderId\r\n" + //
+            "where a.orderStatus like N'Hoàn Thành' and b.productDetailId = ?1", nativeQuery = true)
+    public Integer countOrderBuyed(Integer idProductDetail);
 
 }

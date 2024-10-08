@@ -1,6 +1,9 @@
 package com.duantn.be_project.controller;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 
@@ -23,7 +26,6 @@ import com.duantn.be_project.Repository.ProductRepository;
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Service.SlugText.SlugText;
 import com.duantn.be_project.model.Image;
-import com.duantn.be_project.model.Order;
 import com.duantn.be_project.model.Product;
 import com.duantn.be_project.model.ProductDetail;
 import com.duantn.be_project.model.Store;
@@ -72,10 +74,37 @@ public class ProductController {
         return ResponseEntity.ok(productRepository.findAllDesc());
     }
 
+    @GetMapping("/findMore/{name}")
+    public ResponseEntity<List<Product>> findMore(@PathVariable("name") String name) throws UnsupportedEncodingException {
+        String decodeName = URLDecoder.decode(name, StandardCharsets.UTF_8.name());
+        List<Product> product = productRepository.findMoreProductByNameCateOrTrademark(decodeName);
+        if (product == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(product);
+    }
+
     // GetAllByIdStore
     @GetMapping("/productStore/{slug}")
-    public ResponseEntity<List<Product>> getAllProductByIdStore(@PathVariable("slug") String slug) {
+    public ResponseEntity<List<Product>> getStoreBySlugStore(@PathVariable("slug") String slug) {
         List<Product> products = productRepository.findAllByStoreIdWithSlugStore(slug);
+        if (products == null || products.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Log để kiểm tra dữ liệu
+        products.forEach(product -> {
+            System.out.println("Product ID: " + product.getId());
+            product.getImages().forEach(image -> System.out
+                    .println("Image ID: " + image.getId() + ", Image Name: " + image.getImagename()));
+        });
+        return ResponseEntity.ok(products);
+    }
+
+    // GetAllByIdStore
+    @GetMapping("/countBySlugProduct/{id}")
+    public ResponseEntity<List<Product>> getAllProductByIdStore(@PathVariable("id") Integer id) {
+        List<Product> products = productRepository.CountProductByIdStore(id);
         if (products == null || products.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -335,8 +364,8 @@ public class ProductController {
 
     // CountOrderBuy
     @GetMapping("/countOrderSuccess/{id}")
-    public ResponseEntity<Integer> countOrderBuyed(@PathVariable("id") Integer idProduct) {
-        Integer countOrder = orderRepository.countOrderBuyed(idProduct);
+    public ResponseEntity<Integer> countOrderBuyed(@PathVariable("id") Integer idProductDetail) {
+        Integer countOrder = orderRepository.countOrderBuyed(idProductDetail);
         return ResponseEntity.ok(countOrder);
     }
 

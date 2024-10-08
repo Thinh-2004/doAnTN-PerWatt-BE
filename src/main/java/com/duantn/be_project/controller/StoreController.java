@@ -21,7 +21,6 @@ import com.duantn.be_project.Repository.RoleRepository;
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Repository.UserRepository;
 import com.duantn.be_project.Service.SlugText.SlugText;
-import com.duantn.be_project.model.Product;
 import com.duantn.be_project.model.ProductCategory;
 import com.duantn.be_project.model.Role;
 import com.duantn.be_project.model.Store;
@@ -35,7 +34,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @CrossOrigin("*")
 @RestController
@@ -136,7 +134,7 @@ public class StoreController {
                 return validateRes;
             }
             Integer countTaxCode = storeRepository.checkDuplicate(store.getTaxcode(), store.getId());
-            if (countTaxCode > 0) {
+            if (countTaxCode > 0 && !store.getTaxcode().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("Mã thuế đã được sử dụng");
             }
         } catch (Exception e) {

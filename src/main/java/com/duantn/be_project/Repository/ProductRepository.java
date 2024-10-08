@@ -19,9 +19,16 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     @Query("select p from Product p order by p.id desc")
     List<Product> findAllDesc();
 
+    @Query("select p from Product p where p.store.id = ?1")
+    List<Product> CountProductByIdStore(Integer id);
+
     Optional<Product> findBySlug(String slug); // Thêm phương thức tìm theo slug
 
     // Phương thức kiểm tra tồn tại bằng slug
     boolean existsBySlug(String slug);
+
+    //Find more Product and ProductDetail 
+    @Query("select p from Product p where p.productcategory.name = ?1 or p.trademark.name = ?1" )
+    List<Product> findMoreProductByNameCateOrTrademark(String name);
 
 }
