@@ -1,7 +1,7 @@
 package com.duantn.be_project.controller;
 
 import java.io.File;
-import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -96,7 +96,7 @@ public class StoreController {
             }
         }
         if (store.getCreatedtime() == null) {
-            store.setCreatedtime(LocalDateTime.now());// Thiết lập thời gian tạo
+            store.setCreatedtime(new Date()); // Sử dụng Date để thiết lập thời gian tạo
         }
         if (store.getTaxcode() == null || store.getTaxcode().isEmpty()) {
             store.setTaxcode(null);
@@ -128,6 +128,7 @@ public class StoreController {
         Store store;
         try {
             store = objectMapper.readValue(storeJson, Store.class);
+            System.out.println("Ngày giờ: " + store.getCreatedtime());
             // Bắt lỗi
             ResponseEntity<String> validateRes = validate(store);
             if (validateRes != null) {
@@ -148,9 +149,9 @@ public class StoreController {
             store.setSlug(slugText.generateUniqueSlug(store.getNamestore()));
         }
 
-        if (store.getCreatedtime() == null) {
-            store.setCreatedtime(LocalDateTime.now());
-        }
+        // if (store.getCreatedtime() == null) {
+        //     store.setCreatedtime(LocalDateTime.now());
+        // }
 
         String oldImageUrl = null;
 
