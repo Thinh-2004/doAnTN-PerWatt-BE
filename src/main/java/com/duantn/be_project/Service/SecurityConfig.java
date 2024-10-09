@@ -26,8 +26,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf().disable()
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        .requestMatchers("/**").permitAll() // Cho phép truy cập không yêu cầu xác thực đến tất cả các
-                                                            // endpoint
+                        .requestMatchers("/**").permitAll() // Cho phép truy cập không yêu cầu xác
+                        // thực đến tất cả các
+                        // endpoint
                         .anyRequest().authenticated() // Các request còn lại yêu cầu xác thực
                 )
                 .cors(); // Kích hoạt CORS
@@ -35,12 +36,31 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // @Bean
+    // public SecurityFilterChain configure(HttpSecurity http) throws Exception {
+    // http
+    // .csrf().disable()
+    // .cors() // Kích hoạt CORS
+    // .and()
+    // .authorizeRequests()
+    // .requestMatchers("/", "/public/**").permitAll()
+    // .requestMatchers("/loginByGoogle").authenticated()
+    // .anyRequest().authenticated()
+    // .and()
+    // .oauth2Login().defaultSuccessUrl("/loginByGoogle", true)
+    // .and()
+    // .logout().logoutSuccessUrl("/");
+
+    // return http.build();
+    // }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

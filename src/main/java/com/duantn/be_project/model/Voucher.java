@@ -29,7 +29,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "Vouchers")
+@Table(name = "vouchers")
 public class Voucher implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,10 +37,10 @@ public class Voucher implements Serializable {
     String vouchername;
 
     @ManyToOne
-    @JoinColumn(name = "idstore")
-    Store store;
+    @JoinColumn(name = "idproductdetail")
+    ProductDetail productDetail;
 
-    Float discountPrice;
+    Float discountprice;
 
     @Temporal(TemporalType.TIMESTAMP)
     Date startday;

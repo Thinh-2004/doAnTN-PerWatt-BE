@@ -19,7 +19,6 @@ import com.duantn.be_project.model.Image;
 
 import jakarta.servlet.ServletContext;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 
 @CrossOrigin("*")

@@ -8,13 +8,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.duantn.be_project.Repository.NotificationRepository;
-import com.duantn.be_project.Repository.OrderRepository;
 import com.duantn.be_project.model.Order;
-import com.duantn.be_project.model.Store;
-import com.duantn.be_project.model.User;
-
 import java.util.List;
-import java.util.Optional;
 
 @CrossOrigin("*")
 @RestController
@@ -33,11 +28,11 @@ public class NotificationController {
     @GetMapping("/checkOrder/{id}")
     public ResponseEntity<List<Order>> checkNewOrder(@PathVariable("id") Integer storeId) {
         List<Order> storeOrders = notificationRepository.findAllStoreId(storeId);
-    
+
         if (storeOrders.isEmpty()) {
             return ResponseEntity.noContent().build(); // Trả về HTTP 204 No Content nếu không có đơn hàng
         }
-    
+
         return ResponseEntity.ok(storeOrders);
     }
 

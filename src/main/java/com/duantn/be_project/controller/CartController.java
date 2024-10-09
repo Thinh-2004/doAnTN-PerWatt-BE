@@ -2,6 +2,7 @@ package com.duantn.be_project.controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,27 +20,58 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.duantn.be_project.Repository.CartRepository;
 import com.duantn.be_project.Repository.ProductDetailRepository;
-import com.duantn.be_project.Repository.ProductRepository;
 import com.duantn.be_project.Repository.UserRepository;
 import com.duantn.be_project.model.CartItem;
-import com.duantn.be_project.model.Product;
 import com.duantn.be_project.model.ProductDetail;
 import com.duantn.be_project.model.User;
 
-@CrossOrigin("*") // Cho phép tất cả các nguồn (origin) truy cập vào API này
-@RestController // Đánh dấu lớp này là một controller REST
+@CrossOrigin("*")
+@RestController
 public class CartController {
 
-    @Autowired // Tự động tiêm CartRepository
-    private CartRepository cartRepository;
+    @Autowired
+    CartRepository cartRepository;
+    @Autowired
+    UserRepository userRepository;
+    @Autowired
+    ProductDetailRepository productDetailRepository;
 
-    @Autowired // Tự động tiêm UserRepository
-    private UserRepository userRepository;
+    // hiển danh sách productDetail bằng product id
+    @GetMapping("/productDetailByProductId/{id}")
+    public ResponseEntity<List<ProductDetail>> getByProductId(@PathVariable("id") Integer id) {
+        List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(id);
 
-    @Autowired // Tự động tiêm ProductRepository
-    private ProductDetailRepository productRepository;
+        return ResponseEntity.ok(productDetails);
+    }
 
-    //Vào trang thanh toán
+    @PutMapping("/cartProductDetailUpdate/{id}")
+    public ResponseEntity<?> updateProductDetail(@PathVariable("id") Integer id,
+            @RequestBody Map<String, Integer> payload) {
+        CartItem cartItem = cartRepository.findById(id).orElse(null);
+
+        if (cartItem == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Cart item not found");
+        }
+
+        Integer productDetailId = payload.get("productDetailId"); // Lấy productDetailId từ payload
+
+        if (productDetailId == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing productDetailId");
+        }
+
+        ProductDetail productDetail = productDetailRepository.findById(productDetailId).orElse(null);
+
+        if (productDetail == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product detail not found");
+        }
+
+        cartItem.setProductDetail(productDetail);
+        cartRepository.save(cartItem);
+
+        return ResponseEntity.ok(cartItem);
+    }
+
+    // Vào trang thanh toán
     @RequestMapping("/cart") // Định nghĩa endpoint GET /cart với tham số id
     public ResponseEntity<?> getProductByIds(@RequestParam("id") String ids) {
         String[] cartIds = ids.split(","); // Chia các ID từ chuỗi tham số thành mảng
@@ -56,7 +88,7 @@ public class CartController {
         return ResponseEntity.ok(cartItems); // Trả về danh sách CartItem tìm thấy
     }
 
-    //cập nhật số lượng sản phẩm
+    // cập nhật số lượng sản phẩm
     @PutMapping("/cartUpdate/{id}") // Định nghĩa endpoint PUT /cartUpdate/{id}
     public ResponseEntity<CartItem> updateQuantity(@PathVariable("id") Integer id, @RequestBody Integer quantity) {
         CartItem cartItem = cartRepository.findById(id).orElse(null); // Tìm CartItem theo ID
@@ -71,72 +103,54 @@ public class CartController {
         return ResponseEntity.ok(cartItem); // Trả về CartItem đã cập nhật
     }
 
-    //hiển thị giỏ hàng của user
+    // hiển thị giỏ hàng của user
     @GetMapping("/cart/{id}") // Định nghĩa endpoint GET /cart/{id}
     public ResponseEntity<List<CartItem>> getById(@PathVariable("id") Integer id) {
         List<CartItem> cartItems = cartRepository.findAllCartItemlByIdUser(id); // Tìm tất cả CartItem theo ID người
-                                                                                // dùng
-        // if (cartItems.isEmpty()) { // Nếu danh sách CartItem rỗng
-        //     return ResponseEntity.notFound().build(); // Trả về 404
-        // }
+
         return ResponseEntity.ok(cartItems); // Trả về danh sách CartItem
     }
 
-    //điếm số lượng giỏ hàng
+    // điếm số lượng giỏ hàng
     @GetMapping("/countCartIdUser/{id}") // Định nghĩa endpoint GET /countCartIdUser/{id}
     public ResponseEntity<List<CartItem>> getByAllCartByUserId(@PathVariable("id") Integer id) {
         List<CartItem> cartItems = cartRepository.findAllCartItemlByIdUser(id); // Tìm tất cả CartItem theo ID người
-                                                                                // dùng
-        // if (cartItems.isEmpty()) { // Nếu danh sách CartItem rỗng
-        //     return ResponseEntity.notFound().build(); // Trả về 404
-        // }
+
         return ResponseEntity.ok(cartItems); // Trả về danh sách CartItem
     }
 
-    //thêm sản phẩm vào giỏ hàng
-    // @PostMapping("/cart/add") // Định nghĩa endpoint POST /cart/add
-    // public ResponseEntity<CartItem> addToCart(@RequestBody CartItem cartItem) {
-    //     try {
-    //         User user = userRepository.findById(cartItem.getUser().getId()).orElse(null); // Tìm người dùng theo ID
-    //         ProductDetail product = productRepository.findById(cartItem.getProductDetail().getId()).orElse(null); // Tìm sản phẩm
-    //                                                                                                   // theo ID
-
-    //         if (user == null || product == null) { // Nếu người dùng hoặc sản phẩm không tồn tại
-    //             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build(); // Trả về lỗi 400
-    //         }
-
-    //         CartItem existingCartItem = cartRepository.findByUserIdAndProductId(user.getId(), product.getId()); // Tìm
-    //                                                                                                             // CartItem
-    //                                                                                                             // hiện
-    //                                                                                                             // có
-    //                                                                                                             // theo
-    //                                                                                                             // userId
-    //                                                                                                             // và
-    //                                                                                                             // productId
-
-    //         if (existingCartItem != null) { // Nếu CartItem đã tồn tại
-    //             existingCartItem.setQuantity(existingCartItem.getQuantity() + cartItem.getQuantity()); // Cập nhật số
-    //                                                                                                    // lượng
-    //             return ResponseEntity.ok(cartRepository.save(existingCartItem)); // Lưu lại và trả về CartItem đã cập
-    //                                                                              // nhật
-    //         } else {
-    //             cartItem.setUser(user); // Gán người dùng cho CartItem mới
-    //             cartItem.setProductDetail(product); // Gán sản phẩm cho CartItem mới
-    //             return ResponseEntity.ok(cartRepository.save(cartItem)); // Lưu lại và trả về CartItem mới
-    //         }
-    //     } catch (Exception e) { // Xử lý ngoại lệ nếu có lỗi xảy ra
-    //         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // Trả về lỗi 500
-    //     }
-    // }
-
-
-    //xóa sản phẩm ra khỏi giỏ hàng
-    @DeleteMapping("/cartDelete/{id}") // Định nghĩa endpoint DELETE /cartDelete/{id}
-    public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
-        if (!cartRepository.existsById(id)) { // Kiểm tra nếu CartItem không tồn tại
-            return ResponseEntity.notFound().build(); // Trả về 404
+    // Thêm giỏ hàng
+    @PostMapping("/cart/add")
+    public ResponseEntity<?> addToCart(@RequestBody CartItem cartItem) {
+        try {
+            User user = userRepository.findById(cartItem.getUser().getId()).orElse(null);
+            ProductDetail productDetail = productDetailRepository.findById(cartItem.getProductDetail().getId())
+                    .orElse(null);
+            if (user == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Người dùng không tồn tại");
+            }
+            if (productDetail == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Sản phẩm không tồn tại");
+            }
+            CartItem existingCartItem = cartRepository.findByUserIdAndProductDetailId(user.getId(),
+                    productDetail.getId());
+            if (existingCartItem != null) {
+                existingCartItem.setQuantity(existingCartItem.getQuantity() + cartItem.getQuantity());
+                return ResponseEntity.ok(cartRepository.save(existingCartItem));
+            } else {
+                cartItem.setUser(user);
+                cartItem.setProductDetail(productDetail);
+                return ResponseEntity.ok(cartRepository.save(cartItem));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi server: " + e.getMessage());
         }
-        cartRepository.deleteById(id); // Xóa CartItem theo ID
+    }
+
+    // xóa sản phẩm ra khỏi giỏ hàng
+    @DeleteMapping("/cartDelete/{id}")
+    public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
+        cartRepository.deleteById(id);
         return ResponseEntity.ok().build(); // Trả về 200 OK
     }
 }

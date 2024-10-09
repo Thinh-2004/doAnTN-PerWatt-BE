@@ -29,7 +29,7 @@ public class VoucherAdminCategory implements Serializable {
      @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    String nameCategory;
+    String namecategory;
 
     @JsonIgnore
     @OneToMany(mappedBy = "voucherAdminCategory")

@@ -2,8 +2,6 @@
 
 import java.io.Serializable;
 
-import org.hibernate.annotations.ManyToAny;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -36,6 +34,6 @@ public class CartItem implements Serializable{
     User user;
 
     @ManyToOne
-    @JoinColumn(name = "productDetailId")
+    @JoinColumn(name = "productdetailid")
     ProductDetail productDetail;
 }

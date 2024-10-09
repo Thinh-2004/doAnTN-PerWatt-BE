@@ -12,10 +12,10 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.duantn.be_project.Repository.OrderRepository;
-import com.duantn.be_project.Repository.ProductRepository;
+import com.duantn.be_project.Repository.ProductDetailRepository;
 import com.duantn.be_project.model.Order;
 import com.duantn.be_project.model.OrderDetail;
-import com.duantn.be_project.model.Product;
+import com.duantn.be_project.model.ProductDetail;
 
 import jakarta.transaction.Transactional;
 
@@ -30,7 +30,7 @@ public class OrderController {
     @Autowired
     OrderRepository orderRepository;
     @Autowired
-    ProductRepository productRepository;
+    ProductDetailRepository productRepository;
 
     // GetAll
     @GetMapping("/order")
@@ -76,30 +76,6 @@ public class OrderController {
         return ResponseEntity.ok(sortedOrders);
     }
 
-    // // Post
-    // @PostMapping("/order")
-    // public ResponseEntity<Order> post(@RequestBody Order order) {
-// User user = new User();
-    // PaymentMethod paymentMethod = new PaymentMethod();
-    // ShippingInfor shippingInfor = new ShippingInfor();
-    // Fee fee = new Fee();
-    // Store store = new Store();
-    // order.setPaymentdate(LocalDateTime.now());// Thiết lập thời gian tạo
-    // order.setOrderstatus("Đang chờ duyệt");
-    // user.setId(1);
-    // paymentMethod.setId(1);
-    // shippingInfor.setId(1);
-    // fee.setId(1);
-    // store.setId(1);
-    // order.setUser(user);
-    // order.setPaymentmethod(paymentMethod);
-    // order.setShippinginfor(shippingInfor);
-    // order.setFee(fee);
-    // order.setStore(store);
-    // Order savedOrder = orderRepository.save(order);
-    // return ResponseEntity.ok(savedOrder);
-    // }
-
     @PutMapping("/order/{id}/status")
     @Transactional
     public ResponseEntity<Order> updateOrderStatus(@PathVariable("id") Integer id,
@@ -115,14 +91,14 @@ public class OrderController {
         orderRepository.save(order);
 
         // Nếu đơn hàng bị hủy, cập nhật số lượng sản phẩm
-        // if ("Hủy".equals(newStatus) && !"Hủy".equals(oldStatus)) {
-        //     for (OrderDetail detail : order.getOrderdetails()) {
-        //         Product product = detail.getProduct();
-        //         int quantity = detail.getQuantity();
-        //         // product.setQuantity(product.getQuantity() + quantity);
-        //         productRepository.save(product);
-        //     }
-        // }
+        if ("Hủy".equals(newStatus) && !"Hủy".equals(oldStatus)) {
+            for (OrderDetail detail : order.getOrderdetails()) {
+                ProductDetail product = detail.getProductDetail();
+                int quantity = detail.getQuantity();
+                product.setQuantity(product.getQuantity() + quantity);
+                productRepository.save(product);
+            }
+        }
 
         return ResponseEntity.ok(order);
     }
@@ -135,9 +111,5 @@ public class OrderController {
         orderRepository.deleteById(id);
         return ResponseEntity.ok().build();
     }
-
-
-
- 
 
 }

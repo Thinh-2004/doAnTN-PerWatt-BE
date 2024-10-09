@@ -1,7 +1,7 @@
 package com.duantn.be_project.model;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -29,7 +29,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "Stores")
+@Table(name = "stores")
 public class Store implements Serializable{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,7 +40,7 @@ public class Store implements Serializable{
     String phone;
     String cccdnumber;
     @Temporal(TemporalType.TIMESTAMP)
-    LocalDateTime createdtime;
+    Date createdtime;
     String imgbackgound;
 
     @ManyToOne
@@ -55,9 +55,6 @@ public class Store implements Serializable{
     @OneToMany(mappedBy = "store")
     List<Comment> comments;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "store")
-    List<Voucher> vouchers;
 
     @JsonIgnore
     @OneToMany(mappedBy = "store")
@@ -66,4 +63,7 @@ public class Store implements Serializable{
     @JsonIgnore
     @OneToMany(mappedBy = "store")
     List<Order> orders;
+
+    String taxcode;
+    String slug;
 }

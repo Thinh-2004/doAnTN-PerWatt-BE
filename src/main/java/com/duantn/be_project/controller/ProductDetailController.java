@@ -1,10 +1,13 @@
 package com.duantn.be_project.controller;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,7 +26,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+
 import org.springframework.web.bind.annotation.PutMapping;
 
 @CrossOrigin("*")
@@ -42,10 +45,29 @@ public class ProductDetailController {
         return ResponseEntity.ok(productDetailRepository.findAll());
     }
 
+    
+
     // GetByIdProduct
     @GetMapping("/detailProduct/{id}")
     public ResponseEntity<List<ProductDetail>> getByIdProduct(@PathVariable("id") Integer id) {
         List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(id);
+        if (productDetails == null | productDetails.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(productDetails);
+    }
+
+    // CountDetailProductSoldOutByIdStore
+    @GetMapping("/countDetailSoldOut/{id}")
+    public ResponseEntity<List<ProductDetail>> CountDetailProductSoldOut(@PathVariable("id") Integer id) {
+        List<ProductDetail> productDetails = productDetailRepository.countDetailProductSoldOut(id);
+        return ResponseEntity.ok(productDetails);
+    }
+
+    // GetByIdProduct
+    @GetMapping("/findIdProductByIdProduct/{id}")
+    public ResponseEntity<List<ProductDetail>> getIdProductBySlugProduct(@PathVariable("id") Integer id) {
+        List<ProductDetail> productDetails = productDetailRepository.findIdProductByIdProduct(id);
         if (productDetails == null | productDetails.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -123,7 +145,8 @@ public class ProductDetailController {
 
             // Xóa ảnh cũ sau khi cập nhật thành công ảnh mới
             if (oldImageDetail != null && !oldImageDetail.isEmpty()) {
-                String filePath = String.format("src/main/resources/static/files/detailProduct/%d/%s", id, oldImageDetail);
+                String filePath = String.format("src/main/resources/static/files/detailProduct/%d/%s", id,
+                        oldImageDetail);
                 File fileOld = new File(filePath);
                 if (fileOld.exists()) {// Nếu file tồn tại
                     fileOld.delete();
