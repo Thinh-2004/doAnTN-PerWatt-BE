@@ -3,7 +3,6 @@ package com.duantn.be_project.controller;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -39,13 +38,19 @@ public class ProductDetailController {
     @Autowired
     UploadImages uploadImages;
 
+    // MinMax theo danh sách findMore
+    @GetMapping("/sidlerMinMax/{name}")
+    public ResponseEntity<?> silderMinMax(@PathVariable("name") String name) throws UnsupportedEncodingException {
+         String decodeName = URLDecoder.decode(name, StandardCharsets.UTF_8.name());
+        List<Object[]> respone = productDetailRepository.minMaxPriceDetail("%" + decodeName + "%");
+        return ResponseEntity.ok(respone);
+    }
+
     // GetAll
     @GetMapping("/detailProduct")
     public ResponseEntity<List<ProductDetail>> getAll() {
         return ResponseEntity.ok(productDetailRepository.findAll());
     }
-
-    
 
     // GetByIdProduct
     @GetMapping("/detailProduct/{id}")

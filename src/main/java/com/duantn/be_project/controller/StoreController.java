@@ -102,7 +102,7 @@ public class StoreController {
             store.setTaxcode(null);
         }
 
-        //Gán giá trị tên cửa hàng cho slug
+        // Gán giá trị tên cửa hàng cho slug
         store.setSlug(slugText.generateUniqueSlug(store.getNamestore()));
 
         // Tìm user
@@ -128,12 +128,16 @@ public class StoreController {
         Store store;
         try {
             store = objectMapper.readValue(storeJson, Store.class);
-            System.out.println("Ngày giờ: " + store.getCreatedtime());
             // Bắt lỗi
             ResponseEntity<String> validateRes = validate(store);
             if (validateRes != null) {
                 return validateRes;
             }
+            
+            if (store.getTaxcode() == null || store.getTaxcode().isEmpty()) {
+                store.setTaxcode(null);
+            }
+
             Integer countTaxCode = storeRepository.checkDuplicate(store.getTaxcode(), store.getId());
             if (countTaxCode > 0 && !store.getTaxcode().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("Mã thuế đã được sử dụng");
@@ -144,13 +148,13 @@ public class StoreController {
         }
 
         store.setId(id);
-        //Kiểm tra sự tồn tại của slug
-        if(!store.getSlug().isEmpty() || store.getSlug() != null){
+        // Kiểm tra sự tồn tại của slug
+        if (!store.getSlug().isEmpty() || store.getSlug() != null) {
             store.setSlug(slugText.generateUniqueSlug(store.getNamestore()));
         }
 
         // if (store.getCreatedtime() == null) {
-        //     store.setCreatedtime(LocalDateTime.now());
+        // store.setCreatedtime(LocalDateTime.now());
         // }
 
         String oldImageUrl = null;
@@ -272,7 +276,8 @@ public class StoreController {
         // Mã sô thuế
         if (store.getTaxcode() == null) {
             return null;
-        } else if (!String.valueOf(store.getTaxcode()).matches("^\\d{10}$|^\\d{13}$") && !store.getTaxcode().isEmpty()) {
+        } else if (!String.valueOf(store.getTaxcode()).matches("^\\d{10}$|^\\d{13}$")
+                && !store.getTaxcode().isEmpty()) {
             return ResponseEntity.badRequest().body("Mã số thuế không hợp lệ");
         }
 
