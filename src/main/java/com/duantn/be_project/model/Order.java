@@ -67,4 +67,7 @@ public class Order implements Serializable {
     List<OrderDetail> orderdetails;
 
     String note;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    Date receivedate;
 }

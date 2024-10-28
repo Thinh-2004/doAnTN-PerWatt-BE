@@ -197,12 +197,61 @@ public class ProductController {
             @RequestParam("pageSize") Optional<Integer> pageSize) {
         Sort sort = Sort.by(Direction.DESC, "id"); // Sắp xếp giảm dần
         Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(8), sort);
-        Page<Product> prPage = productRepository.listProductPerMall(pageable);
+        Page<Object[]> prPage = productRepository.listProductPerMall("%",
+                pageable);
 
         // Tạo map để trả dữ liệu
         Map<String, Object> response = new HashMap<>();
-        response.put("products", prPage.getContent()); // Danh sách phân trang sản phẩm
-        response.put("currentPage", prPage.getNumber() ); // Số trang hiện tại
+
+        List<Product> products = prPage.getContent().stream().map((sliceElement) -> (Product) sliceElement[0])
+                .collect(Collectors.toList());
+
+        response.put("products", products); // Danh sách phân trang sản phẩm
+        response.put("currentPage", prPage.getNumber()); // Số trang hiện tại
+        response.put("totalPage", prPage.getTotalPages());// Tổng số trang
+        response.put("totalItems", prPage.getTotalElements()); // Tổng số sản phẩm
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("findMore/productPerMall/list")
+    public ResponseEntity<?> productPerMallFindMorEntity(@RequestParam("pageNo") Optional<Integer> pageNo,
+            @RequestParam("pageSize") Optional<Integer> pageSize,
+            @RequestParam(name = "keyWord", defaultValue = "") String keyWord,
+            @RequestParam(name = "sortBy", defaultValue = "") String sortBy) {
+        // Thiết lập Sort dựa vào yêu cầu của người dùng
+        Sort sort = Sort.by(Direction.DESC, "p.id");
+        switch (sortBy) {
+            case "newItems":
+                sort = Sort.by(Direction.DESC, "p.id");
+                break;
+            case "oldItems":
+                sort = Sort.by(Direction.ASC, "p.id");
+                break;
+            case "priceASC":
+                sort = Sort.by(Direction.ASC, "maxPrice");
+                break;
+            case "priceDESC":
+                sort = Sort.by(Direction.DESC, "maxPrice");
+                break;
+            case "bestSeller":
+                sort = Sort.by(Direction.DESC, "orderCount");
+                break;
+            default:
+                sort = Sort.by(Direction.DESC, "p.id");
+                break;
+        }
+
+        Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20), sort);
+        Page<Object[]> prPage = productRepository.listProductPerMall(keyWord.isEmpty() ? "%" : "%" + keyWord + "%",
+                pageable);
+
+        // Tạo map để trả dữ liệu
+        Map<String, Object> response = new HashMap<>();
+
+        List<Product> products = prPage.getContent().stream().map((sliceElement) -> (Product) sliceElement[0])
+                .collect(Collectors.toList());
+        response.put("products", products); // Danh sách phân trang sản phẩm
+        response.put("currentPage", prPage.getNumber() + 1); // Số trang hiện tại
         response.put("totalPage", prPage.getTotalPages());// Tổng số trang
         response.put("totalItems", prPage.getTotalElements()); // Tổng số sản phẩm
         return ResponseEntity.ok(response);
@@ -215,7 +264,8 @@ public class ProductController {
             @RequestParam("pageNo") Optional<Integer> pageNo,
             @RequestParam("pageSize") Optional<Integer> pageSize,
             @RequestParam(name = "keyWord", defaultValue = "") String keyWord,
-            @RequestParam(name = "sortBy", defaultValue = "") String sortBy) {
+            @RequestParam(name = "sortBy", defaultValue = "") String sortBy,
+            @RequestParam(name = "soldOutProduct", defaultValue = "false") Boolean soldOutProduct) {
 
         // Xác định Sort dựa trên sortBy
         Sort sort = Sort.by(Direction.DESC, "p.id"); // Sử dụng tên trường đúng
@@ -236,6 +286,12 @@ public class ProductController {
             case "bestSeller":
                 sort = Sort.by(Direction.DESC, "orderCount"); // Sắp xếp theo sản phẩm bán chạy
                 break;
+            case "quantityASC":
+                sort = Sort.by(Direction.ASC, "quantityCount");
+                break;
+            case "quantityDESC":
+                sort = Sort.by(Direction.DESC, "quantityCount");
+                break;
             default:
                 sort = Sort.by(Direction.DESC, "p.id");
                 break;
@@ -250,11 +306,11 @@ public class ProductController {
             idCate = Integer.parseInt(keyWord);
             // Thực hiện truy vấn duy nhất
             prPage = productRepository.findAllByStoreIdWithSlugStore(slug,
-                    "", idCate, pageable);
+                    "", idCate, soldOutProduct, pageable);
         } catch (NumberFormatException e) {
             // keyWord không phải là số, giữ nguyên giá trị keyWord
             prPage = productRepository.findAllByStoreIdWithSlugStore(slug, "%" + keyWord + "%",
-                    null, pageable);
+                    null, soldOutProduct, pageable);
         }
 
         // Thực hiện truy vấn duy nhất

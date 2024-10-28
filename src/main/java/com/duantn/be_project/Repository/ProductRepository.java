@@ -22,16 +22,17 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
   // Page<Object[]> findAllByStoreIdWithSlugStore(String slugStore, String name,
   // Integer idCate, Pageable pageable);
 
-  @Query("SELECT p, MAX(pd.price) as maxPrice, COUNT(od.id) as orderCount " +
-      "FROM Product p " +
-      "JOIN p.productDetails pd " +
-      "LEFT JOIN OrderDetail od ON pd.id = od.productDetail.id " +
-      "LEFT JOIN Order o ON od.order.id = o.id AND o.orderstatus LIKE 'Hoàn Thành' " +
-      "WHERE p.store.slug LIKE ?1 " +
-      "AND (p.name LIKE ?2 OR p.productcategory.name LIKE ?2 OR p.productcategory.id = ?3 OR p.trademark.name LIKE ?2) "
-      +
-      "GROUP BY p")
-  Page<Object[]> findAllByStoreIdWithSlugStore(String slugStore, String name, Integer idCate, Pageable pageable);
+  @Query("SELECT p, MAX(pd.price) as maxPrice, COUNT(o.orderstatus) as orderCount, SUM(pd.quantity) as quantityCount " +
+  "FROM Product p " +
+  "JOIN p.productDetails pd " +
+  "LEFT JOIN OrderDetail od ON pd.id = od.productDetail.id " +
+  "LEFT JOIN Order o ON od.order.id = o.id AND o.orderstatus LIKE 'Hoàn Thành' " +
+  "WHERE p.store.slug LIKE ?1 " +
+  "AND (p.name LIKE ?2 OR p.productcategory.name LIKE ?2 OR p.productcategory.id = ?3 OR p.trademark.name LIKE ?2) " +
+  "GROUP BY p " +
+  "HAVING (SUM(pd.quantity) = 0 OR ?4 = false)")
+Page<Object[]> findAllByStoreIdWithSlugStore(String slugStore, String name, Integer idCate, boolean quantityFilter, Pageable pageable);
+
 
   @Query("select p from Product p order by p.id desc")
   List<Product> findAllDesc();
@@ -51,7 +52,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
   @Query("""
           SELECT p,
                  MAX(pd.price) AS maxPrice,
-                 COUNT(od.id) AS orderCount
+                 COUNT(o.orderstatus) AS orderCount
           FROM Product p
           JOIN p.productDetails pd
           LEFT JOIN OrderDetail od ON pd.id = od.productDetail.id
@@ -71,7 +72,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
   @Query("""
       SELECT p,
                 MAX(pd.price) AS maxPrice,
-                COUNT(od.id) AS orderCount
+                COUNT(o.orderstatus) AS orderCount
          FROM Product p
          JOIN p.productDetails pd
          LEFT JOIN OrderDetail od ON pd.id = od.productDetail.id
@@ -90,7 +91,16 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
 
   // Danh sách sản phẩm có taxcpde
   @Query("""
-      select p from Product p where p.store.taxcode is not null
+      select p,  MAX(pd.price) AS maxPrice,
+                COUNT(o.orderstatus) AS orderCount
+        from Product p
+        JOIN p.productDetails pd
+        LEFT JOIN OrderDetail od ON pd.id = od.productDetail.id
+        LEFT JOIN Order o ON od.order.id = o.id
+          and o.orderstatus LIKE 'Hoàn thành'
+          where p.store.taxcode is not null
+      and (p.name like ?1 or p.productcategory.name like ?1 or p.trademark.name like ?1)
+       GROUP BY p
       """)
-  Page<Product> listProductPerMall(Pageable pageable);
+  Page<Object[]> listProductPerMall(String keyWord, Pageable pageable);
 }
