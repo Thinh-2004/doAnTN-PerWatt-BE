@@ -1,4 +1,4 @@
-package com.duantn.be_project.repository;
+package com.duantn.be_project.Repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
