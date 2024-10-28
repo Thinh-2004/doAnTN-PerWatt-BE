@@ -9,28 +9,32 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @SuppressWarnings("serial")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 @Entity
-@Table(name = "ChatMessages")
-public class ChatMessage implements Serializable{
-    @Id
+@Table(name = "Voucheradmindetail")
+public class VoucherAdminDetail implements Serializable {
+     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
 
     @ManyToOne
-    @JoinColumn(name = "senderid")
-    User user1;
+    @JoinColumn(name = "idvoucheradmin")
+    VoucherAdmin voucherAdmin;
 
     @ManyToOne
-    @JoinColumn(name = "receiverid")
-    User user2;
+    @JoinColumn(name = "idproductdetail")
+    ProductDetail productDetail;
 
-    @ManyToOne
-    @JoinColumn(name = "productid")
-    Product product;
-    
-
+    Float discountPrice;
 }

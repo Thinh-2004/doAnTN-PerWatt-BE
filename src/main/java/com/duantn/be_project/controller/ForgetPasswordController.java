@@ -7,14 +7,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSender;
+<<<<<<< HEAD
+=======
+import org.springframework.security.crypto.password.PasswordEncoder;
+>>>>>>> 2fb2db93120c2a41361d8cf63fde495227a53b0c
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.duantn.be_project.model.User;
+<<<<<<< HEAD
 import com.duantn.be_project.repository.ForgetPasswordRepository;
 import com.duantn.be_project.service.ForgetPasswordService;
+=======
+import com.duantn.be_project.Repository.ForgetPasswordRepository;
+import com.duantn.be_project.Service.ForgetPasswordService;
+>>>>>>> 2fb2db93120c2a41361d8cf63fde495227a53b0c
 
 @Controller
 @RequestMapping("/api")
@@ -25,6 +34,11 @@ public class ForgetPasswordController {
     private ForgetPasswordRepository forgetPasswordRepository;
     @Autowired
     private ForgetPasswordService forgetPasswordService;
+<<<<<<< HEAD
+=======
+    @Autowired
+    PasswordEncoder passwordEncoder;
+>>>>>>> 2fb2db93120c2a41361d8cf63fde495227a53b0c
 
     @PostMapping("/send-otp")
     public ResponseEntity<Map<String, String>> sendForgotPasswordEmail(@RequestBody Map<String, String> request) {
@@ -44,9 +58,17 @@ public class ForgetPasswordController {
         String otp = OTPUtil.generateOTP(6); // Tạo OTP có độ dài 6 ký tự
         try {
             forgetPasswordService.sendOTP(toEmail, otp);
+<<<<<<< HEAD
             return ResponseEntity.ok(Map.of("message", "OTP đã được gửi tới email của bạn.", "otp", otp, "email", toEmail));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Đã xảy ra lỗi khi gửi OTP."));
+=======
+            return ResponseEntity
+                    .ok(Map.of("message", "OTP đã được gửi tới email của bạn.", "otp", otp, "email", toEmail));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Đã xảy ra lỗi khi gửi OTP."));
+>>>>>>> 2fb2db93120c2a41361d8cf63fde495227a53b0c
         }
     }
 
@@ -81,7 +103,11 @@ public class ForgetPasswordController {
         if (email != null) {
             User user = forgetPasswordRepository.findByEmail(email);
             if (user != null) {
+<<<<<<< HEAD
                 user.setPassword(newPassword); // Đặt mật khẩu mới cho người dùng
+=======
+                user.setPassword(passwordEncoder.encode(newPassword)); // Đặt mật khẩu mới cho người dùng
+>>>>>>> 2fb2db93120c2a41361d8cf63fde495227a53b0c
                 forgetPasswordRepository.save(user);
                 return ResponseEntity.ok("Đổi mật khẩu thành công!");
             }
@@ -93,7 +119,11 @@ public class ForgetPasswordController {
     public static class OTPUtil {
         private static final String CHARACTERS = "0123456789";
         private static final SecureRandom RANDOM = new SecureRandom();
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> 2fb2db93120c2a41361d8cf63fde495227a53b0c
         public static String generateOTP(int length) {
             StringBuilder otp = new StringBuilder(length);
             for (int i = 0; i < length; i++) {

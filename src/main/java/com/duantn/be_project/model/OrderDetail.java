@@ -9,12 +9,20 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @SuppressWarnings("serial")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 @Entity
-@Table(name = "OrderDetails")
+@Table(name = "Orderdetails")
 public class OrderDetail implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,8 +34,8 @@ public class OrderDetail implements Serializable {
     Order order;
 
     @ManyToOne
-    @JoinColumn(name = "productid")
-    Product product;
+    @JoinColumn(name = "productdetailid")
+    ProductDetail productDetail;
     
     Float price;
 }

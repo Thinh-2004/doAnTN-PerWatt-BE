@@ -16,12 +16,20 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @SuppressWarnings("serial")
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
 @Entity
-@Table(name = "Stores")
+@Table(name = "stores")
 public class Store implements Serializable{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,7 +38,7 @@ public class Store implements Serializable{
     String address;
     String email;
     String phone;
-    Integer cccdnumber;
+    String cccdnumber;
     @Temporal(TemporalType.TIMESTAMP)
     Date createdtime;
     String imgbackgound;
@@ -45,9 +53,17 @@ public class Store implements Serializable{
 
     @JsonIgnore
     @OneToMany(mappedBy = "store")
-    List<Voucher> vouchers;
+    List<Comment> comments;
+
 
     @JsonIgnore
     @OneToMany(mappedBy = "store")
     List<Follow> follows;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "store")
+    List<Order> orders;
+
+    String taxcode;
+    String slug;
 }
