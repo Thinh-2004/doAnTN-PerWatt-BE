@@ -22,7 +22,7 @@ import com.duantn.be_project.Service.UserService;
 import com.duantn.be_project.Service.Security.Encryption;
 import com.duantn.be_project.model.Role;
 import com.duantn.be_project.model.User;
-import com.duantn.be_project.model.Request.TokenRequest;
+import com.duantn.be_project.model.Request_Response.TokenRequest;
 import com.duantn.be_project.untils.UploadImages;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;

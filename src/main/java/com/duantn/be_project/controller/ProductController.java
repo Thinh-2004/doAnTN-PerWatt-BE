@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collector;
+
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,22 +22,25 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.ui.Model;
+
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.duantn.be_project.Repository.CategoryRepository;
 import com.duantn.be_project.Repository.ImageRepository;
 import com.duantn.be_project.Repository.OrderRepository;
 import com.duantn.be_project.Repository.ProductDetailRepository;
 import com.duantn.be_project.Repository.ProductRepository;
 import com.duantn.be_project.Repository.StoreRepository;
+import com.duantn.be_project.Repository.TradeMarkRepository;
 import com.duantn.be_project.Service.SlugText.SlugText;
 import com.duantn.be_project.model.Image;
 import com.duantn.be_project.model.Product;
 import com.duantn.be_project.model.ProductDetail;
 import com.duantn.be_project.model.Store;
+import com.duantn.be_project.model.Request_Response.ProductDTO;
 import com.duantn.be_project.untils.FileManagerService;
 import com.duantn.be_project.untils.UploadImages;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -62,6 +65,10 @@ public class ProductController {
     @Autowired
     ProductRepository productRepository;
     @Autowired
+    CategoryRepository categoryRepository;
+    @Autowired
+    TradeMarkRepository tradeMarkRepository;
+    @Autowired
     StoreRepository storeRepository;
     @Autowired
     ImageRepository imageRepository;
@@ -83,27 +90,95 @@ public class ProductController {
     public ResponseEntity<?> List(
             @RequestParam("pageNo") Optional<Integer> pageNo,
             @RequestParam("pageSize") Optional<Integer> pageSize,
-            @RequestParam(name = "keyWord", defaultValue = "") String keyword) {
+            @RequestParam(name = "keyWord", defaultValue = "") String keyWord) {
+
+        // Tách từ khóa thành mảng các chuỗi con
+        String[] keywords = keyWord.split(" ");
+
+        // Khởi tạo danh sách để lưu các chuỗi hợp lệ
+        List<String> listSearch = new ArrayList<>();
+
+        // Kiểm tra từng từ khóa trong mảng keywords
+        Arrays.stream(keywords).forEach(string -> {
+            Boolean checkCate = categoryRepository.checkEmptyCategory("%" + string.split(" ") + "%");
+            Boolean checkTradeMark = tradeMarkRepository.checkEmptyTradeMark("%" + string.split(" ") + "%");
+
+            // Nếu tồn tại trong category hoặc trademark, thêm từ khóa vào listSearch
+            if (checkCate || checkTradeMark) {
+                listSearch.add(string);
+            }
+        });
+
+        // In ra danh sách các từ khóa hợp lệ để kiểm tra
+        // System.out.println("Các từ khóa hợp lệ: " + listSearch);
 
         Sort sort = Sort.by(Direction.DESC, "ID"); // Giảm dần theo cột
-        Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20), sort);
+        Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20),
+                sort);
 
         Page<Product> prPage = null;
         Integer idCate = null;
 
         // Kiểm tra nếu keyword có thể chuyển đổi thành số
-        try {
-            idCate = Integer.parseInt(keyword);
-            prPage = productRepository.findByNamePrCateTrademark("", idCate, pageable); // Tìm theo category ID
-        } catch (NumberFormatException e) {
-            // Nếu keyword không phải là số thì tìm theo tên hoặc danh mục
-            prPage = productRepository.findByNamePrCateTrademark("%" + keyword + "%", null, pageable);
+        if (!keyWord.isEmpty()) {
+            try {
+                // Tìm theo category ID danh mục
+                idCate = Integer.parseInt(keyWord);
+                prPage = productRepository.findByNamePrCateTrademark("", "", "", "", "", idCate, pageable);
+
+            } catch (NumberFormatException e) {
+                // Nếu keyword không phải là số thì tìm theo tên hoặc danh mục
+                // Đảm bảo listSearch có đủ 5 phần tử
+                while (listSearch.size() < 5) {
+                    listSearch.add(""); // Thêm phần tử rỗng nếu kích thước nhỏ hơn 5
+                }
+
+                // Tạo một mảng để lưu các tham số cho hàm tìm kiếm
+                String[] searchParams = new String[5];
+
+                for (int i = 0; i < searchParams.length; i++) {
+                    // Kiểm tra xem phần tử có phải là chuỗi không rỗng hay không
+                    if (i < listSearch.size() && !listSearch.get(i).isEmpty()) {
+                        searchParams[i] = "%" + listSearch.get(i) + "%"; // Thêm ký tự '%' nếu không rỗng
+                    } else {
+                        searchParams[i] = ""; // Nếu phần tử rỗng, thêm chuỗi rỗng
+                    }
+                }
+
+                // Gọi hàm tìm kiếm với các tham số đã xử lý
+                prPage = productRepository.findByNamePrCateTrademark(
+                        searchParams[0],
+                        searchParams[1],
+                        searchParams[2],
+                        searchParams[3],
+                        searchParams[4],
+                        null,
+                        pageable);
+
+            }
+        } else {
+            prPage = productRepository.findByNamePrCateTrademark(
+                    "%",
+                    "%",
+                    "%",
+                    "%",
+                    "%",
+                    null,
+                    pageable);
         }
+
+        List<ProductDTO> productDTOs = prPage.getContent().stream().map(product -> {
+            List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(product.getId());
+            Integer countOrderSuccess = productDetails.stream()
+                    .mapToInt((detailProduct) -> orderRepository.countOrderBuyed(detailProduct.getId())).sum();
+            return new ProductDTO(product, productDetails, countOrderSuccess);
+        }).collect(Collectors.toList());
 
         // Tạo một Map để trả về dữ liệu
         Map<String, Object> response = new HashMap<>();
-        response.put("products", prPage.getContent()); // Danh sách sản phẩm
-        response.put("currentPage", prPage.getNumber() + 1); // Trang hiện tại (hiển thị từ 1)
+        response.put("products", productDTOs); // Danh sách sản phẩm
+        response.put("currentPage", prPage.getNumber() + 1); // Trang hiện tại (hiển
+        // thị từ 1)
         response.put("totalPages", prPage.getTotalPages()); // Tổng số trang
         response.put("totalItems", prPage.getTotalElements()); // Tổng số sản phẩm
 
@@ -121,6 +196,26 @@ public class ProductController {
             @RequestParam(name = "shopType", defaultValue = "") String shopTypeString,
             @RequestParam(name = "tradeMark", defaultValue = "") String tradeMarkString)
             throws UnsupportedEncodingException {
+
+        // Tách từ khóa thành mảng các chuỗi con
+        String[] keywords = keyWord.split(" ");
+
+        // Khởi tạo danh sách để lưu các chuỗi hợp lệ
+        List<String> listSearch = new ArrayList<>();
+
+        // Kiểm tra từng từ khóa trong mảng keywords
+        Arrays.stream(keywords).forEach(string -> {
+            Boolean checkCate = categoryRepository.checkEmptyCategory("%" + string.split(" ") + "%");
+            Boolean checkTradeMark = tradeMarkRepository.checkEmptyTradeMark("%" + string.split(" ") + "%");
+
+            // Nếu tồn tại trong category hoặc trademark, thêm từ khóa vào listSearch
+            if (checkCate || checkTradeMark) {
+                listSearch.add(string);
+            }
+        });
+
+        // In ra danh sách các từ khóa hợp lệ để kiểm tra
+        // System.out.println("Các từ khóa hợp lệ: " + listSearch);
 
         // Thiết lập Sort dựa vào yêu cầu của người dùng
         Sort sort = Sort.by(Direction.DESC, "p.id");
@@ -147,6 +242,8 @@ public class ProductController {
 
         Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20), sort);
         String decodeName = URLDecoder.decode(name, StandardCharsets.UTF_8.name());
+        Page<Object[]> prPage;
+        List<Object[]> fullList;
 
         // Lấy minPrice và maxPrice từ cơ sở dữ liệu nếu không có giá trị từ request
         List<Object[]> minMaxPrice = productDetailRepository.minMaxPriceDetail("%" + decodeName + "%");
@@ -169,22 +266,81 @@ public class ProductController {
                 : Arrays.stream(tradeMarkString.split(","))
                         .map(String::trim)
                         .collect(Collectors.toList());
-        // Gọi truy vấn phân trang
-        Page<Object[]> prPage = productRepository.queryFindMore(decodeName,
-                keyWord.isEmpty() ? "%" : "%" + keyWord + "%", minPrice, maxPrice, shopType, tradeMark, pageable);
 
-        // Gọi truy vấn không phân trang để lấy toàn bộ danh sách
-        List<Object[]> fullList = productRepository.queryFindMoreFullList(decodeName,
-                keyWord.isEmpty() ? "%" : "%" + keyWord + "%", minPrice, maxPrice, shopType, tradeMark, sort);
+        // Kiểm tra nếu keyword có thể chuyển đổi thành số
+        if (!keyWord.isEmpty()) {
+            // Đảm bảo listSearch có đủ 5 phần tử
+            while (listSearch.size() < 5) {
+                listSearch.add(""); // Thêm phần tử rỗng nếu kích thước nhỏ hơn 5
+            }
+
+            // Tạo một mảng để lưu các tham số cho hàm tìm kiếm
+            String[] searchParams = new String[5];
+
+            for (int i = 0; i < searchParams.length; i++) {
+                // Kiểm tra xem phần tử có phải là chuỗi không rỗng hay không
+                if (i < listSearch.size() && !listSearch.get(i).isEmpty()) {
+                    searchParams[i] = "%" + listSearch.get(i) + "%"; // Thêm ký tự '%' nếu không rỗng
+                } else {
+                    searchParams[i] = ""; // Nếu phần tử rỗng, thêm chuỗi rỗng
+                }
+            }
+
+            // Gọi truy vấn
+            prPage = productRepository.queryFindMore(decodeName,
+                    searchParams[0],
+                    searchParams[1],
+                    searchParams[2],
+                    searchParams[3],
+                    searchParams[4],
+                    minPrice, maxPrice, shopType, tradeMark,
+                    pageable);
+            // Gọi truy vấn không phân trang để lấy toàn bộ danh sách
+            fullList = productRepository.queryFindMoreFullList(decodeName,
+                    keyWord.isEmpty() ? "%" : "%" + keyWord + "%", minPrice, maxPrice, shopType, tradeMark, sort);
+        } else {
+            // Gọi truy vấn
+            prPage = productRepository.queryFindMore(decodeName,
+                    "%",
+                    "%",
+                    "%",
+                    "%",
+                    "%",
+                    minPrice, maxPrice, shopType, tradeMark,
+                    pageable);
+            // Gọi truy vấn không phân trang để lấy toàn bộ danh sách
+            fullList = productRepository.queryFindMoreFullList(decodeName,
+                    keyWord.isEmpty() ? "%" : "%" + keyWord + "%", minPrice, maxPrice, shopType, tradeMark, sort);
+        }
+
+        // Cắt danh sách trước khi gửi lên client
+        List<Product> products = prPage.getContent().stream().map((sliceElement) -> (Product) sliceElement[0])
+                .collect(Collectors.toList());
+
+        // Hiển thị full list product
+        List<Product> fullListPr = fullList.stream().map((sliceElement) -> (Product) sliceElement[0])
+                .collect(Collectors.toList());
+
+        // Truy vấn từng id của prPage
+        List<ProductDTO> productDTOs = products.stream().map(product -> {
+            List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(product.getId());
+            Integer countOrderSuccess = productDetails.stream()
+                    .mapToInt((detailProduct) -> orderRepository.countOrderBuyed(detailProduct.getId())).sum();
+            return new ProductDTO(product, productDetails, countOrderSuccess);
+        }).collect(Collectors.toList());
+
+        // Truy vấn từng id của fullList
+        List<ProductDTO> productDTOFullLists = fullListPr.stream().map(product -> {
+            List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(product.getId());
+            Integer countOrderSuccess = productDetails.stream()
+                    .mapToInt((detailProduct) -> orderRepository.countOrderBuyed(detailProduct.getId())).sum();
+            return new ProductDTO(product, productDetails, countOrderSuccess);
+        }).collect(Collectors.toList());
 
         // Tạo một Map để trả dữ liệu
         Map<String, Object> response = new HashMap<>();
-        List<Product> products = prPage.getContent().stream().map((sliceElement) -> (Product) sliceElement[0])
-                .collect(Collectors.toList());
-        List<Product> fullListPr = fullList.stream().map((sliceElement) -> (Product) sliceElement[0])
-                .collect(Collectors.toList());
-        response.put("products", products); // Danh sách sản phẩm phân trang
-        response.put("fullListProduct", fullListPr); // Danh sách toàn bộ sản phẩm
+        response.put("products", productDTOs); // Danh sách sản phẩm phân trang
+        response.put("fullListProduct", productDTOFullLists); // Danh sách toàn bộ sản phẩm
         response.put("currentPage", prPage.getNumber() + 1); // Trang hiện tại
         response.put("totalPage", prPage.getTotalPages()); // Tổng số trang
         response.put("totalItems", prPage.getTotalElements()); // Tổng số sản phẩm
@@ -197,16 +353,24 @@ public class ProductController {
             @RequestParam("pageSize") Optional<Integer> pageSize) {
         Sort sort = Sort.by(Direction.DESC, "id"); // Sắp xếp giảm dần
         Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(8), sort);
-        Page<Object[]> prPage = productRepository.listProductPerMall("%",
+        Page<Object[]> prPage = productRepository.listProductPerMall("%", "%", "%", "%", "%",
                 pageable);
 
-        // Tạo map để trả dữ liệu
-        Map<String, Object> response = new HashMap<>();
-
+        // Map dữ liệu sản phẩm ra
         List<Product> products = prPage.getContent().stream().map((sliceElement) -> (Product) sliceElement[0])
                 .collect(Collectors.toList());
 
-        response.put("products", products); // Danh sách phân trang sản phẩm
+        // Truy vấn từng id
+        List<ProductDTO> productDTOs = products.stream().map(product -> {
+            List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(product.getId());
+            Integer countOrderSuccess = productDetails.stream()
+                    .mapToInt((detailProduct) -> orderRepository.countOrderBuyed(detailProduct.getId())).sum();
+            return new ProductDTO(product, productDetails, countOrderSuccess);
+        }).collect(Collectors.toList());
+
+        // Tạo map để trả dữ liệu
+        Map<String, Object> response = new HashMap<>();
+        response.put("products", productDTOs); // Danh sách phân trang sản phẩm
         response.put("currentPage", prPage.getNumber()); // Số trang hiện tại
         response.put("totalPage", prPage.getTotalPages());// Tổng số trang
         response.put("totalItems", prPage.getTotalElements()); // Tổng số sản phẩm
@@ -218,6 +382,27 @@ public class ProductController {
             @RequestParam("pageSize") Optional<Integer> pageSize,
             @RequestParam(name = "keyWord", defaultValue = "") String keyWord,
             @RequestParam(name = "sortBy", defaultValue = "") String sortBy) {
+
+        // Tách từ khóa thành mảng các chuỗi con
+        String[] keywords = keyWord.split(" ");
+
+        // Khởi tạo danh sách để lưu các chuỗi hợp lệ
+        List<String> listSearch = new ArrayList<>();
+
+        // Kiểm tra từng từ khóa trong mảng keywords
+        Arrays.stream(keywords).forEach(string -> {
+            Boolean checkCate = categoryRepository.checkEmptyCategory("%" + string.split(" ") + "%");
+            Boolean checkTradeMark = tradeMarkRepository.checkEmptyTradeMark("%" + string.split(" ") + "%");
+
+            // Nếu tồn tại trong category hoặc trademark, thêm từ khóa vào listSearch
+            if (checkCate || checkTradeMark) {
+                listSearch.add(string);
+            }
+        });
+
+        // In ra danh sách các từ khóa hợp lệ để kiểm tra
+        // System.out.println("Các từ khóa hợp lệ: " + listSearch);
+
         // Thiết lập Sort dựa vào yêu cầu của người dùng
         Sort sort = Sort.by(Direction.DESC, "p.id");
         switch (sortBy) {
@@ -242,15 +427,60 @@ public class ProductController {
         }
 
         Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20), sort);
-        Page<Object[]> prPage = productRepository.listProductPerMall(keyWord.isEmpty() ? "%" : "%" + keyWord + "%",
-                pageable);
+        Page<Object[]> prPage;
+        // Kiểm tra nếu keyword có thể chuyển đổi thành số
+        if (!keyWord.isEmpty()) {
+            // Đảm bảo listSearch có đủ 5 phần tử
+            while (listSearch.size() < 5) {
+                listSearch.add(""); // Thêm phần tử rỗng nếu kích thước nhỏ hơn 5
+            }
+
+            // Tạo một mảng để lưu các tham số cho hàm tìm kiếm
+            String[] searchParams = new String[5];
+
+            for (int i = 0; i < searchParams.length; i++) {
+                // Kiểm tra xem phần tử có phải là chuỗi không rỗng hay không
+                if (i < listSearch.size() && !listSearch.get(i).isEmpty()) {
+                    searchParams[i] = "%" + listSearch.get(i) + "%"; // Thêm ký tự '%' nếu không rỗng
+                } else {
+                    searchParams[i] = ""; // Nếu phần tử rỗng, thêm chuỗi rỗng
+                }
+            }
+
+            // Gọi hàm tìm kiếm với các tham số đã xử lý
+            prPage = productRepository.listProductPerMall(
+                    searchParams[0],
+                    searchParams[1],
+                    searchParams[2],
+                    searchParams[3],
+                    searchParams[4],
+                    pageable);
+
+        } else {
+            prPage = productRepository.listProductPerMall(
+                    "%",
+                    "%",
+                    "%",
+                    "%",
+                    "%",
+                    pageable);
+        }
+
+        // Duyệt prPage chỉ lấy thuộc tính product
+        List<Product> products = prPage.getContent().stream().map((sliceElement) -> (Product) sliceElement[0])
+                .collect(Collectors.toList());
+
+        // Truy vấn từng id
+        List<ProductDTO> productDTOs = products.stream().map(product -> {
+            List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(product.getId());
+            Integer countOrderSuccess = productDetails.stream()
+                    .mapToInt((detailProduct) -> orderRepository.countOrderBuyed(detailProduct.getId())).sum();
+            return new ProductDTO(product, productDetails, countOrderSuccess);
+        }).collect(Collectors.toList());
 
         // Tạo map để trả dữ liệu
         Map<String, Object> response = new HashMap<>();
-
-        List<Product> products = prPage.getContent().stream().map((sliceElement) -> (Product) sliceElement[0])
-                .collect(Collectors.toList());
-        response.put("products", products); // Danh sách phân trang sản phẩm
+        response.put("products", productDTOs); // Danh sách phân trang sản phẩm
         response.put("currentPage", prPage.getNumber() + 1); // Số trang hiện tại
         response.put("totalPage", prPage.getTotalPages());// Tổng số trang
         response.put("totalItems", prPage.getTotalElements()); // Tổng số sản phẩm
@@ -266,6 +496,26 @@ public class ProductController {
             @RequestParam(name = "keyWord", defaultValue = "") String keyWord,
             @RequestParam(name = "sortBy", defaultValue = "") String sortBy,
             @RequestParam(name = "soldOutProduct", defaultValue = "false") Boolean soldOutProduct) {
+
+        // Tách từ khóa thành mảng các chuỗi con
+        String[] keywords = keyWord.split(" ");
+
+        // Khởi tạo danh sách để lưu các chuỗi hợp lệ
+        List<String> listSearch = new ArrayList<>();
+
+        // Kiểm tra từng từ khóa trong mảng keywords
+        Arrays.stream(keywords).forEach(string -> {
+            Boolean checkCate = categoryRepository.checkEmptyCategory("%" + string.split(" ") + "%");
+            Boolean checkTradeMark = tradeMarkRepository.checkEmptyTradeMark("%" + string.split(" ") + "%");
+
+            // Nếu tồn tại trong category hoặc trademark, thêm từ khóa vào listSearch
+            if (checkCate || checkTradeMark) {
+                listSearch.add(string);
+            }
+        });
+
+        // In ra danh sách các từ khóa hợp lệ để kiểm tra
+        // System.out.println("Các từ khóa hợp lệ: " + listSearch);
 
         // Xác định Sort dựa trên sortBy
         Sort sort = Sort.by(Direction.DESC, "p.id"); // Sử dụng tên trường đúng
@@ -299,30 +549,75 @@ public class ProductController {
 
         Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20), sort);
         Page<Object[]> prPage;
-
-        // Xử lý keyWord
         Integer idCate = null;
-        try {
-            idCate = Integer.parseInt(keyWord);
-            // Thực hiện truy vấn duy nhất
+
+        // Kiểm tra nếu keyword có thể chuyển đổi thành số
+        if (!keyWord.isEmpty()) {
+            try {
+                // Tìm theo category ID danh mục
+                idCate = Integer.parseInt(keyWord);
+                prPage = productRepository.findAllByStoreIdWithSlugStore(slug, "", "", "", "", "", idCate,
+                        soldOutProduct, pageable);
+
+            } catch (NumberFormatException e) {
+                // Nếu keyword không phải là số thì tìm theo tên hoặc danh mục
+                // Đảm bảo listSearch có đủ 5 phần tử
+                while (listSearch.size() < 5) {
+                    listSearch.add(""); // Thêm phần tử rỗng nếu kích thước nhỏ hơn 5
+                }
+
+                // Tạo một mảng để lưu các tham số cho hàm tìm kiếm
+                String[] searchParams = new String[5];
+
+                for (int i = 0; i < searchParams.length; i++) {
+                    // Kiểm tra xem phần tử có phải là chuỗi không rỗng hay không
+                    if (i < listSearch.size() && !listSearch.get(i).isEmpty()) {
+                        searchParams[i] = "%" + listSearch.get(i) + "%"; // Thêm ký tự '%' nếu không rỗng
+                    } else {
+                        searchParams[i] = ""; // Nếu phần tử rỗng, thêm chuỗi rỗng
+                    }
+                }
+
+                // Gọi hàm tìm kiếm với các tham số đã xử lý
+                prPage = productRepository.findAllByStoreIdWithSlugStore(slug,
+                        searchParams[0],
+                        searchParams[1],
+                        searchParams[2],
+                        searchParams[3],
+                        searchParams[4],
+                        null,
+                        soldOutProduct,
+                        pageable);
+
+            }
+        } else {
             prPage = productRepository.findAllByStoreIdWithSlugStore(slug,
-                    "", idCate, soldOutProduct, pageable);
-        } catch (NumberFormatException e) {
-            // keyWord không phải là số, giữ nguyên giá trị keyWord
-            prPage = productRepository.findAllByStoreIdWithSlugStore(slug, "%" + keyWord + "%",
-                    null, soldOutProduct, pageable);
+                    "%",
+                    "%",
+                    "%",
+                    "%",
+                    "%",
+                    null,
+                    soldOutProduct,
+                    pageable);
         }
 
-        // Thực hiện truy vấn duy nhất
-
-        // Tạo Map chỉ chứa số liệu cần thiết
-        Map<String, Object> response = new HashMap<>();
         // Tạo danh sách sản phẩm từ dữ liệu trả về
         List<Product> products = prPage.getContent().stream()
                 .map(obj -> (Product) obj[0]) // Chỉ lấy sản phẩm từ mảng
                 .collect(Collectors.toList());
 
-        response.put("products", products); // Dánh sách sản phẩm
+        // Truy vấn từng id
+        List<ProductDTO> productDTOs = products.stream().map(product -> {
+            List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(product.getId());
+            Integer countOrderSuccess = productDetails.stream()
+                    .mapToInt((detailProduct) -> orderRepository.countOrderBuyed(detailProduct.getId())).sum();
+            return new ProductDTO(product, productDetails, countOrderSuccess);
+        }).collect(Collectors.toList());
+
+        // Tạo Map chỉ chứa số liệu cần thiết
+        Map<String, Object> response = new HashMap<>();
+        response.put("products", productDTOs); // Dánh sách sản phẩm
         response.put("currentPage", prPage.getNumber() + 1); // Trang hiện tại
         response.put("totalPage", prPage.getTotalPages()); // Tổng số trang
         response.put("totalItems", prPage.getTotalElements()); // Tổng số phần tử
@@ -346,17 +641,6 @@ public class ProductController {
         });
         return ResponseEntity.ok(products);
     }
-
-    // GetByIdProduct
-    // @GetMapping("/product/{id}")
-    // public ResponseEntity<Product> getByIdProduct(@PathVariable("id") Integer id)
-    // {
-    // Product product = productRepository.findById(id).orElseThrow();
-    // if (product == null) {
-    // return ResponseEntity.notFound().build();
-    // }
-    // return ResponseEntity.ok(product);
-    // }
 
     @GetMapping("/product/{slug}")
     public ResponseEntity<Product> getBySlugNameProduct(@PathVariable("slug") String slug) {
