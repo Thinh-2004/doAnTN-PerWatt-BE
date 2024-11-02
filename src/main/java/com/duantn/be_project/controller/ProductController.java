@@ -112,51 +112,37 @@ public class ProductController {
         // In ra danh sách các từ khóa hợp lệ để kiểm tra
         // System.out.println("Các từ khóa hợp lệ: " + listSearch);
 
-        Sort sort = Sort.by(Direction.DESC, "ID"); // Giảm dần theo cột
-        Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20),
-                sort);
-
-        Page<Product> prPage = null;
+        // Khởi tạo biến sắp xếp
+        Sort sort;
+        // Khởi tại biến phân trang
+        Pageable pageable;
+        // khởi tạo biến chứa sản phẩm phân trang
+        Page<Object[]> prPage = null;
+        // Khởi tạo biến kiểm tra idCate
         Integer idCate = null;
 
-        // Kiểm tra nếu keyword có thể chuyển đổi thành số
-        if (!keyWord.isEmpty()) {
-            try {
-                // Tìm theo category ID danh mục
-                idCate = Integer.parseInt(keyWord);
-                prPage = productRepository.findByNamePrCateTrademark("", "", "", "", "", idCate, pageable);
+        //Kiểm tra keyWord
+        if (keyWord.toLowerCase().matches(".*\\bhot\\b.*") || keyWord.toLowerCase().contains("yêu thích")
+                || keyWord.toLowerCase().contains("bán chạy") ||
+                keyWord.toLowerCase().contains("phổ biến") || keyWord.toLowerCase().contains("được ưa chuộng") 
+                || keyWord.toLowerCase().contains("hàng đầu")
+                || keyWord.toLowerCase().contains("nổi bật")
+                || keyWord.toLowerCase().contains("xu hướng") ||
+                keyWord.toLowerCase().contains("top")
+                || keyWord.toLowerCase().contains("săn đón") ||
+                keyWord.toLowerCase().contains("được quan tâm") 
+                || keyWord.toLowerCase().contains("bán nhiều") ||
+                keyWord.toLowerCase().contains("best seller") ||
+                keyWord.toLowerCase().contains("bestseller") || 
+                keyWord.toLowerCase().contains("best-seller") || 
+                keyWord.toLowerCase().contains("được đánh giá cao") ||
+                keyWord.toLowerCase().contains("được mua nhiều")
+                ) {
+            sort = Sort.by(Direction.DESC, "orderCount");
 
-            } catch (NumberFormatException e) {
-                // Nếu keyword không phải là số thì tìm theo tên hoặc danh mục
-                // Đảm bảo listSearch có đủ 5 phần tử
-                while (listSearch.size() < 5) {
-                    listSearch.add(""); // Thêm phần tử rỗng nếu kích thước nhỏ hơn 5
-                }
+            pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20),
+                    sort);
 
-                // Tạo một mảng để lưu các tham số cho hàm tìm kiếm
-                String[] searchParams = new String[5];
-
-                for (int i = 0; i < searchParams.length; i++) {
-                    // Kiểm tra xem phần tử có phải là chuỗi không rỗng hay không
-                    if (i < listSearch.size() && !listSearch.get(i).isEmpty()) {
-                        searchParams[i] = "%" + listSearch.get(i) + "%"; // Thêm ký tự '%' nếu không rỗng
-                    } else {
-                        searchParams[i] = ""; // Nếu phần tử rỗng, thêm chuỗi rỗng
-                    }
-                }
-
-                // Gọi hàm tìm kiếm với các tham số đã xử lý
-                prPage = productRepository.findByNamePrCateTrademark(
-                        searchParams[0],
-                        searchParams[1],
-                        searchParams[2],
-                        searchParams[3],
-                        searchParams[4],
-                        null,
-                        pageable);
-
-            }
-        } else {
             prPage = productRepository.findByNamePrCateTrademark(
                     "%",
                     "%",
@@ -165,9 +151,66 @@ public class ProductController {
                     "%",
                     null,
                     pageable);
+        } else {
+            sort = Sort.by(Direction.DESC, "p.id"); // Giảm dần theo cột id
+            pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20),
+                    sort);
+
+            // Kiểm tra nếu keyword có thể chuyển đổi thành số
+            if (!keyWord.isEmpty() && listSearch.size() > 0) {
+                try {
+                    // Tìm theo category ID danh mục
+                    idCate = Integer.parseInt(keyWord);
+                    prPage = productRepository.findByNamePrCateTrademark("", "", "", "", "", idCate, pageable);
+
+                } catch (NumberFormatException e) {
+                    // Nếu keyword không phải là số thì tìm theo tên hoặc danh mục
+                    // Đảm bảo listSearch có đủ 5 phần tử
+                    while (listSearch.size() < 5) {
+                        listSearch.add(""); // Thêm phần tử rỗng nếu kích thước nhỏ hơn 5
+                    }
+
+                    // Tạo một mảng để lưu các tham số cho hàm tìm kiếm
+                    String[] searchParams = new String[5];
+
+                    for (int i = 0; i < searchParams.length; i++) {
+                        // Kiểm tra xem phần tử có phải là chuỗi không rỗng hay không
+                        if (i < listSearch.size() && !listSearch.get(i).isEmpty()) {
+                            searchParams[i] = "%" + listSearch.get(i) + "%"; // Thêm ký tự '%' nếu không rỗng
+                        } else {
+                            searchParams[i] = ""; // Nếu phần tử rỗng, thêm chuỗi rỗng
+                        }
+                    }
+
+                    // Gọi hàm tìm kiếm với các tham số đã xử lý
+                    prPage = productRepository.findByNamePrCateTrademark(
+                            searchParams[0],
+                            searchParams[1],
+                            searchParams[2],
+                            searchParams[3],
+                            searchParams[4],
+                            null,
+                            pageable);
+
+                }
+            } else {
+                prPage = productRepository.findByNamePrCateTrademark(
+                        "%",
+                        "%",
+                        "%",
+                        "%",
+                        "%",
+                        null,
+                        pageable);
+            }
+
         }
 
-        List<ProductDTO> productDTOs = prPage.getContent().stream().map(product -> {
+        // Cắt danh sách trước khi gửi lên client
+        List<Product> products = prPage.getContent().stream().map((sliceElement) -> (Product) sliceElement[0])
+                .collect(Collectors.toList());
+
+        List<ProductDTO> productDTOs = products.stream().map(product -> {
             List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(product.getId());
             Integer countOrderSuccess = productDetails.stream()
                     .mapToInt((detailProduct) -> orderRepository.countOrderBuyed(detailProduct.getId())).sum();
