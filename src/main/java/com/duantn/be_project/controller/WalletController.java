@@ -44,7 +44,6 @@ public class WalletController {
         Optional<Wallet> optionalWallet = walletRepository.findByUserId(id);
 
         Wallet wallet = optionalWallet.get();
-        wallet.setPasscode(updatedWallet.getPasscode());
         wallet.setBalance(updatedWallet.getBalance());
         walletRepository.save(wallet);
         return ResponseEntity.ok(wallet);
@@ -53,39 +52,30 @@ public class WalletController {
     @GetMapping("/wallettransaction/{id}")
     public ResponseEntity<List<WalletTransaction>> getByWalletId(@PathVariable("id") Integer id) {
         List<WalletTransaction> walletTransactions = walletTransactionRepository.findByWalletId(id);
-
         return ResponseEntity.ok(walletTransactions);
     }
 
     @PostMapping("/wallettransaction/create/{id}")
     public ResponseEntity<String> addTransaction(@PathVariable("id") Integer id,
             @RequestBody WalletTransaction newTransaction) {
-
         Wallet wallet = walletRepository.findById(id).orElse(null);
         if (wallet == null) {
             throw new RuntimeException("Ví không tồn tại");
         }
-
         Integer userId = newTransaction.getUser().getId();
-
         User user = userRepository.findById(userId).orElse(null);
         if (user == null) {
             throw new RuntimeException("Người dùng không tồn tại");
         }
-
         newTransaction.setWallet(wallet);
-
         newTransaction.setUser(user);
-
         walletTransactionRepository.save(newTransaction);
-
         return ResponseEntity.status(201).body("Giao dịch đã được thêm thành công");
     }
 
     @GetMapping("/wallettransaction/idWalletByIdUSer/{id}")
     public ResponseEntity<?> idWalletByIdUser(@PathVariable("id") Integer id) {
         Wallet wallet = walletRepository.findByUserId(id).orElse(null);
-
         return ResponseEntity.ok(wallet);
     }
 

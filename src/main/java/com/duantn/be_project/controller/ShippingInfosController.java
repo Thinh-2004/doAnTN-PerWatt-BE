@@ -1,6 +1,5 @@
 package com.duantn.be_project.controller;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.duantn.be_project.Repository.ShippingInfosRepository;
 import com.duantn.be_project.model.ShippingInfor;
-import com.duantn.be_project.model.User;
 
 @CrossOrigin("*")
 @RestController

@@ -40,8 +40,4 @@ public class Wallet implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     Date createdat;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    Date updatedat;
-
-    Integer passcode;
 }
