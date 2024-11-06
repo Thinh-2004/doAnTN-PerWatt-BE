@@ -121,23 +121,22 @@ public class ProductController {
         // Khởi tạo biến kiểm tra idCate
         Integer idCate = null;
 
-        //Kiểm tra keyWord
+        // Kiểm tra keyWord
         if (keyWord.toLowerCase().matches(".*\\bhot\\b.*") || keyWord.toLowerCase().contains("yêu thích")
                 || keyWord.toLowerCase().contains("bán chạy") ||
-                keyWord.toLowerCase().contains("phổ biến") || keyWord.toLowerCase().contains("được ưa chuộng") 
+                keyWord.toLowerCase().contains("phổ biến") || keyWord.toLowerCase().contains("được ưa chuộng")
                 || keyWord.toLowerCase().contains("hàng đầu")
                 || keyWord.toLowerCase().contains("nổi bật")
                 || keyWord.toLowerCase().contains("xu hướng") ||
                 keyWord.toLowerCase().contains("top")
                 || keyWord.toLowerCase().contains("săn đón") ||
-                keyWord.toLowerCase().contains("được quan tâm") 
+                keyWord.toLowerCase().contains("được quan tâm")
                 || keyWord.toLowerCase().contains("bán nhiều") ||
                 keyWord.toLowerCase().contains("best seller") ||
-                keyWord.toLowerCase().contains("bestseller") || 
-                keyWord.toLowerCase().contains("best-seller") || 
+                keyWord.toLowerCase().contains("bestseller") ||
+                keyWord.toLowerCase().contains("best-seller") ||
                 keyWord.toLowerCase().contains("được đánh giá cao") ||
-                keyWord.toLowerCase().contains("được mua nhiều")
-                ) {
+                keyWord.toLowerCase().contains("được mua nhiều")) {
             sort = Sort.by(Direction.DESC, "orderCount");
 
             pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20),
@@ -283,10 +282,7 @@ public class ProductController {
                 break;
         }
 
-        Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20), sort);
         String decodeName = URLDecoder.decode(name, StandardCharsets.UTF_8.name());
-        Page<Object[]> prPage;
-        List<Object[]> fullList;
 
         // Lấy minPrice và maxPrice từ cơ sở dữ liệu nếu không có giá trị từ request
         List<Object[]> minMaxPrice = productDetailRepository.minMaxPriceDetail("%" + decodeName + "%");
@@ -310,50 +306,95 @@ public class ProductController {
                         .map(String::trim)
                         .collect(Collectors.toList());
 
-        // Kiểm tra nếu keyword có thể chuyển đổi thành số
-        if (!keyWord.isEmpty()) {
-            // Đảm bảo listSearch có đủ 5 phần tử
-            while (listSearch.size() < 5) {
-                listSearch.add(""); // Thêm phần tử rỗng nếu kích thước nhỏ hơn 5
-            }
+        Pageable pageable;
+        Page<Object[]> prPage = null;
+        List<Object[]> fullList = null;
 
-            // Tạo một mảng để lưu các tham số cho hàm tìm kiếm
-            String[] searchParams = new String[5];
+        // Kiểm tra keyWord
+        if (keyWord.toLowerCase().matches(".*\\bhot\\b.*") || keyWord.toLowerCase().contains("yêu thích")
+                || keyWord.toLowerCase().contains("bán chạy") ||
+                keyWord.toLowerCase().contains("phổ biến") || keyWord.toLowerCase().contains("được ưa chuộng")
+                || keyWord.toLowerCase().contains("hàng đầu")
+                || keyWord.toLowerCase().contains("nổi bật")
+                || keyWord.toLowerCase().contains("xu hướng") ||
+                keyWord.toLowerCase().contains("top")
+                || keyWord.toLowerCase().contains("săn đón") ||
+                keyWord.toLowerCase().contains("được quan tâm")
+                || keyWord.toLowerCase().contains("bán nhiều") ||
+                keyWord.toLowerCase().contains("best seller") ||
+                keyWord.toLowerCase().contains("bestseller") ||
+                keyWord.toLowerCase().contains("best-seller") ||
+                keyWord.toLowerCase().contains("được đánh giá cao") ||
+                keyWord.toLowerCase().contains("được mua nhiều")) {
+            sort = Sort.by(Direction.DESC, "orderCount");
 
-            for (int i = 0; i < searchParams.length; i++) {
-                // Kiểm tra xem phần tử có phải là chuỗi không rỗng hay không
-                if (i < listSearch.size() && !listSearch.get(i).isEmpty()) {
-                    searchParams[i] = "%" + listSearch.get(i) + "%"; // Thêm ký tự '%' nếu không rỗng
-                } else {
-                    searchParams[i] = ""; // Nếu phần tử rỗng, thêm chuỗi rỗng
-                }
-            }
+            pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20),
+                    sort);
 
-            // Gọi truy vấn
             prPage = productRepository.queryFindMore(decodeName,
-                    searchParams[0],
-                    searchParams[1],
-                    searchParams[2],
-                    searchParams[3],
-                    searchParams[4],
+                    "%",
+                    "%",
+                    "%",
+                    "%",
+                    "%",
                     minPrice, maxPrice, shopType, tradeMark,
                     pageable);
             // Gọi truy vấn không phân trang để lấy toàn bộ danh sách
             fullList = productRepository.queryFindMoreFullList(decodeName,
                     keyWord.isEmpty() ? "%" : "%" + keyWord + "%", minPrice, maxPrice, shopType, tradeMark, sort);
         } else {
-            // Gọi truy vấn
-            prPage = productRepository.queryFindMore(decodeName,
-                    "%",
-                    "%",
-                    "%",
-                    "%",
-                    "%",
-                    minPrice, maxPrice, shopType, tradeMark,
-                    pageable);
-            // Gọi truy vấn không phân trang để lấy toàn bộ danh sách
-            fullList = productRepository.queryFindMoreFullList(decodeName,
-                    keyWord.isEmpty() ? "%" : "%" + keyWord + "%", minPrice, maxPrice, shopType, tradeMark, sort);
+            pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20),
+                    sort);
+
+            // Kiểm tra nếu keyword và mảng listSearch
+            if (!keyWord.isEmpty() && listSearch.size() > 0) {
+                // Đảm bảo listSearch có đủ 5 phần tử
+                while (listSearch.size() < 5) {
+                    listSearch.add(""); // Thêm phần tử rỗng nếu kích thước nhỏ hơn 5
+                }
+
+                // Tạo một mảng để lưu các tham số cho hàm tìm kiếm
+                String[] searchParams = new String[5];
+
+                for (int i = 0; i < searchParams.length; i++) {
+                    // Kiểm tra xem phần tử có phải là chuỗi không rỗng hay không
+                    if (i < listSearch.size() && !listSearch.get(i).isEmpty()) {
+                        searchParams[i] = "%" + listSearch.get(i) + "%"; // Thêm ký tự '%' nếu không rỗng
+
+                    } else {
+                        searchParams[i] = ""; // Nếu phần tử rỗng, thêm chuỗi rỗng
+                    }
+                }
+
+                // Gọi truy vấn
+                prPage = productRepository.queryFindMore(decodeName,
+                        searchParams[0],
+                        searchParams[1],
+                        searchParams[2],
+                        searchParams[3],
+                        searchParams[4],
+                        minPrice, maxPrice, shopType, tradeMark,
+                        pageable);
+                // Gọi truy vấn không phân trang để lấy toàn bộ danh sách
+                fullList = productRepository.queryFindMoreFullList(decodeName,
+                        keyWord.isEmpty() ? "%" : "%" + keyWord + "%", minPrice, maxPrice, shopType,
+                        tradeMark, sort);
+            } else {
+                // Gọi truy vấn
+                prPage = productRepository.queryFindMore(decodeName,
+                        "%",
+                        "%",
+                        "%",
+                        "%",
+                        "%",
+                        minPrice, maxPrice, shopType, tradeMark,
+                        pageable);
+                // Gọi truy vấn không phân trang để lấy toàn bộ danh sách
+                fullList = productRepository.queryFindMoreFullList(decodeName,
+                        keyWord.isEmpty() ? "%" : "%" + keyWord + "%", minPrice, maxPrice, shopType,
+                        tradeMark, sort);
+            }
+
         }
 
         // Cắt danh sách trước khi gửi lên client
@@ -471,42 +512,77 @@ public class ProductController {
 
         Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20), sort);
         Page<Object[]> prPage;
-        // Kiểm tra nếu keyword có thể chuyển đổi thành số
-        if (!keyWord.isEmpty()) {
-            // Đảm bảo listSearch có đủ 5 phần tử
-            while (listSearch.size() < 5) {
-                listSearch.add(""); // Thêm phần tử rỗng nếu kích thước nhỏ hơn 5
-            }
 
-            // Tạo một mảng để lưu các tham số cho hàm tìm kiếm
-            String[] searchParams = new String[5];
+        // Kiểm tra keyWord
+        if (keyWord.toLowerCase().matches(".*\\bhot\\b.*") || keyWord.toLowerCase().contains("yêu thích")
+                || keyWord.toLowerCase().contains("bán chạy") ||
+                keyWord.toLowerCase().contains("phổ biến") || keyWord.toLowerCase().contains("được ưa chuộng")
+                || keyWord.toLowerCase().contains("hàng đầu")
+                || keyWord.toLowerCase().contains("nổi bật")
+                || keyWord.toLowerCase().contains("xu hướng") ||
+                keyWord.toLowerCase().contains("top")
+                || keyWord.toLowerCase().contains("săn đón") ||
+                keyWord.toLowerCase().contains("được quan tâm")
+                || keyWord.toLowerCase().contains("bán nhiều") ||
+                keyWord.toLowerCase().contains("best seller") ||
+                keyWord.toLowerCase().contains("bestseller") ||
+                keyWord.toLowerCase().contains("best-seller") ||
+                keyWord.toLowerCase().contains("được đánh giá cao") ||
+                keyWord.toLowerCase().contains("được mua nhiều")) {
+            sort = Sort.by(Direction.DESC, "orderCount");
 
-            for (int i = 0; i < searchParams.length; i++) {
-                // Kiểm tra xem phần tử có phải là chuỗi không rỗng hay không
-                if (i < listSearch.size() && !listSearch.get(i).isEmpty()) {
-                    searchParams[i] = "%" + listSearch.get(i) + "%"; // Thêm ký tự '%' nếu không rỗng
-                } else {
-                    searchParams[i] = ""; // Nếu phần tử rỗng, thêm chuỗi rỗng
-                }
-            }
+            pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20),
+                    sort);
 
-            // Gọi hàm tìm kiếm với các tham số đã xử lý
             prPage = productRepository.listProductPerMall(
-                    searchParams[0],
-                    searchParams[1],
-                    searchParams[2],
-                    searchParams[3],
-                    searchParams[4],
+                    "%",
+                    "%",
+                    "%",
+                    "%",
+                    "%",
                     pageable);
-
         } else {
-            prPage = productRepository.listProductPerMall(
-                    "%",
-                    "%",
-                    "%",
-                    "%",
-                    "%",
-                    pageable);
+            pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20),
+                    sort);
+
+            // Kiểm tra nếu keyword và listSearch
+            if (!keyWord.isEmpty() && listSearch.size() > 0) {
+                // Đảm bảo listSearch có đủ 5 phần tử
+                while (listSearch.size() < 5) {
+                    listSearch.add(""); // Thêm phần tử rỗng nếu kích thước nhỏ hơn 5
+                }
+
+                // Tạo một mảng để lưu các tham số cho hàm tìm kiếm
+                String[] searchParams = new String[5];
+
+                for (int i = 0; i < searchParams.length; i++) {
+                    // Kiểm tra xem phần tử có phải là chuỗi không rỗng hay không
+                    if (i < listSearch.size() && !listSearch.get(i).isEmpty()) {
+                        searchParams[i] = "%" + listSearch.get(i) + "%"; // Thêm ký tự '%' nếu không rỗng
+                    } else {
+                        searchParams[i] = ""; // Nếu phần tử rỗng, thêm chuỗi rỗng
+                    }
+                }
+
+                // Gọi hàm tìm kiếm với các tham số đã xử lý
+                prPage = productRepository.listProductPerMall(
+                        searchParams[0],
+                        searchParams[1],
+                        searchParams[2],
+                        searchParams[3],
+                        searchParams[4],
+                        pageable);
+
+            } else {
+                prPage = productRepository.listProductPerMall(
+                        "%",
+                        "%",
+                        "%",
+                        "%",
+                        "%",
+                        pageable);
+            }
+
         }
 
         // Duyệt prPage chỉ lấy thuộc tính product
@@ -594,55 +670,91 @@ public class ProductController {
         Page<Object[]> prPage;
         Integer idCate = null;
 
-        // Kiểm tra nếu keyword có thể chuyển đổi thành số
-        if (!keyWord.isEmpty()) {
-            try {
-                // Tìm theo category ID danh mục
-                idCate = Integer.parseInt(keyWord);
-                prPage = productRepository.findAllByStoreIdWithSlugStore(slug, "", "", "", "", "", idCate,
-                        soldOutProduct, pageable);
+        // Kiểm tra keyWord
+        if (keyWord.toLowerCase().matches(".*\\bhot\\b.*") || keyWord.toLowerCase().contains("yêu thích")
+                || keyWord.toLowerCase().contains("bán chạy") ||
+                keyWord.toLowerCase().contains("phổ biến") || keyWord.toLowerCase().contains("được ưa chuộng")
+                || keyWord.toLowerCase().contains("hàng đầu")
+                || keyWord.toLowerCase().contains("nổi bật")
+                || keyWord.toLowerCase().contains("xu hướng") ||
+                keyWord.toLowerCase().contains("top")
+                || keyWord.toLowerCase().contains("săn đón") ||
+                keyWord.toLowerCase().contains("được quan tâm")
+                || keyWord.toLowerCase().contains("bán nhiều") ||
+                keyWord.toLowerCase().contains("best seller") ||
+                keyWord.toLowerCase().contains("bestseller") ||
+                keyWord.toLowerCase().contains("best-seller") ||
+                keyWord.toLowerCase().contains("được đánh giá cao") ||
+                keyWord.toLowerCase().contains("được mua nhiều")) {
+            sort = Sort.by(Direction.DESC, "orderCount");
 
-            } catch (NumberFormatException e) {
-                // Nếu keyword không phải là số thì tìm theo tên hoặc danh mục
-                // Đảm bảo listSearch có đủ 5 phần tử
-                while (listSearch.size() < 5) {
-                    listSearch.add(""); // Thêm phần tử rỗng nếu kích thước nhỏ hơn 5
-                }
+            pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20),
+                    sort);
 
-                // Tạo một mảng để lưu các tham số cho hàm tìm kiếm
-                String[] searchParams = new String[5];
-
-                for (int i = 0; i < searchParams.length; i++) {
-                    // Kiểm tra xem phần tử có phải là chuỗi không rỗng hay không
-                    if (i < listSearch.size() && !listSearch.get(i).isEmpty()) {
-                        searchParams[i] = "%" + listSearch.get(i) + "%"; // Thêm ký tự '%' nếu không rỗng
-                    } else {
-                        searchParams[i] = ""; // Nếu phần tử rỗng, thêm chuỗi rỗng
-                    }
-                }
-
-                // Gọi hàm tìm kiếm với các tham số đã xử lý
-                prPage = productRepository.findAllByStoreIdWithSlugStore(slug,
-                        searchParams[0],
-                        searchParams[1],
-                        searchParams[2],
-                        searchParams[3],
-                        searchParams[4],
-                        null,
-                        soldOutProduct,
-                        pageable);
-
-            }
-        } else {
             prPage = productRepository.findAllByStoreIdWithSlugStore(slug,
                     "%",
                     "%",
                     "%",
                     "%",
                     "%",
-                    null,
+                    idCate,
                     soldOutProduct,
                     pageable);
+        } else {
+            pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20),
+                    sort);
+
+            // Kiểm tra nếu keyword có thể chuyển đổi thành số
+            if (!keyWord.isEmpty()) {
+                try {
+                    // Tìm theo category ID danh mục
+                    idCate = Integer.parseInt(keyWord);
+                    prPage = productRepository.findAllByStoreIdWithSlugStore(slug, "", "", "", "", "", idCate,
+                            soldOutProduct, pageable);
+
+                } catch (NumberFormatException e) {
+                    // Nếu keyword không phải là số thì tìm theo tên hoặc danh mục
+                    // Đảm bảo listSearch có đủ 5 phần tử
+                    while (listSearch.size() < 5) {
+                        listSearch.add(""); // Thêm phần tử rỗng nếu kích thước nhỏ hơn 5
+                    }
+
+                    // Tạo một mảng để lưu các tham số cho hàm tìm kiếm
+                    String[] searchParams = new String[5];
+
+                    for (int i = 0; i < searchParams.length; i++) {
+                        // Kiểm tra xem phần tử có phải là chuỗi không rỗng hay không
+                        if (i < listSearch.size() && !listSearch.get(i).isEmpty()) {
+                            searchParams[i] = "%" + listSearch.get(i) + "%"; // Thêm ký tự '%' nếu không rỗng
+                        } else {
+                            searchParams[i] = ""; // Nếu phần tử rỗng, thêm chuỗi rỗng
+                        }
+                    }
+
+                    // Gọi hàm tìm kiếm với các tham số đã xử lý
+                    prPage = productRepository.findAllByStoreIdWithSlugStore(slug,
+                            searchParams[0],
+                            searchParams[1],
+                            searchParams[2],
+                            searchParams[3],
+                            searchParams[4],
+                            null,
+                            soldOutProduct,
+                            pageable);
+
+                }
+            } else {
+                prPage = productRepository.findAllByStoreIdWithSlugStore(slug,
+                        "%",
+                        "%",
+                        "%",
+                        "%",
+                        "%",
+                        null,
+                        soldOutProduct,
+                        pageable);
+            }
+
         }
 
         // Tạo danh sách sản phẩm từ dữ liệu trả về
