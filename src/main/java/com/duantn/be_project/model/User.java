@@ -81,4 +81,12 @@ public class User implements Serializable {
     @OneToMany(mappedBy = "user")
     List<VoucherDetail> voucherDetails;
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "user")
+    List<Wallet> wallets;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "user")
+    List<WalletTransaction> walletTransactions;
+
 }

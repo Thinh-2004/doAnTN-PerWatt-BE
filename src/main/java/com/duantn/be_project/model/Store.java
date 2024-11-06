@@ -66,4 +66,8 @@ public class Store implements Serializable{
 
     String taxcode;
     String slug;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "store")
+    List<WalletTransaction> walletTransactions;
 }
