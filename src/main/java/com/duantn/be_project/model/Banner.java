@@ -1,7 +1,7 @@
 package com.duantn.be_project.model;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -30,10 +30,11 @@ public class Banner implements Serializable {
     Integer id;
     String bannername;
     String position;
-    LocalDateTime startdate;
-    LocalDateTime enddate;
+    LocalDate startdate;
+    LocalDate enddate;
      
     @ManyToOne
-    @JoinColumn(name = "idUser")
+    @JoinColumn(name = "iduser")
     User user;
+    String img;
 }
