@@ -1,7 +1,7 @@
 package com.duantn.be_project.Service;
 
-import com.duantn.be_project.model.Request.MoMoPaymentRequest;
-import com.duantn.be_project.model.Request.MoMoPaymentResponse;
+import com.duantn.be_project.model.Request_Response.MoMoPaymentRequest;
+import com.duantn.be_project.model.Request_Response.MoMoPaymentResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.http.HttpEntity;
