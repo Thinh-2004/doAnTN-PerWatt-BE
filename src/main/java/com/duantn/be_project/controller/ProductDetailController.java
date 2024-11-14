@@ -1,6 +1,12 @@
 package com.duantn.be_project.controller;
 
 import java.io.File;
+<<<<<<< HEAD
+=======
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+>>>>>>> a6abd943928eae065c0e9d81e347ca6ca254abf4
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,13 +41,19 @@ public class ProductDetailController {
     @Autowired
     UploadImages uploadImages;
 
+    // MinMax theo danh sách findMore
+    @GetMapping("/sidlerMinMax/{name}")
+    public ResponseEntity<?> silderMinMax(@PathVariable("name") String name) throws UnsupportedEncodingException {
+         String decodeName = URLDecoder.decode(name, StandardCharsets.UTF_8.name());
+        List<Object[]> respone = productDetailRepository.minMaxPriceDetail("%" + decodeName + "%");
+        return ResponseEntity.ok(respone);
+    }
+
     // GetAll
     @GetMapping("/detailProduct")
     public ResponseEntity<List<ProductDetail>> getAll() {
         return ResponseEntity.ok(productDetailRepository.findAll());
     }
-
-    
 
     // GetByIdProduct
     @GetMapping("/detailProduct/{id}")
@@ -63,7 +75,7 @@ public class ProductDetailController {
     // GetByIdProduct
     @GetMapping("/findIdProductByIdProduct/{id}")
     public ResponseEntity<List<ProductDetail>> getIdProductBySlugProduct(@PathVariable("id") Integer id) {
-        List<ProductDetail> productDetails = productDetailRepository.findIdProductByIdProduct(id);
+        List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(id);
         if (productDetails == null | productDetails.isEmpty()) {
             return ResponseEntity.notFound().build();
         }

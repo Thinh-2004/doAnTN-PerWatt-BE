@@ -37,6 +37,11 @@ public class Wallet implements Serializable {
 
     Float balance;
 
+<<<<<<< HEAD
+=======
+    Integer passcode;
+
+>>>>>>> a6abd943928eae065c0e9d81e347ca6ca254abf4
     @Temporal(TemporalType.TIMESTAMP)
     Date createdat;
 

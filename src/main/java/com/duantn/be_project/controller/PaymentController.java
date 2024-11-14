@@ -31,9 +31,9 @@ import com.duantn.be_project.model.Order;
 import com.duantn.be_project.model.OrderDetail;
 import com.duantn.be_project.model.PaymentMethod;
 import com.duantn.be_project.model.ProductDetail;
-import com.duantn.be_project.model.Request.OrderRequest;
-import com.duantn.be_project.model.Request.PaymentResDTO;
-import com.duantn.be_project.model.Request.TotalMoneyDTO;
+import com.duantn.be_project.model.Request_Response.OrderRequest;
+import com.duantn.be_project.model.Request_Response.PaymentResDTO;
+import com.duantn.be_project.model.Request_Response.TotalMoneyDTO;
 
 @RestController
 @RequestMapping("/api/payment")
@@ -61,7 +61,7 @@ public class PaymentController {
         String vnp_TxnRef = Config.getRandomNumber(8);
         String vnp_TmnCode = Config.vnp_TmnCode;
 
-        long amount = totalMoneyDTO.getAmount() * 100;
+        Integer amount = totalMoneyDTO.getAmount() * 100;
         Map<String, String> vnp_Params = new HashMap<>();
         vnp_Params.put("vnp_Version", vnp_Version);
         vnp_Params.put("vnp_Command", vnp_Command);

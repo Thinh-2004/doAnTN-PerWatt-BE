@@ -3,6 +3,7 @@ package com.duantn.be_project.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -71,6 +72,7 @@ public class CartController {
         return ResponseEntity.ok(cartItem);
     }
 
+<<<<<<< HEAD
     @RequestMapping("/cart") 
     public ResponseEntity<?> getProductByIds(@RequestParam("id") String ids) {
         String[] cartIds = ids.split(","); 
@@ -82,8 +84,31 @@ public class CartController {
                 cartItems.add(cartItem); // Thêm vào danh sách kết quả
             } else {
                 return ResponseEntity.notFound().build(); // Trả về 404 nếu không tìm thấy CartItem
+=======
+    @RequestMapping("/cart")
+    public ResponseEntity<?> getProductByIds(@RequestParam("id") String ids) {
+        String[] cartIds = ids.split(",");
+        List<CartItem> cartItems = new ArrayList<>();
+
+        // for (String id : cartIds) {
+        // CartItem cartItem =
+        // cartRepository.findById(Integer.parseInt(id)).orElse(null);
+        // if (cartItem != null) {
+        // cartItems.add(cartItem);
+        // } else {
+        // return ResponseEntity.notFound().build(); // Trả về 404 nếu không tìm thấy
+        // CartItem
+        // }
+        // }
+
+        for (String id : cartIds) {
+            CartItem cartItem = cartRepository.findById(Integer.parseInt(id)).orElse(null);
+            if (cartItem != null) {
+                cartItems.add(cartItem);
+>>>>>>> a6abd943928eae065c0e9d81e347ca6ca254abf4
             }
         }
+
         return ResponseEntity.ok(cartItems); // Trả về danh sách CartItem tìm thấy
     }
 
@@ -104,7 +129,15 @@ public class CartController {
     public ResponseEntity<List<CartItem>> getById(@PathVariable("id") Integer id) {
         List<CartItem> cartItems = cartRepository.findAllCartItemlByIdUser(id);
 
+<<<<<<< HEAD
         return ResponseEntity.ok(cartItems);
+=======
+        List<CartItem> sortedCartItems = cartItems.stream()
+                .sorted((o1, o2) -> o2.getId().compareTo(o1.getId()))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(sortedCartItems);
+>>>>>>> a6abd943928eae065c0e9d81e347ca6ca254abf4
     }
 
     @GetMapping("/countCartIdUser/{id}")

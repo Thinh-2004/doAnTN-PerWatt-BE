@@ -142,12 +142,16 @@ public class StoreController {
         Store store;
         try {
             store = objectMapper.readValue(storeJson, Store.class);
-            System.out.println("Ngày giờ: " + store.getCreatedtime());
             // Bắt lỗi
             ResponseEntity<String> validateRes = validate(store);
             if (validateRes != null) {
                 return validateRes;
             }
+
+            if (store.getTaxcode() == null || store.getTaxcode().isEmpty()) {
+                store.setTaxcode(null);
+            }
+
             Integer countTaxCode = storeRepository.checkDuplicate(store.getTaxcode(), store.getId());
             if (countTaxCode > 0 && !store.getTaxcode().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("Mã thuế đã được sử dụng");

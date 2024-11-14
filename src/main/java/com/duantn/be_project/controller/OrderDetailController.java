@@ -13,7 +13,7 @@ import com.duantn.be_project.Repository.ProductDetailRepository;
 import com.duantn.be_project.model.CartItem;
 import com.duantn.be_project.model.Order;
 import com.duantn.be_project.model.OrderDetail;
-import com.duantn.be_project.model.Request.OrderRequest;
+import com.duantn.be_project.model.Request_Response.OrderRequest;
 import com.duantn.be_project.model.PaymentMethod;
 import com.duantn.be_project.model.ProductDetail;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -1,5 +1,7 @@
 package com.duantn.be_project.Service;
 
+import java.util.Arrays;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -10,12 +12,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.util.Arrays;
-
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 @EnableWebSecurity
-public class SecurityConfig {
+public class SecurityConfig implements WebMvcConfigurer {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -34,6 +35,12 @@ public class SecurityConfig {
                 .cors(); // Kích hoạt CORS
 
         return http.build();
+    }
+
+     @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/files/**")
+                .addResourceLocations("file:" + System.getProperty("user.dir") + "/src/main/resources/static/files/");
     }
 
     // @Bean

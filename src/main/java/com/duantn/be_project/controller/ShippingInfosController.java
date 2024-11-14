@@ -1,10 +1,9 @@
 package com.duantn.be_project.controller;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -27,7 +26,11 @@ public class ShippingInfosController {
 
     @GetMapping("/shippingInfo")
     public ResponseEntity<List<ShippingInfor>> getAll(@RequestParam("userId") Integer idUser) {
-        return ResponseEntity.ok(shippingInfosRepository.findAllByUserId(idUser));
+        List<ShippingInfor> sortedShippingInfos = shippingInfosRepository.findAllByUserId(idUser).stream()
+                .sorted((o1, o2) -> o2.getId().compareTo(o1.getId()))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(sortedShippingInfos);
     }
 
     @PostMapping("/shippingInfoCreate")
@@ -45,14 +48,8 @@ public class ShippingInfosController {
 
     @DeleteMapping("/shippingInfoDelete/{id}")
     public ResponseEntity<String> delete(@PathVariable Integer id) {
-        try {
-            shippingInfosRepository.deleteById(id);
-            return ResponseEntity.noContent().build();
-        } catch (DataIntegrityViolationException e) {
-            // Xử lý lỗi ràng buộc khóa ngoại
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body("Địa chỉ này không thể xóa vì đã được sử dụng bởi đơn hàng trước đó.");
-        }
+        shippingInfosRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 
 }
