@@ -72,7 +72,7 @@ public class ProductDetailController {
     // GetByIdProduct
     @GetMapping("/findIdProductByIdProduct/{id}")
     public ResponseEntity<List<ProductDetail>> getIdProductBySlugProduct(@PathVariable("id") Integer id) {
-        List<ProductDetail> productDetails = productDetailRepository.findIdProductByIdProduct(id);
+        List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(id);
         if (productDetails == null | productDetails.isEmpty()) {
             return ResponseEntity.notFound().build();
         }

@@ -12,7 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import com.duantn.be_project.model.Product;
 
 public interface ProductRepository extends JpaRepository<Product, Integer> {
-        @Query("select p from Product p where p.store.id = ?1 ")
+        @Query("select p from Product p where p.store.id = ?1 order by p.id desc ")
         List<Product> findAllByStoreId(Integer idStore);
 
         @Query("""

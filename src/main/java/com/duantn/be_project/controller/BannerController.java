@@ -42,6 +42,13 @@ public class BannerController {
         return ResponseEntity.ok(banners);
     }
 
+    @GetMapping("checkShowBannerMid")
+    public ResponseEntity<?> checkShowBannerMid() {
+        List<Banner> banners = bannerRepository.findBannerByParameter();
+       
+        return ResponseEntity.ok(banners);
+    }
+
     // Get banner by ID
     @GetMapping("/{id}")
     public ResponseEntity<Banner> getBannerById(@PathVariable Integer id) {

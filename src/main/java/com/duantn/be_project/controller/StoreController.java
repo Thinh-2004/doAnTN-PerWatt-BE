@@ -20,11 +20,13 @@ import com.duantn.be_project.Repository.CategoryRepository;
 import com.duantn.be_project.Repository.RoleRepository;
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Repository.UserRepository;
+import com.duantn.be_project.Repository.WalletRepository;
 import com.duantn.be_project.Service.SlugText.SlugText;
 import com.duantn.be_project.model.ProductCategory;
 import com.duantn.be_project.model.Role;
 import com.duantn.be_project.model.Store;
 import com.duantn.be_project.model.User;
+import com.duantn.be_project.model.Wallet;
 import com.duantn.be_project.untils.UploadImages;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -50,6 +52,8 @@ public class StoreController {
     CategoryRepository categoryRepository;
     @Autowired
     SlugText slugText;
+    @Autowired
+    WalletRepository walletRepository;
 
     // Get All
     @GetMapping("/store")
@@ -111,6 +115,16 @@ public class StoreController {
             Role newRole = roleRepository.findById(2).orElseThrow();
             user.setRole(newRole);
         }
+
+        Wallet wallet = walletRepository.findByUserIdStoreId(user.getId());
+        if (wallet == null) {
+            wallet = new Wallet(); // Khởi tạo đối tượng Wallet mới
+            wallet.setUser(store.getUser());
+            wallet.setBalance(0f);
+            wallet.setCreatedat(new Date());
+            walletRepository.save(wallet);
+        }
+
         userRepository.save(user); // Cập nhật lại role khi tạo store
         store.setUser(user);// Cập nhật lại user khi tạo store
         Store savedStore = storeRepository.save(store);
@@ -133,7 +147,7 @@ public class StoreController {
             if (validateRes != null) {
                 return validateRes;
             }
-            
+
             if (store.getTaxcode() == null || store.getTaxcode().isEmpty()) {
                 store.setTaxcode(null);
             }
