@@ -31,8 +31,8 @@ public class MoMoService {
     private static final String ACCESS_KEY = "mTCKt9W3eU1m39TW";
     private static final String SECRET_KEY = "SetA5RDnLHvt51AULf51DyauxUo3kDU6";
     private static final String REQUEST_TYPE = "payWithATM";
-    private static final String NOTIFY_URL = "http://localhost:3000/order";
-    private static final String RETURN_URL = "http://localhost:3000/order";
+    private static final String NOTIFY_URL = "http://localhost:3000/order";// cancel
+    private static final String RETURN_URL = "http://localhost:3000/order";// successful
     private static final String API_ENDPOINT = "https://test-payment.momo.vn/v2/gateway/api/create";
 
     public String createPayment(Long amount, String orderId, String orderInfo) throws Exception {
@@ -55,6 +55,7 @@ public class MoMoService {
 
         MoMoPaymentRequest paymentRequest = new MoMoPaymentRequest();
         paymentRequest.setPartnerCode(PARTNER_CODE);
+        paymentRequest.setPartnerName("MoMo");
         paymentRequest.setRequestId(requestId); // Sử dụng cùng requestId
         paymentRequest.setAmount(amount);
         paymentRequest.setOrderId(orderId);
@@ -64,7 +65,7 @@ public class MoMoService {
         paymentRequest.setRequestType(REQUEST_TYPE);
         paymentRequest.setExtraData(extraData); // Sử dụng extraData đã mã hóa
         paymentRequest.setLang("vi");
-        paymentRequest.setSignature(signature);
+paymentRequest.setSignature(signature);
 
         // Chuẩn bị headers
         HttpHeaders headers = new HttpHeaders();

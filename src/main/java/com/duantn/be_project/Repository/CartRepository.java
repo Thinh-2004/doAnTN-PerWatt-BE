@@ -19,4 +19,7 @@ public interface CartRepository extends JpaRepository<CartItem, Integer> {
 
     CartItem findByProductDetailAndUser(ProductDetail productDetail, User user);
 
+    @Query("SELECT COUNT(c) FROM CartItem c WHERE c.user.id = ?1 AND c.productDetail.id = ?2")
+    Long countByUserIdAndProductDetailId(Integer userId, Integer productDetailId);
+
 }

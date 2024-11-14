@@ -1,5 +1,7 @@
 package com.duantn.be_project.controller;
 
+import java.sql.Date;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,13 +34,11 @@ public class OrderController {
     @Autowired
     ProductDetailRepository productRepository;
 
-    // GetAll
     @GetMapping("/order")
     public ResponseEntity<List<Order>> getAll(Model model) {
         return ResponseEntity.ok(orderRepository.findAll());
     }
 
-    // GetAllById
     @GetMapping("/order/{id}")
     public ResponseEntity<Order> getById(@PathVariable("id") Integer id) {
         Order order = orderRepository.findById(id).orElseThrow();
@@ -55,7 +55,6 @@ public class OrderController {
             return ResponseEntity.notFound().build();
         }
 
-        // Sắp xếp danh sách theo id giảm dần
         List<Order> sortedOrders = orders.stream()
                 .sorted((o1, o2) -> o2.getId().compareTo(o1.getId()))
                 .collect(Collectors.toList());
@@ -69,7 +68,6 @@ public class OrderController {
         if (orders == null || orders.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        // Sắp xếp danh sách theo id giảm dần
         List<Order> sortedOrders = orders.stream()
                 .sorted((o1, o2) -> o2.getId().compareTo(o1.getId()))
                 .collect(Collectors.toList());
@@ -86,11 +84,19 @@ public class OrderController {
 
         Order order = orderRepository.findById(id).orElseThrow();
         String newStatus = statusUpdate.get("status");
+        String note = statusUpdate.get("note");
+        String receivedate = statusUpdate.get("receivedate");
+
         String oldStatus = order.getOrderstatus();
         order.setOrderstatus(newStatus);
+        order.setNote(note);
+
+        if (receivedate != null) {
+            order.setReceivedate(Date.from(Instant.parse(receivedate)));
+        }
+
         orderRepository.save(order);
 
-        // Nếu đơn hàng bị hủy, cập nhật số lượng sản phẩm
         if ("Hủy".equals(newStatus) && !"Hủy".equals(oldStatus)) {
             for (OrderDetail detail : order.getOrderdetails()) {
                 ProductDetail product = detail.getProductDetail();

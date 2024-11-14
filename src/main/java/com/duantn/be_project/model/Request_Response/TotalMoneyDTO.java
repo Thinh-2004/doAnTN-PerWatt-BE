@@ -6,7 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class TotalMoneyDTO {
-    long amount;
+    Integer amount;
     String nameOrderInfor;
     String ids;
     String address;

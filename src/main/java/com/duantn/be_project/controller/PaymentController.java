@@ -61,7 +61,7 @@ public class PaymentController {
         String vnp_TxnRef = Config.getRandomNumber(8);
         String vnp_TmnCode = Config.vnp_TmnCode;
 
-        long amount = totalMoneyDTO.getAmount() * 100;
+        Integer amount = totalMoneyDTO.getAmount() * 100;
         Map<String, String> vnp_Params = new HashMap<>();
         vnp_Params.put("vnp_Version", vnp_Version);
         vnp_Params.put("vnp_Command", vnp_Command);

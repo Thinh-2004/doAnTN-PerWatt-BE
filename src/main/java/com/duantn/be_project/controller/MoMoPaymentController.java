@@ -5,10 +5,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.duantn.be_project.Repository.CartRepository;
+import com.duantn.be_project.Repository.OrderDetailRepository;
+import com.duantn.be_project.Repository.OrderRepository;
+import com.duantn.be_project.Repository.ProductDetailRepository;
 import com.duantn.be_project.Service.MoMoService;
+import com.duantn.be_project.model.CartItem;
+import com.duantn.be_project.model.Order;
+import com.duantn.be_project.model.OrderDetail;
+import com.duantn.be_project.model.PaymentMethod;
+import com.duantn.be_project.model.ProductDetail;
+import com.duantn.be_project.model.Request_Response.OrderRequest;
 
 import java.security.SecureRandom;
 
@@ -17,12 +28,21 @@ import java.security.SecureRandom;
 public class MoMoPaymentController {
     @Autowired
     private MoMoService moMoService;
+    @Autowired
+    ProductDetailRepository productDetailRepository;
+    @Autowired
+    OrderRepository orderRepository;
+    @Autowired
+    OrderDetailRepository orderDetailRepository;
+    @Autowired
+    CartRepository cartRepository;
 
     @GetMapping("/pay")
-    public ResponseEntity<String> pay(@RequestParam Long amount) {
-        String orderId = generateRandomOrderId(20);
+    public ResponseEntity<String> pay(@RequestParam Long amount, @RequestParam String ids,
+            @RequestParam String address) {
+        String orderId = generateRandomOrderId(10);
 
-        String orderInfo = "Thanh toán bằng MoMo"; // Thông tin đơn hàng
+        String orderInfo = "Thanh toán bằng MoMo " + ids + "," + address; // Thông tin đơn hàng
         try {
             String paymentResponse = moMoService.createPayment(amount, orderId, orderInfo);
             return ResponseEntity.ok(paymentResponse); // Trả về URL thanh toán
@@ -36,7 +56,7 @@ public class MoMoPaymentController {
     // Phương thức tạo ID đơn hàng ngẫu nhiên
     private String generateRandomOrderId(int length) {
         // Chỉ cho phép ký tự chữ cái và số, và thêm dấu gạch dưới hoặc dấu chấm
-        String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_";
+        String characters = "0123456789";
         SecureRandom random = new SecureRandom();
         StringBuilder orderId = new StringBuilder(length);
 
@@ -54,18 +74,49 @@ public class MoMoPaymentController {
         return orderId.toString();
     }
 
-    @PostMapping("/notify")
-    public String notifyy() {
-        // Xử lý thông báo từ MoMo khi thanh toán hoàn tất
-        // Kiểm tra tính hợp lệ của payload, cập nhật trạng thái đơn hàng trong hệ thống
-        // Trả về "SUCCESS" để MoMo biết bạn đã nhận được thông báo
-        return "SUCCESS";
-    }
+    // Tạo đơn auto ra momo
+    @PostMapping("/createMoMoOrder")
+    public ResponseEntity<Order> createOrderVnPay(@RequestBody OrderRequest orderRequest) {
+        System.out.println("API called");
+        Order order = new Order();
+        PaymentMethod paymentMethod = new PaymentMethod();
+        paymentMethod.setId(8);
+        order.setUser(orderRequest.getOrder().getUser());
+        order.setPaymentmethod(paymentMethod);
+        order.setShippinginfor(orderRequest.getOrder().getShippinginfor());
+        order.setStore(orderRequest.getOrder().getStore());
+        order.setPaymentdate(orderRequest.getOrder().getPaymentdate());
+        order.setOrderstatus(orderRequest.getOrder().getOrderstatus());
 
-    @PostMapping("/return")
-    public String returnUrl() {
-        // Xử lý khi người dùng được chuyển hướng trở lại sau khi thanh toán
-        return "Payment completed!";
+        Order savedOrder = orderRepository.save(order);
+
+        if (orderRequest.getOrderDetails() != null) {
+            for (OrderDetail detailRequest : orderRequest.getOrderDetails()) {
+                OrderDetail detail = new OrderDetail();
+                detail.setOrder(savedOrder);
+                detail.setProductDetail(detailRequest.getProductDetail());
+                detail.setQuantity(detailRequest.getQuantity());
+                detail.setPrice(detailRequest.getPrice());
+                orderDetailRepository.save(detail);
+
+                ProductDetail productDetail = productDetailRepository.findById(detailRequest.getProductDetail().getId())
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+                if (productDetail.getQuantity() < detailRequest.getQuantity()) {
+                    return ResponseEntity.badRequest().body(null);
+                }
+                productDetail.setQuantity(productDetail.getQuantity() - detailRequest.getQuantity());
+                productDetailRepository.save(productDetail);
+
+                CartItem cartItem = cartRepository.findByProductDetailAndUser(detailRequest.getProductDetail(),
+                        savedOrder.getUser());
+                if (cartItem != null) {
+                    cartRepository.delete(cartItem);
+                }
+            }
+        }
+        System.out.println("Order and details saved");
+
+        return ResponseEntity.ok(savedOrder);
     }
 
 }
