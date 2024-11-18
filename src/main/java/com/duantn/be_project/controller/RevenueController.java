@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 
 @CrossOrigin("*")
 @RestController
-@RequestMapping("/revenue")
 public class RevenueController {
 
     @Autowired

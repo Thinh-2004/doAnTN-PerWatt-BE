@@ -1037,4 +1037,77 @@ public class ProductController {
         return ResponseEntity.ok(countOrder);
     }
 
+    // Get Top 10 Products by Store Id seller
+    @GetMapping("/top10-products/{storeId}")
+    public ResponseEntity<List<Map<String, Object>>> getTopSellingProductsByStoreId(@PathVariable Integer storeId) {
+        try {
+            // Lấy danh sách kết quả từ Repository
+            List<Object[]> topSellingProducts = productRepository.findTopSellingProductsByStoreId(storeId);
+
+            // Chuyển đổi danh sách Object[] thành List<Map<String, Object>> cho dễ xử lý
+            // trong JSON
+            List<Map<String, Object>> products = new ArrayList<>();
+            for (Object[] row : topSellingProducts) {
+                Map<String, Object> product = new HashMap<>();
+                product.put("productId", row[0]); // productId từ câu truy vấn
+                product.put("productDetailId", row[1]); // productDetailId từ câu truy vấn
+                product.put("productName", row[2]); // productName từ Products table
+                product.put("nameDetail", row[3]); // name từ ProductDetails table
+                product.put("priceDetail", row[4]); // priceDetail từ ProductDetails table
+                product.put("sold", row[5]); // sold (tổng số lượng bán)
+                product.put("imageNameDetail", row[6]); // imageNameDetail từ ProductDetails hoặc fallback từ Images
+                product.put("productImage", row[7]); // productImage từ Images
+                product.put("slugProduct", row[8]); // productImage từ Images
+
+                products.add(product);
+            }
+
+            return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    // Phương thức mới để lấy doanh thu theo storeId biểu đồ
+    @GetMapping("/revenue/{storeId}")
+    public ResponseEntity<List<Map<String, Object>>> getRevenueByStoreId(@PathVariable Integer storeId) {
+        List<Object[]> revenueData = productRepository.findRevenueByStoreId(storeId);
+
+        // Chuyển đổi dữ liệu từ Object[] sang Map<String, Object> để có cấu trúc dữ
+        // liệu dễ đọc hơn
+        List<Map<String, Object>> formattedRevenueData = revenueData.stream().map(record -> {
+            Map<String, Object> revenueMap = new HashMap<>();
+            revenueMap.put("date", record[0]); // Ngày
+            revenueMap.put("revenue", record[1]); // Doanh thu
+            return revenueMap;
+        }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(formattedRevenueData);
+    }
+
+    // biểu đồ tròn
+    @GetMapping("/pie-chart/{storeId}")
+    public ResponseEntity<List<Map<String, Object>>> getPieChartData(@PathVariable Integer storeId) {
+        // Giả sử bạn có một phương thức để lấy danh sách sản phẩm theo storeId
+        List<ProductDetail> products = productDetailRepository.findByProduct_StoreId(storeId);
+
+        List<Map<String, Object>> response = new ArrayList<>();
+        for (ProductDetail product : products) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("products", product);
+            data.put("value", product.getPrice() * product.getQuantity()); // Tính giá trị
+            response.add(data);
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    // biểu đồ mixed-chart
+    @GetMapping("/mixed-chart/{storeId}")
+    public ResponseEntity<List<Map<String, Object>>> getMixedChartData(@PathVariable Integer storeId) {
+        List<Map<String, Object>> data = orderRepository.findRevenueByMonth(storeId);
+
+        // Không cần tính toán thêm, dữ liệu đã được tính trong query
+        return ResponseEntity.ok(data);
+    }
 }

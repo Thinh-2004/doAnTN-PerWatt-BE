@@ -22,7 +22,7 @@ public class RunWithProject {
     VoucherDetailsSellerRepository voucherDetailsSellerRepository;
 
     @Async
-    @Scheduled(cron = "0 0 0 * * ?") // Chạy mỗi ngày vào lúc 00:00
+    // @Scheduled(cron = "0 0 0 * * ?") // Chạy mỗi ngày vào lúc 00:00
     // @Scheduled(fixedRate = 3000) // Chạy mỗi 3 giây
     public CompletableFuture<Void> runDateUpdate() {
         // Lấy tất cả các voucher trong cơ sở dữ liệu

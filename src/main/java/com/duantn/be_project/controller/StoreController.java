@@ -246,6 +246,65 @@ public class StoreController {
         }
     }
 
+    // all sản phẩm bán chạy store (ProductList)
+    @GetMapping("/product-sales")
+    public List<Map<String, Object>> getProductSalesByStore() {
+        // Gọi phương thức findProductSalesByStore từ StoreRepository
+        return storeRepository.findProductSalesByStore();
+    }
+
+    // Doanh thu cửa all cửa hàng bên admin (ProductList)
+    @GetMapping("/revenue/net-store-revenue")
+    public List<Map<String, Object>> getNetRevenueByStore() {
+        return storeRepository.findNetRevenueByStore();
+    }
+
+    // Doanh thu theo năm
+    @GetMapping("/revenue-by-year")
+    public ResponseEntity<List<Map<String, Object>>> getRevenueByYear() {
+        List<Map<String, Object>> revenueData = storeRepository.findRevenueByYear();
+        return ResponseEntity.ok(revenueData);
+
+    }
+
+    // Doanh thu theo tháng Dashboard
+    @GetMapping("/revenue-by-month")
+    public ResponseEntity<List<Map<String, Object>>> getVATByMonth() {
+        List<Map<String, Object>> vatData = storeRepository.findTotalVATByMonth(); // Cập nhật phương thức trong
+                                                                                   // repository
+        return ResponseEntity.ok(vatData);
+    }
+
+    // Doanh thu theo ngày
+    @GetMapping("/revenue-by-day")
+    public ResponseEntity<List<Map<String, Object>>> getRevenueByDay() {
+        List<Map<String, Object>> revenueData = storeRepository.findRevenueByDay();
+        return ResponseEntity.ok(revenueData);
+    }
+
+    // Tổng cửa hàng được tạo (card số lượng cửa hàng) Dashboard
+    @GetMapping("/total-stores-count")
+    public ResponseEntity<Map<String, Long>> getTotalStoresCount() {
+        long totalStoresCount = storeRepository.countTotalStores();
+        Map<String, Long> response = new HashMap<>();
+        response.put("totalStoresCount", totalStoresCount);
+        return ResponseEntity.ok(response);
+    }
+
+    // Số lượng cửa hàng theo tháng
+    @GetMapping("/stores-by-month")
+    public ResponseEntity<List<Map<String, Object>>> getCountStoresByMonth() {
+        List<Map<String, Object>> storeCountData = storeRepository.countStoresByMonth();
+        return ResponseEntity.ok(storeCountData);
+    }
+
+    // Số lượng cửa hàng theo ngày
+    @GetMapping("/stores-by-day")
+    public ResponseEntity<List<Map<String, Object>>> getCountStoresByDay() {
+        List<Map<String, Object>> storeCountData = storeRepository.countStoresByDay();
+        return ResponseEntity.ok(storeCountData);
+    }
+
     // Bắt lỗi
     public ResponseEntity<String> validate(Store store) {
         // Biểu thức chính quy email

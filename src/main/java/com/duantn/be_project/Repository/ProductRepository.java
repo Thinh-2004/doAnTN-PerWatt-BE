@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.duantn.be_project.model.Product;
 
@@ -123,4 +124,75 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
                         """)
         Page<Object[]> listProductPerMall(String name1, String name2, String name3, String name4, String name5,
                         Pageable pageable);
+
+    @Query(value = """
+                    WITH ProductSales AS (
+    SELECT 
+        p.id AS productId, 
+        pd.id AS productDetailId, 
+        p.name AS productName, 
+        pd.nameDetail AS nameDetail, 
+        COALESCE(SUM(od.quantity), 0) AS sold, 
+        MAX(pd.price) AS priceDetail, 
+        (SELECT TOP 1 i.imageName 
+         FROM Images i 
+         WHERE i.productId = p.id) AS productImage, 
+        pd.imageDetail AS imageNameDetail, 
+        p.slug AS slugProduct
+    FROM 
+        Products p
+    INNER JOIN 
+        ProductDetails pd ON p.id = pd.idProduct
+    LEFT JOIN 
+        OrderDetails od ON pd.id = od.productDetailId
+    LEFT JOIN 
+        Orders o ON od.orderId = o.id
+    WHERE 
+        p.storeId = 2
+        AND o.orderStatus = 'Hoàn thành'
+        AND od.quantity IS NOT NULL
+    GROUP BY 
+        p.id, pd.id, p.name, pd.nameDetail, pd.imageDetail, p.slug
+)
+SELECT TOP 10 
+    productId, 
+    productDetailId, 
+    productName, 
+    nameDetail, 
+    priceDetail, 
+    sold, 
+    imageNameDetail, 
+    productImage, 
+    slugProduct
+FROM 
+    ProductSales
+ORDER BY 
+    sold DESC;
+
+                    """, nativeQuery = true)
+    List<Object[]> findTopSellingProductsByStoreId(@Param("storeId") Integer storeId);
+
+        // Doanh thu theo năm seller
+        @Query(value = "SELECT \r\n" + //
+                        "    YEAR(o.paymentDate) AS year, \r\n" + //
+                        "    SUM(od.quantity * od.price * (1 - pc.vat)) AS revenue \r\n" + //
+                        "FROM \r\n" + //
+                        "    Orders o \r\n" + //
+                        "JOIN \r\n" + //
+                        "    OrderDetails od ON o.id = od.orderId \r\n" + //
+                        "JOIN \r\n" + //
+                        "    ProductDetails pd ON od.productdetailid = pd.id \r\n" + //
+                        "JOIN \r\n" + //
+                        "\tProducts p on p.id = pd.idProduct\r\n" + //
+                        "JOIN \r\n" + //
+                        "    ProductCategorys pc ON p.categoryId = pc.id \r\n" + //
+                        "WHERE \r\n" + //
+                        "    o.storeId = :storeId  \r\n" + //
+                        "    AND o.orderStatus = N'hoàn thành' \r\n" + //
+                        "GROUP BY \r\n" + //
+                        "    YEAR(o.paymentDate) \r\n" + //
+                        "ORDER BY \r\n" + //
+                        "    year;\r\n" + //
+                        "", nativeQuery = true)
+        List<Object[]> findRevenueByStoreId(@Param("storeId") Integer storeId);
 }
