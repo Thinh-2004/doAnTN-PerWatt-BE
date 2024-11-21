@@ -21,8 +21,8 @@ public class RunWithProject {
     @Autowired
     VoucherDetailsSellerRepository voucherDetailsSellerRepository;
 
-    @Async
-    // @Scheduled(cron = "0 0 0 * * ?") // Chạy mỗi ngày vào lúc 00:00
+    // @Async
+    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Ho_Chi_Minh") // Chạy mỗi ngày vào lúc 00:00
     // @Scheduled(fixedRate = 3000) // Chạy mỗi 3 giây
     public CompletableFuture<Void> runDateUpdate() {
         // Lấy tất cả các voucher trong cơ sở dữ liệu
@@ -58,10 +58,10 @@ public class RunWithProject {
         return CompletableFuture.completedFuture(null); // Trả về khi hoàn thành
     }
 
-    @Scheduled(cron = "0 0 0 * * ?") // Chạy mỗi ngày vào lúc 00:00
+    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Ho_Chi_Minh") // Chạy mỗi ngày vào lúc 00:00
     // @Scheduled(fixedRate = 3000) // Chạy mỗi 3 giây
     public void runDeleteVoucherDetail() {
-        runDateUpdate().join(); // Chờ method chạy xong thì mới được xóa
+        // runDateUpdate().join(); // Chờ method chạy xong thì mới được xóa
         voucherDetailsSellerRepository.deleteByVoucherStatus("Ngừng hoạt động");
     }
 }
