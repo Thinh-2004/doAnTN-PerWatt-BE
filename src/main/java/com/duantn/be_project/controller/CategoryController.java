@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,10 +33,11 @@ public class CategoryController {
         productCategories.sort(Comparator.comparing((ProductCategory pc) -> pc.getName()));
         return ResponseEntity.ok(productCategories);
     }
+
     @GetMapping("/category/hot")
     public ResponseEntity<List<ProductCategory>> getCategory(Model model) {
         List<ProductCategory> productCategories = categoryRepository.sortByPCAZ();
-        return ResponseEntity.ok(productCategories); 
+        return ResponseEntity.ok(productCategories);
     }
 
     // GetAllById
@@ -49,6 +51,7 @@ public class CategoryController {
     }
 
     // Post
+    @PreAuthorize("hasAnyAuthority('Admin')")
     @PostMapping("/category")
     public ResponseEntity<ProductCategory> post(@RequestBody ProductCategory productCategory) {
         // TODO: process POST request
@@ -59,6 +62,7 @@ public class CategoryController {
     }
 
     // Put
+    @PreAuthorize("hasAnyAuthority('Admin')")
     @PutMapping("category/{id}")
     public ResponseEntity<ProductCategory> put(@PathVariable("id") Integer id,
             @RequestBody ProductCategory productCategory) {
@@ -69,6 +73,7 @@ public class CategoryController {
         return ResponseEntity.ok(categoryRepository.save(productCategory));
     }
 
+    @PreAuthorize("hasAnyAuthority('Admin')")
     @DeleteMapping("/category/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
         // TODO: process PUT request

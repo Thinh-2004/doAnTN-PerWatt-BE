@@ -14,6 +14,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,6 +33,7 @@ public class WalletController {
     @Autowired
     UserRepository userRepository;
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer', 'Admin')")
     @GetMapping("/wallet/{id}")
     public ResponseEntity<Wallet> getByUserId(@PathVariable("id") Integer id) {
         Optional<Wallet> optionalWallet = walletRepository.findByUserId(id);
@@ -39,6 +41,7 @@ public class WalletController {
         return ResponseEntity.ok(optionalWallet.get());
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer', 'Admin')")
     @PutMapping("/wallet/update/{id}")
     public ResponseEntity<Wallet> updateBalance(@PathVariable("id") Integer id, @RequestBody Wallet updatedWallet) {
         Optional<Wallet> optionalWallet = walletRepository.findByUserId(id);
@@ -49,12 +52,14 @@ public class WalletController {
         return ResponseEntity.ok(wallet);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer', 'Admin')")
     @GetMapping("/wallettransaction/{id}")
     public ResponseEntity<List<WalletTransaction>> getByWalletId(@PathVariable("id") Integer id) {
         List<WalletTransaction> walletTransactions = walletTransactionRepository.findByWalletId(id);
         return ResponseEntity.ok(walletTransactions);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer', 'Admin')")
     @PostMapping("/wallettransaction/create/{id}")
     public ResponseEntity<String> addTransaction(@PathVariable("id") Integer id,
             @RequestBody WalletTransaction newTransaction) {
@@ -73,6 +78,7 @@ public class WalletController {
         return ResponseEntity.status(201).body("Giao dịch đã được thêm thành công");
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer', 'Admin')")
     @GetMapping("/wallettransaction/idWalletByIdUSer/{id}")
     public ResponseEntity<?> idWalletByIdUser(@PathVariable("id") Integer id) {
         Wallet wallet = walletRepository.findByUserId(id).orElse(null);

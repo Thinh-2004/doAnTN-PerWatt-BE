@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.duantn.be_project.Repository.CartRepository;
@@ -31,12 +32,14 @@ public class OrderDetailController {
     ProductDetailRepository productDetailRepository;
 
     // Lấy tất cả các chi tiết đơn hàng
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @GetMapping("/orderDetail")
     public ResponseEntity<List<OrderDetail>> getAll() {
         return ResponseEntity.ok(orderDetailRepository.findAll());
     }
 
     // Lấy tất cả các chi tiết đơn hàng theo id đơn hàng
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @GetMapping("/orderDetail/{id}")
     public ResponseEntity<List<OrderDetail>> getAllById(@PathVariable("id") Integer id) {
         List<OrderDetail> orderDetails = orderDetailRepository.findAllOrderDetailByIdOrder(id);
@@ -46,6 +49,7 @@ public class OrderDetailController {
         return ResponseEntity.ok(orderDetails); // Trả về danh sách chi tiết đơn hàng
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @GetMapping("/orderDetailSeller/{id}")
     public ResponseEntity<List<OrderDetail>> getAllByIdSeller(@PathVariable Integer id) {
         List<OrderDetail> orderDetails = orderDetailRepository.findAllOrderDetailByIdOrder(id);
@@ -56,6 +60,7 @@ public class OrderDetailController {
     }
 
     // Tạo đơn hàng mới
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @PostMapping("/api/orderCreate")
     public ResponseEntity<Order> createOrder(@RequestBody OrderRequest orderRequest) {
         // Tạo đối tượng đơn hàng mới từ yêu cầu

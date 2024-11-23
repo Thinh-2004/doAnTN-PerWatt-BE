@@ -8,6 +8,9 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,7 +44,7 @@ public class ProductDetailController {
     // MinMax theo danh sách findMore
     @GetMapping("/sidlerMinMax/{name}")
     public ResponseEntity<?> silderMinMax(@PathVariable("name") String name) throws UnsupportedEncodingException {
-         String decodeName = URLDecoder.decode(name, StandardCharsets.UTF_8.name());
+        String decodeName = URLDecoder.decode(name, StandardCharsets.UTF_8.name());
         List<Object[]> respone = productDetailRepository.minMaxPriceDetail("%" + decodeName + "%");
         return ResponseEntity.ok(respone);
     }
@@ -80,6 +83,7 @@ public class ProductDetailController {
     }
 
     // Post
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @PostMapping("/detailProduct")
     public ResponseEntity<?> postDetailProduct(
             @RequestParam("file") MultipartFile file,
@@ -117,6 +121,7 @@ public class ProductDetailController {
     }
 
     // Put
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @PutMapping("/detailProduct/{id}")
     public ResponseEntity<?> putDetailProduct(
             @PathVariable("id") Integer id,
@@ -173,6 +178,7 @@ public class ProductDetailController {
     }
 
     // Delete
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @DeleteMapping("detailProduct/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
         // TODO: process PUT request

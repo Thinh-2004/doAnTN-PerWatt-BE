@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.Query;
 
 import com.duantn.be_project.model.ProductDetail;
 
-
 public interface ProductDetailRepository extends JpaRepository<ProductDetail, Integer> {
     // Tìm theo id Product
     @Query("select pd from ProductDetail pd where pd.product.id = ?1")
@@ -23,5 +22,8 @@ public interface ProductDetailRepository extends JpaRepository<ProductDetail, In
             select min(pd.price), max(pd.price) from ProductDetail pd where pd.product.productcategory.name like ?1 or pd.product.trademark.name like ?1
             """)
     List<Object[]> minMaxPriceDetail(String name);
+
+    // biểu đồ tròn
+    List<ProductDetail> findByProduct_StoreId(Integer storeId);
 
 }

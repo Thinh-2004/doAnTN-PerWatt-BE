@@ -2,6 +2,7 @@ package com.duantn.be_project.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +19,7 @@ public class NotificationController {
     @Autowired
     NotificationRepository notificationRepository;
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @GetMapping("/checkOrder")
     public ResponseEntity<List<Order>> findAll() {
         // Tìm cửa hàng theo storeId
@@ -25,6 +27,7 @@ public class NotificationController {
         return ResponseEntity.ok(storeOptional);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @GetMapping("/checkOrder/{id}")
     public ResponseEntity<List<Order>> checkNewOrder(@PathVariable("id") Integer storeId) {
         List<Order> storeOrders = notificationRepository.findAllStoreId(storeId);

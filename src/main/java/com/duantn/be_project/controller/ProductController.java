@@ -22,7 +22,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,6 +35,7 @@ import com.duantn.be_project.Repository.ProductDetailRepository;
 import com.duantn.be_project.Repository.ProductRepository;
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Repository.TradeMarkRepository;
+import com.duantn.be_project.Service.FirebaseStorageService;
 import com.duantn.be_project.Service.SlugText.SlugText;
 import com.duantn.be_project.model.Image;
 import com.duantn.be_project.model.Product;
@@ -47,6 +48,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.Bucket;
+import com.google.firebase.cloud.StorageClient;
 
 import jakarta.servlet.ServletContext;
 
@@ -84,6 +88,8 @@ public class ProductController {
     UploadImages uploadImages;
     @Autowired
     SlugText slugText;
+    @Autowired
+    FirebaseStorageService firebaseStorageService;
 
     // Tìm kiếm và phân trang
     @GetMapping("/home/product/list")
@@ -122,7 +128,7 @@ public class ProductController {
         Integer idCate = null;
 
         // Kiểm tra keyWord
-        if (keyWord.toLowerCase().matches(".*\\bhot\\b.*") || keyWord.toLowerCase().contains("yêu thích")
+        if (keyWord.toLowerCase().matches(".*\bhot\b.*") || keyWord.toLowerCase().contains("yêu thích")
                 || keyWord.toLowerCase().contains("bán chạy") ||
                 keyWord.toLowerCase().contains("phổ biến") || keyWord.toLowerCase().contains("được ưa chuộng")
                 || keyWord.toLowerCase().contains("hàng đầu")
@@ -311,7 +317,7 @@ public class ProductController {
         List<Object[]> fullList = null;
 
         // Kiểm tra keyWord
-        if (keyWord.toLowerCase().matches(".*\\bhot\\b.*") || keyWord.toLowerCase().contains("yêu thích")
+        if (keyWord.toLowerCase().matches(".*\bhot\b.*") || keyWord.toLowerCase().contains("yêu thích")
                 || keyWord.toLowerCase().contains("bán chạy") ||
                 keyWord.toLowerCase().contains("phổ biến") || keyWord.toLowerCase().contains("được ưa chuộng")
                 || keyWord.toLowerCase().contains("hàng đầu")
@@ -514,7 +520,7 @@ public class ProductController {
         Page<Object[]> prPage;
 
         // Kiểm tra keyWord
-        if (keyWord.toLowerCase().matches(".*\\bhot\\b.*") || keyWord.toLowerCase().contains("yêu thích")
+        if (keyWord.toLowerCase().matches(".*\bhot\b.*") || keyWord.toLowerCase().contains("yêu thích")
                 || keyWord.toLowerCase().contains("bán chạy") ||
                 keyWord.toLowerCase().contains("phổ biến") || keyWord.toLowerCase().contains("được ưa chuộng")
                 || keyWord.toLowerCase().contains("hàng đầu")
@@ -671,7 +677,7 @@ public class ProductController {
         Integer idCate = null;
 
         // Kiểm tra keyWord
-        if (keyWord.toLowerCase().matches(".*\\bhot\\b.*") || keyWord.toLowerCase().contains("yêu thích")
+        if (keyWord.toLowerCase().matches(".*\bhot\b.*") || keyWord.toLowerCase().contains("yêu thích")
                 || keyWord.toLowerCase().contains("bán chạy") ||
                 keyWord.toLowerCase().contains("phổ biến") || keyWord.toLowerCase().contains("được ưa chuộng")
                 || keyWord.toLowerCase().contains("hàng đầu")
@@ -804,11 +810,115 @@ public class ProductController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
+    // @PostMapping("/productCreate")
+    // public ResponseEntity<?> createProduct(
+    // @RequestPart("product") String productJson,
+    // @RequestPart("productDetails") String productDetailsJson,
+    // @RequestPart("files") MultipartFile[] files) throws JsonMappingException,
+    // JsonProcessingException {
+    // ObjectMapper objectMapper = new ObjectMapper();
+    // Product product;
+    // List<ProductDetail> productDetails;
+
+    // // Chuyển đổi JSON thành đối tượng Product
+    // product = objectMapper.readValue(productJson, Product.class);
+
+    // // Gán tên sản phẩm cho slug
+    // product.setSlug(slugText.generateUniqueSlug(product.getName()));
+
+    // // Lưu Product trước và lấy productId
+    // Product savedProduct = productRepository.save(product);
+    // try {
+    // // Chuyển đổi JSON thành danh sách ProductDetail
+    // TypeReference<List<ProductDetail>> typeRef = new
+    // TypeReference<List<ProductDetail>>() {
+    // };
+    // productDetails = objectMapper.readValue(productDetailsJson, typeRef);
+
+    // // Duyệt qua từng ProductDetail để lưu vào cơ sở dữ liệu trước để lấy id
+    // for (ProductDetail detail : productDetails) {
+    // detail.setProduct(savedProduct); // Gán Product đã lưu vào ProductDetail
+    // ProductDetail savedDetail = productDetailRepository.save(detail); // Lưu tạm
+    // // thời ProductDetail để lấy
+    // // id
+
+    // try {
+    // if (detail.getImagedetail() != null && !detail.getImagedetail().isEmpty()) {
+    // // Chuyển đổi chuỗi base64 thành MultipartFile
+    // MultipartFile imageDetail =
+    // uploadImages.base64ToMultipartFile(detail.getImagedetail());
+    // // Lưu hình ảnh lên server và lấy đường dẫn lưu
+    // String imageDetailPath = uploadImages.saveDetailProductImage(imageDetail,
+    // savedDetail.getId());
+    // savedDetail.setImagedetail(imageDetailPath); // Cập nhật đường dẫn thực tế
+    // // cho imagedetail
+    // } else {
+    // savedDetail.setImagedetail(null); // Cập nhật đường dẫn thực tế cho
+    // // imagedetail
+
+    // }
+
+    // } catch (IOException e) {
+    // e.printStackTrace();
+    // // Xử lý lỗi khi chuyển đổi base64 thành MultipartFile
+    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    // .body("Failed to process image for ProductDetail: " + e.getMessage());
+    // }
+
+    // // Lưu lại ProductDetail sau khi đã cập nhật imagedetail
+    // productDetailRepository.save(savedDetail);
+    // }
+
+    // } catch (Exception e) {
+    // e.printStackTrace();
+    // return ResponseEntity.badRequest().body("Invalid data: " + e.getMessage());
+    // }
+
+    // System.out.println("Saved product and details: " + product);
+
+    // // Lưu các ảnh trong files vào server và liên kết với Product
+    // List<String> imageUrls = new ArrayList<>();
+    // for (MultipartFile file : files) {
+    // System.out.println("Received file: " + file.getOriginalFilename());
+
+    // // Lưu file và lấy URL
+    // String imageUrl = fileManagerService.save(file, savedProduct.getId());
+
+    // if (imageUrl != null) {
+    // imageUrls.add(imageUrl);
+    // }
+    // }
+
+    // // Tạo các đối tượng Image và liên kết với Product
+    // List<Image> images = new ArrayList<>();
+    // for (String imageUrl : imageUrls) {
+    // Image image = new Image();
+    // image.setImagename(imageUrl);
+    // image.setProduct(savedProduct);
+    // images.add(image);
+    // }
+
+    // // Lưu danh sách Image vào cơ sở dữ liệu
+    // try {
+    // imageRepository.saveAll(images);
+    // savedProduct.setImages(images);
+    // productRepository.save(savedProduct);
+    // } catch (Exception e) {
+    // e.printStackTrace();
+    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    // .body("Failed to update product with images: " + e.getMessage());
+    // }
+
+    // return ResponseEntity.ok("Product created successfully with images
+    // anddetails");
+    // }
     @PostMapping("/productCreate")
     public ResponseEntity<?> createProduct(
             @RequestPart("product") String productJson,
             @RequestPart("productDetails") String productDetailsJson,
             @RequestPart("files") MultipartFile[] files) throws JsonMappingException, JsonProcessingException {
+
         ObjectMapper objectMapper = new ObjectMapper();
         Product product;
         List<ProductDetail> productDetails;
@@ -827,27 +937,25 @@ public class ProductController {
             };
             productDetails = objectMapper.readValue(productDetailsJson, typeRef);
 
-            // Duyệt qua từng ProductDetail để lưu vào cơ sở dữ liệu trước để lấy id
+            // Duyệt qua từng ProductDetail để lưu vào cơ sở dữ liệu
             for (ProductDetail detail : productDetails) {
                 detail.setProduct(savedProduct); // Gán Product đã lưu vào ProductDetail
-                ProductDetail savedDetail = productDetailRepository.save(detail); // Lưu tạm thời ProductDetail để lấy
-                                                                                  // id
+                ProductDetail savedDetail = productDetailRepository.save(detail); // Lưu tạm thời
 
                 try {
                     if (detail.getImagedetail() != null && !detail.getImagedetail().isEmpty()) {
-                        // Chuyển đổi chuỗi base64 thành MultipartFile
+                        // Chuyển đổi Base64 thành MultipartFile
                         MultipartFile imageDetail = uploadImages.base64ToMultipartFile(detail.getImagedetail());
-                        // Lưu hình ảnh lên server và lấy đường dẫn lưu
-                        String imageDetailPath = uploadImages.saveDetailProductImage(imageDetail, savedDetail.getId());
-                        savedDetail.setImagedetail(imageDetailPath); // Cập nhật đường dẫn thực tế cho imagedetail
+
+                        // Lưu hình ảnh lên Firebase và lấy đường dẫn
+                        String imageDetailUrl = firebaseStorageService.uploadToFirebase(imageDetail,
+                                "productDetails/" + savedDetail.getId());
+                        savedDetail.setImagedetail(imageDetailUrl); // Cập nhật đường dẫn thực tế
                     } else {
-                        savedDetail.setImagedetail(null); // Cập nhật đường dẫn thực tế cho imagedetail
-
+                        savedDetail.setImagedetail(null);
                     }
-
                 } catch (IOException e) {
                     e.printStackTrace();
-                    // Xử lý lỗi khi chuyển đổi base64 thành MultipartFile
                     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                             .body("Failed to process image for ProductDetail: " + e.getMessage());
                 }
@@ -861,18 +969,19 @@ public class ProductController {
             return ResponseEntity.badRequest().body("Invalid data: " + e.getMessage());
         }
 
-        System.out.println("Saved product and details: " + product);
-
-        // Lưu các ảnh trong files vào server và liên kết với Product
+        // Lưu các ảnh trong files lên Firebase
         List<String> imageUrls = new ArrayList<>();
         for (MultipartFile file : files) {
-            System.out.println("Received file: " + file.getOriginalFilename());
-
-            // Lưu file và lấy URL
-            String imageUrl = fileManagerService.save(file, savedProduct.getId());
-
-            if (imageUrl != null) {
-                imageUrls.add(imageUrl);
+            try {
+                String imageUrl = firebaseStorageService.uploadToFirebase(file, "products/" + savedProduct.getId());
+                System.out.println("Image uploaded: " + imageUrl);
+                if (imageUrl != null) {
+                    imageUrls.add(imageUrl); // Thêm vào danh sách imageUrls
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Failed to upload image: " + e.getMessage());
             }
         }
 
@@ -880,16 +989,16 @@ public class ProductController {
         List<Image> images = new ArrayList<>();
         for (String imageUrl : imageUrls) {
             Image image = new Image();
-            image.setImagename(imageUrl);
-            image.setProduct(savedProduct);
-            images.add(image);
+            image.setImagename(imageUrl); // Set đường dẫn hình ảnh
+            image.setProduct(savedProduct); // Liên kết hình ảnh với sản phẩm
+            images.add(image); // Thêm vào danh sách hình ảnh
         }
 
         // Lưu danh sách Image vào cơ sở dữ liệu
         try {
-            imageRepository.saveAll(images);
-            savedProduct.setImages(images);
-            productRepository.save(savedProduct);
+            imageRepository.saveAll(images); // Lưu tất cả ảnh vào cơ sở dữ liệu
+            savedProduct.setImages(images); // Cập nhật lại sản phẩm với ảnh đã lưu
+            productRepository.save(savedProduct); // Lưu lại sản phẩm với ảnh
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -900,11 +1009,85 @@ public class ProductController {
     }
 
     // Put Store Product
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
+    // @PutMapping("/productUpdate/{id}")
+    // public ResponseEntity<?> updateProduct(
+    // @PathVariable("id") Integer id,
+    // @RequestPart("product") String productJson,
+    // @RequestPart(value = "files", required = false) MultipartFile[] files) {
+
+    // // Kiểm tra xem sản phẩm có tồn tại không
+    // if (!productRepository.existsById(id)) {
+    // return ResponseEntity.notFound().build();
+    // }
+
+    // // Chuyển đổi chuỗi JSON thành đối tượng Product
+    // ObjectMapper objectMapper = new ObjectMapper();
+    // Product product;
+    // try {
+    // product = objectMapper.readValue(productJson, Product.class);
+    // if (!product.getSlug().isEmpty() || product.getSlug() != null) {
+    // product.setSlug(slugText.generateUniqueSlug(product.getName()));
+    // }
+    // } catch (Exception e) {
+    // e.printStackTrace();
+    // return ResponseEntity.badRequest().body("Dữ liệu sản phẩm không hợp lệ: " +
+    // e.getMessage());
+    // }
+
+    // // Lưu sản phẩm đã cập nhật
+    // Product updatedProduct;
+    // try {
+    // updatedProduct = productRepository.save(product);
+    // } catch (Exception e) {
+    // e.printStackTrace();
+    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    // .body("Không thể cập nhật sản phẩm: " + e.getMessage());
+    // }
+
+    // // Xử lý các tệp mới nếu có
+    // if (files != null && files.length > 0) {
+    // List<String> imageUrls = new ArrayList<>();
+    // for (MultipartFile file : files) {
+    // System.out.println("Đã nhận tệp: " + file.getOriginalFilename());
+
+    // // Lưu tệp và lấy URL hoặc tên tệp
+    // String imageUrl = fileManagerService.save(file, updatedProduct.getId());
+
+    // if (imageUrl != null) {
+    // imageUrls.add(imageUrl);
+    // }
+    // }
+
+    // // Tạo các đối tượng Image cho từng URL hình ảnh mới và liên kết với sản phẩm
+    // List<Image> images = new ArrayList<>();
+    // for (String imageUrl : imageUrls) {
+    // Image image = new Image();
+    // image.setImagename(imageUrl);
+    // image.setProduct(updatedProduct);
+    // images.add(image);
+    // }
+
+    // // Lưu các hình ảnh mới và cập nhật sản phẩm với các đối tượng hình ảnh
+    // try {
+    // imageRepository.saveAll(images); // Đảm bảo bạn có repository để lưu hình ảnh
+    // updatedProduct.getImages().addAll(images); // Thêm hình ảnh mới vào những
+    // hình ảnh hiện có
+    // productRepository.save(updatedProduct); // Lưu sản phẩm đã cập nhật
+    // } catch (Exception e) {
+    // e.printStackTrace();
+    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+    // .body("Không thể cập nhật sản phẩm với hình ảnh mới: " + e.getMessage());
+    // }
+    // }
+
+    // return ResponseEntity.ok().build();
+    // }
     @PutMapping("/productUpdate/{id}")
     public ResponseEntity<?> updateProduct(
             @PathVariable("id") Integer id,
             @RequestPart("product") String productJson,
-            @RequestPart(value = "files", required = false) MultipartFile[] files) {
+            @RequestPart(value = "files", required = false) MultipartFile[] files) throws IOException {
 
         // Kiểm tra xem sản phẩm có tồn tại không
         if (!productRepository.existsById(id)) {
@@ -916,7 +1099,7 @@ public class ProductController {
         Product product;
         try {
             product = objectMapper.readValue(productJson, Product.class);
-            if (!product.getSlug().isEmpty() || product.getSlug() != null) {
+            if (product.getSlug() != null && !product.getSlug().isEmpty()) {
                 product.setSlug(slugText.generateUniqueSlug(product.getName()));
             }
         } catch (Exception e) {
@@ -937,11 +1120,22 @@ public class ProductController {
         // Xử lý các tệp mới nếu có
         if (files != null && files.length > 0) {
             List<String> imageUrls = new ArrayList<>();
+
+            // Xóa các hình ảnh cũ nếu có
+            for (Image image : updatedProduct.getImages()) {
+                // Xóa hình ảnh trên Firebase (nếu cần)
+                firebaseStorageService.deleteFileFromFirebase(image.getImagename());
+
+                // Xóa hình ảnh khỏi CSDL
+                imageRepository.delete(image);
+            }
+
+            // Tải hình ảnh mới lên Firebase
             for (MultipartFile file : files) {
                 System.out.println("Đã nhận tệp: " + file.getOriginalFilename());
 
-                // Lưu tệp và lấy URL hoặc tên tệp
-                String imageUrl = fileManagerService.save(file, updatedProduct.getId());
+                // Lưu tệp lên Firebase và lấy URL hoặc tên tệp
+                String imageUrl = firebaseStorageService.uploadToFirebase(file, "products/" + updatedProduct.getId());
 
                 if (imageUrl != null) {
                     imageUrls.add(imageUrl);
@@ -957,10 +1151,11 @@ public class ProductController {
                 images.add(image);
             }
 
-            // Lưu các hình ảnh mới và cập nhật sản phẩm với các đối tượng hình ảnh
+            // Lưu các hình ảnh mới vào cơ sở dữ liệu
             try {
                 imageRepository.saveAll(images); // Đảm bảo bạn có repository để lưu hình ảnh
-                updatedProduct.getImages().addAll(images); // Thêm hình ảnh mới vào những hình ảnh hiện có
+                updatedProduct.getImages().clear(); // Xóa các hình ảnh cũ trong sản phẩm
+                updatedProduct.getImages().addAll(images); // Thêm hình ảnh mới vào sản phẩm
                 productRepository.save(updatedProduct); // Lưu sản phẩm đã cập nhật
             } catch (Exception e) {
                 e.printStackTrace();
@@ -973,6 +1168,7 @@ public class ProductController {
     }
 
     // Delete
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @DeleteMapping("/ProductDelete/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
         // Kiểm tra xem sản phẩm có tồn tại không
@@ -1037,4 +1233,82 @@ public class ProductController {
         return ResponseEntity.ok(countOrder);
     }
 
+    // Get Top 10 Products by Store Id seller
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là admin mới được gọi
+    @GetMapping("/top10-products/{storeId}")
+    public ResponseEntity<List<Map<String, Object>>> getTopSellingProductsByStoreId(@PathVariable Integer storeId) {
+        try {
+            // Lấy danh sách kết quả từ Repository
+            List<Object[]> topSellingProducts = productRepository.findTopSellingProductsByStoreId(storeId);
+
+            // Chuyển đổi danh sách Object[] thành List<Map<String, Object>> cho dễ xử lý
+            // trong JSON
+            List<Map<String, Object>> products = new ArrayList<>();
+            for (Object[] row : topSellingProducts) {
+                Map<String, Object> product = new HashMap<>();
+                product.put("productId", row[0]); // productId từ câu truy vấn
+                product.put("productDetailId", row[1]); // productDetailId từ câu truy vấn
+                product.put("productName", row[2]); // productName từ Products table
+                product.put("nameDetail", row[3]); // name từ ProductDetails table
+                product.put("priceDetail", row[4]); // priceDetail từ ProductDetails table
+                product.put("sold", row[5]); // sold (tổng số lượng bán)
+                product.put("imageNameDetail", row[6]); // imageNameDetail từ ProductDetails hoặc fallback từ Images
+                product.put("productImage", row[7]); // productImage từ Images
+                product.put("slugProduct", row[8]); // productImage từ Images
+
+                products.add(product);
+            }
+
+            return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    // Phương thức mới để lấy doanh thu theo storeId biểu đồ
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là admin mới được gọi
+    @GetMapping("/revenue/{storeId}")
+    public ResponseEntity<List<Map<String, Object>>> getRevenueByStoreId(@PathVariable Integer storeId) {
+        List<Object[]> revenueData = productRepository.findRevenueByStoreId(storeId);
+
+        // Chuyển đổi dữ liệu từ Object[] sang Map<String, Object> để có cấu trúc dữ
+        // liệu dễ đọc hơn
+        List<Map<String, Object>> formattedRevenueData = revenueData.stream().map(record -> {
+            Map<String, Object> revenueMap = new HashMap<>();
+            revenueMap.put("date", record[0]); // Ngày
+            revenueMap.put("revenue", record[1]); // Doanh thu
+            return revenueMap;
+        }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(formattedRevenueData);
+    }
+
+    // biểu đồ tròn
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là admin mới được gọi
+    @GetMapping("/pie-chart/{storeId}")
+    public ResponseEntity<List<Map<String, Object>>> getPieChartData(@PathVariable Integer storeId) {
+        // Giả sử bạn có một phương thức để lấy danh sách sản phẩm theo storeId
+        List<ProductDetail> products = productDetailRepository.findByProduct_StoreId(storeId);
+
+        List<Map<String, Object>> response = new ArrayList<>();
+        for (ProductDetail product : products) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("products", product);
+            data.put("value", product.getPrice() * product.getQuantity()); // Tính giá trị
+            response.add(data);
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    // biểu đồ mixed-chart
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là admin mới được gọi
+    @GetMapping("/mixed-chart/{storeId}")
+    public ResponseEntity<List<Map<String, Object>>> getMixedChartData(
+            @PathVariable Integer storeId,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        List<Map<String, Object>> data = orderRepository.findRevenueByMonthWithProducts(storeId, startDate, endDate);
+        return ResponseEntity.ok(data);
+    }
 }

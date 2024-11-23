@@ -2,6 +2,7 @@ package com.duantn.be_project.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,6 +38,7 @@ public class MoMoPaymentController {
     @Autowired
     CartRepository cartRepository;
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @GetMapping("/pay")
     public ResponseEntity<String> pay(@RequestParam Long amount, @RequestParam String ids,
             @RequestParam String address) {
@@ -75,6 +77,7 @@ public class MoMoPaymentController {
     }
 
     // Tạo đơn auto ra momo
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @PostMapping("/createMoMoOrder")
     public ResponseEntity<Order> createOrderVnPay(@RequestBody OrderRequest orderRequest) {
         System.out.println("API called");

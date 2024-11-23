@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,12 +26,14 @@ public class VoucherDetailsSeller {
     @Autowired
     VoucherSellerRepository voucherSellerRepository;
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
     @GetMapping("/findVoucherByIdUser/{id}")
     public ResponseEntity<?> getMethodName(@PathVariable("id") Integer id) {
         List<VoucherDetail> voucherDetails = voucherDetailsSellerRepository.findAllByIdAUser(id);
         return ResponseEntity.ok(voucherDetails);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @PostMapping("addVoucherDetails")
     public ResponseEntity<?> postVoucherDeltails(@RequestBody VoucherDetail voucherDetailRequest) {
         List<Voucher> vouchers = voucherSellerRepository
