@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,9 +19,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PutMapping;
-
-
-
 
 @CrossOrigin("*")
 @RestController
@@ -47,6 +45,7 @@ public class TradeMarkController {
     }
 
     //Post
+    @PreAuthorize("hasAnyAuthority('Admin')")
     @PostMapping("/brand")
     public ResponseEntity<TradeMark> post(@RequestBody TradeMark tradeMark) {
         //TODO: process POST request
@@ -57,6 +56,7 @@ public class TradeMarkController {
     }
 
     //Put
+    @PreAuthorize("hasAnyAuthority('Admin')")
     @PutMapping("/brand/{id}")
     public ResponseEntity<TradeMark> put(@PathVariable("id") Integer id, @RequestBody TradeMark tradeMark) {
         //TODO: process PUT request
@@ -66,7 +66,8 @@ public class TradeMarkController {
         return ResponseEntity.ok(tradeMarkRepository.save(tradeMark));
     }
     
-     @DeleteMapping("/brand/{id}")
+    @PreAuthorize("hasAnyAuthority('Admin')")
+    @DeleteMapping("/brand/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
         // TODO: process PUT request
         if (!tradeMarkRepository.existsById(id)) {

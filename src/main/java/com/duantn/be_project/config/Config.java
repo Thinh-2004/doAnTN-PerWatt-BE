@@ -1,4 +1,4 @@
-package com.duantn.be_project.Service;
+package com.duantn.be_project.config;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;

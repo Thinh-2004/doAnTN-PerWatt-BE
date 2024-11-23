@@ -1,6 +1,7 @@
 package com.duantn.be_project.controller;
 
 import java.io.File;
+import java.text.ParseException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -9,20 +10,29 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.duantn.be_project.Repository.RoleRepository;
 import com.duantn.be_project.Repository.UserRepository;
 import com.duantn.be_project.Service.UserService;
-import com.duantn.be_project.Service.Security.Encryption;
 import com.duantn.be_project.model.Role;
 import com.duantn.be_project.model.User;
 import com.duantn.be_project.model.Request_Response.TokenRequest;
+import com.duantn.be_project.security.model.ApiResponse;
+import com.duantn.be_project.security.model.AuthenticateRequest;
+import com.duantn.be_project.security.model.AuthenticationResponse;
+import com.duantn.be_project.security.service.authenticateService;
+import com.duantn.be_project.security.service.jwtService;
 import com.duantn.be_project.untils.UploadImages;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -30,12 +40,14 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
+import com.nimbusds.jose.JOSEException;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PutMapping;
 
 @CrossOrigin("*")
@@ -52,18 +64,36 @@ public class UserController {
     @Autowired
     UserService userService;
     @Autowired
-    Encryption encryption;
+    authenticateService authenticateService;
 
-    // @Autowired
-    // private JwtDecoder jwtDecoder;
+    @Autowired
+    jwtService jwtService;
 
     // GetAll
+    @PreAuthorize("hasAnyAuthority('Admin')")
     @GetMapping("/user")
     public ResponseEntity<List<User>> getAll(Model model) {
         return ResponseEntity.ok(userRepository.findAll());
     }
 
     // GetByIdUser
+    // Chỉ được gọi khi email trùng với email trong token
+    @PostAuthorize("returnObject.body.email == authentication.name")
+    @GetMapping("/userProFile/myInfo")
+    public ResponseEntity<User> getMyInfo() {
+        String emailUser = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(emailUser);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println(authentication.getAuthorities());
+        return ResponseEntity.ok(user);
+    }
+
+    // GetByIdUser
+    // Chỉ được gọi khi email trùng với email trong token
+    @PostAuthorize("returnObject.body.email == authentication.name")
     @GetMapping("/userProFile/{id}")
     public ResponseEntity<User> getByIdUser(@PathVariable("id") Integer id) {
         User user = userRepository.findById(id).orElseThrow();
@@ -74,6 +104,7 @@ public class UserController {
     }
 
     // checkmkProfileUser
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
     @PostMapping("/checkPass")
     public ResponseEntity<Map<String, Object>> checkPass(@RequestBody User userRequest) {
         Map<String, Object> response = new HashMap<>();
@@ -96,21 +127,39 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody User userRequest) {
-        Map<String, Object> response = new HashMap<>();
-        User user = userRepository.findByEmail(userRequest.getEmail());
-        if (user == null) {
-            response.put("message", "Email không tồn tại");
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    public ApiResponse<AuthenticationResponse> login(@RequestBody AuthenticateRequest request) {
+
+        AuthenticationResponse result = authenticateService.authenticate(request);
+        return ApiResponse.<AuthenticationResponse>builder()
+                .result(result)
+                .build();
+    }
+
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer', 'Admin')")
+    @PostMapping("/refesh")
+    ApiResponse<AuthenticationResponse> authenticate(@RequestBody Map<String, String> token)
+            throws ParseException, JOSEException {
+        AuthenticationResponse result = jwtService.refeshToken(token.get("token"));
+        return ApiResponse.<AuthenticationResponse>builder()
+                .result(result)
+                .build();
+    }
+
+    @PostMapping("/logout")
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer', 'Admin')")
+    public ApiResponse<Void> logout(@RequestBody Map<String, String> requestBody) throws ParseException, JOSEException {
+        String token = requestBody.get("token"); // Lấy token từ body
+        if (token == null || token.isEmpty()) {
+            throw new IllegalArgumentException("Token không được để trống");
         }
 
-        if (passwordEncoder.matches(userRequest.getPassword(), user.getPassword())) {
-            response.put("user", user);
-            return ResponseEntity.ok(response);
-        } else {
-            response.put("message", "Mật khẩu không chính xác");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
+        // Kiểm tra và xử lý token
+        authenticateService.Logout(token);
+
+        // Trả về phản hồi thành công
+        return ApiResponse.<Void>builder()
+                .message("Đăng xuất thành công")
+                .build();
     }
 
     @PostMapping("/user")
@@ -119,7 +168,7 @@ public class UserController {
         // Bắt lỗi dữ liệu yêu cầu
         // ResponseEntity<String> validateRes = validate(user);
         // if (validateRes != null) {
-        //     return validateRes;
+        // return validateRes;
         // }
 
         // Kiểm tra email đã tồn tại
@@ -151,6 +200,7 @@ public class UserController {
         return ResponseEntity.ok(savedUser);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
     @PutMapping("/user/{id}")
     public ResponseEntity<?> updateUser(
             @PathVariable("id") Integer id,
@@ -171,7 +221,7 @@ public class UserController {
             // Bắt lỗi
             // ResponseEntity<String> validateRes = validate(user);
             // if (validateRes != null) {
-            //     return validateRes;
+            // return validateRes;
             // }
         } catch (Exception e) {
             e.printStackTrace();
@@ -180,7 +230,7 @@ public class UserController {
 
         // Đảm bảo ID của người dùng khớp với biến đường dẫn
         user.setId(id);
-        User existingUser  = userRepository.findById(user.getId()).orElseThrow();
+        User existingUser = userRepository.findById(user.getId()).orElseThrow();
 
         // Kiểm tra nếu mật khẩu mới không null hoặc không rỗng
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
@@ -250,6 +300,7 @@ public class UserController {
     }
 
     // delete
+    @PreAuthorize("hasAnyAuthority('Admin')") // Chỉ vai trò là seller mới được gọi
     @DeleteMapping("/user/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
         if (!userRepository.existsById(id)) {
@@ -259,22 +310,9 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    ////////
-    @GetMapping("/info/{id}")
-    public ResponseEntity<User> getUserInfo(@PathVariable Integer id) {
-        User user = userService.getUserById(id);
-        return ResponseEntity.ok(user);
-    }
-
-    @PutMapping("/info/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Integer id, @RequestBody User user) {
-        User updatedUser = userService.updateUser(id, user);
-        return ResponseEntity.ok(updatedUser);
-    }
-
     // Login by google
     @PostMapping("/loginByGoogle")
-    public ResponseEntity<?> googleLogin(@RequestBody TokenRequest tokenRequest) {
+    public ApiResponse<AuthenticationResponse> googleLogin(@RequestBody TokenRequest tokenRequest) {
         JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
         try {
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), jsonFactory)
@@ -307,8 +345,8 @@ public class UserController {
                     // Tải ảnh từ URL và lưu vào server
                     String avatarFilename = uploadImages.saveImageUserByLoginGoogle(pictureUrl, saveBeta.getId());
                     if (avatarFilename == null) {
-                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body("Lỗi khi lưu trữ ảnh đại diện");
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                                "Lỗi khi lưu trữ ảnh đại diện");
                     }
                     user.setAvatar(avatarFilename);
                 } else {
@@ -317,97 +355,38 @@ public class UserController {
                     userRepository.save(user);
                 }
 
-                User savedUser = userRepository.save(user);
-
                 // String jsonData = new ObjectMapper().writeValueAsString(savedUser); // Chuyển
                 // đổi đối tượng thành Json
                 // String encrytedData = encryption.encrypt(jsonData);
                 // Trả về thông tin người dùng
-                return ResponseEntity.ok(savedUser);
+                User savedUser = userRepository.save(user);
+                // Khởi tạo AuthenticateRequest để chưa giá trị
+                AuthenticateRequest authenticateRequest = new AuthenticateRequest(savedUser.getEmail(),
+                        savedUser.getPassword(), true);
+                AuthenticationResponse result = authenticateService.authenticate(authenticateRequest);
+                return ApiResponse.<AuthenticationResponse>builder()
+                        .result(result)
+                        .build();
             } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid ID token.");
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid ID token.");
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error while verifying token: " + e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Error while verifying token: " + e.getMessage());
         }
     }
 
-    // public ResponseEntity<String> validate(User user) {
-    //     // Mẫu mật khẩu: ít nhất 8 ký tự, chứa ít nhất 1 chữ cái
-    //     String patternPassword = "^(?=.*[a-zA-Z]).{8,}$";
-    //     // Biểu thức chính quy email
-    //     String patternEmail = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$";
-    //     // Biểu thức chinh quy số điện thoại
-    //     String patternPhone = "0[0-9]{9}";
+    ////////
+    @GetMapping("/info/{id}")
+    public ResponseEntity<User> getUserInfo(@PathVariable Integer id) {
+        User user = userService.getUserById(id);
+        return ResponseEntity.ok(user);
+    }
 
-    //     // Tên
-    //     if (user.getFullname().isEmpty()) {
-    //         return ResponseEntity.badRequest().body("Không được bỏ trống tên");
-    //     }
-
-    //     // Mật khẩu
-    //     if (user.getPassword().isEmpty()) {
-    //         return ResponseEntity.badRequest().body("Không được bỏ trống mật khẩu");
-    //     } else if (user.getPassword().length() < 8 || !user.getPassword().matches(patternPassword)) {
-    //         return ResponseEntity.badRequest().body("Mật khẩu phải chứa ít nhất 8 ký tự bao gồm chữ hoa hoặc thường");
-
-    //     }
-
-    //     // Email
-    //     if (user.getEmail().isEmpty()) {
-    //         return ResponseEntity.badRequest().body("Không được bỏ trống email");
-    //     } else if (!user.getEmail().matches(patternEmail)) {
-    //         return ResponseEntity.badRequest().body("Email sai định dạng");
-    //     }
-
-    //     // Ngày sinh
-    //     if (user.getBirthdate() == null) {
-    //         return ResponseEntity.badRequest().body("Không được bỏ trống ngày sinh");
-    //     }
-    //     // LocalDate dateNow = LocalDate.now(); // Lấy ngày hiện tại
-    //     // LocalDate dateOfBirth;
-
-    //     // try {
-    //     // dateOfBirth = user.getBirthdate();
-    //     // } catch (Exception e) {
-    //     // // TODO: handle exception
-    //     // return ResponseEntity.badRequest().body("Ngày sinh sai định dạng");
-    //     // }
-
-    //     // // Ngày sinh không được lớn hơn hoặc bằng ngày hiện tại
-    //     // if (!dateOfBirth.isBefore(dateNow)) {
-    //     // return ResponseEntity.badRequest().body("Ngày sinh không được bằng hoặc lớn
-    //     // hơn ngày hiện tại");
-    //     // }
-
-    //     // if (Period.between(dateOfBirth, dateNow).getYears() > 100) {
-    //     // return ResponseEntity.badRequest().body("Tuổi không hợp lệ");
-    //     // }
-
-    //     // Giới tính
-    //     if (user.getGender() == null) {
-    //         return ResponseEntity.badRequest().body("Cần chọn giới tính");
-    //     }
-
-    //     // Vai trò
-    //     if (user.getRole() == null) {
-    //         return ResponseEntity.badRequest().body("Cần nhập vai trò");
-    //     }
-
-    //     // địa chỉ
-    //     if (user.getAddress().isEmpty()) {
-    //         return ResponseEntity.badRequest().body("Cần nhập địa chỉ");
-    //     }
-
-    //     // Số điện thoại
-    //     if (user.getPhone().isEmpty()) {
-    //         return ResponseEntity.badRequest().body("Cần nhập số điện thoại");
-    //     } else if (!user.getPhone().matches(patternPhone)) {
-    //         return ResponseEntity.badRequest().body("Số điện thoại không hợp lệ");
-    //     }
-
-    //     return null;
-    // }
+    @PutMapping("/info/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Integer id, @RequestBody User user) {
+        User updatedUser = userService.updateUser(id, user);
+        return ResponseEntity.ok(updatedUser);
+    }
 }

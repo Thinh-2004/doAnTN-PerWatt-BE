@@ -3,6 +3,7 @@ package com.duantn.be_project.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import com.duantn.be_project.Repository.OrderUsRepository;
@@ -14,9 +15,11 @@ import java.util.Map;
 @RestController
 public class OrderUsController {
 
+    //Seller
     @Autowired
     private OrderUsRepository orderUsRepository;
 
+    @PreAuthorize("hasAnyAuthority('Seller')")
     @GetMapping("/count-orders/{storeId}")
     public ResponseEntity<?> getOrdersByStatusForStore(@PathVariable("storeId") Integer storeId) {
         try {

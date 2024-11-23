@@ -12,6 +12,7 @@ public class BeProjectApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(BeProjectApplication.class, args);
+		System.out.println(" Swagger : " + "http://localhost:8080/swagger-ui/index.html#/");
 	}
 
 }

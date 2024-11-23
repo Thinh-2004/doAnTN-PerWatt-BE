@@ -21,6 +21,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -53,6 +54,7 @@ public class VoucherControllerSeller {
     @Autowired
     SlugText slugText;
 
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @GetMapping("fillProduct/{idStore}")
     public ResponseEntity<List<Product>> getProduct(@PathVariable Integer idStore) {
         List<Product> products = productRepository.findAllByStoreId(idStore);
@@ -144,6 +146,7 @@ public class VoucherControllerSeller {
     // return ResponseEntity.ok(response);
     // }
 
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @GetMapping("fillVoucher/{idStore}")
     public ResponseEntity<?> fillVoucher(
             @PathVariable Integer idStore,
@@ -247,6 +250,7 @@ public class VoucherControllerSeller {
         return ResponseEntity.ok(vouchers);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @GetMapping("editVoucherShop/{slug}")
     public ResponseEntity<?> getVouchersByVoucherName(@PathVariable("slug") String slug)
             throws UnsupportedEncodingException {
@@ -257,6 +261,7 @@ public class VoucherControllerSeller {
         return ResponseEntity.ok(vouchers);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @PostMapping("addVouchers")
     public ResponseEntity<?> addVoucher(@RequestBody VoucherRequest voucherRequest) {
 
@@ -308,6 +313,7 @@ public class VoucherControllerSeller {
         return ResponseEntity.ok("Thêm voucher thành công");
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @PutMapping("updateVoucher/{slug}")
     public ResponseEntity<?> updateVoucher(@PathVariable String slug,
             @RequestBody VoucherRequest voucherRequest) {
@@ -386,6 +392,7 @@ public class VoucherControllerSeller {
         return ResponseEntity.ok("Cập nhật thành công");
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @DeleteMapping("delete/{slug}")
     public ResponseEntity<Void> deleteVoucher(@PathVariable String slug) {
         if (voucherSellerRepository.existsBySlug(slug)) {

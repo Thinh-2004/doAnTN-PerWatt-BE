@@ -21,4 +21,6 @@ public interface CategoryRepository extends JpaRepository<ProductCategory, Integ
     //Kiểm tra keyWord 
     @Query("select case when count(c) > 0 then true else false end from ProductCategory c where c.name like ?1")
     Boolean checkEmptyCategory(String keyWord);
+
+    
 }

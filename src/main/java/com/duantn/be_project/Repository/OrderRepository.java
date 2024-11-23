@@ -31,28 +31,30 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
         public Integer countOrderBuyed(Integer idProductDetail);
 
         // biểu đồ doanh thu tháng
-        @Query(value = "SELECT \r\n" + //
-                                "    FORMAT(o.paymentdate, 'MM-yyyy') AS month, \r\n" + //
-                                "    SUM(od.quantity * od.price * (1 - pc.vat)) AS revenue, \r\n" + //
-                                "    COUNT(o.id) AS orders \r\n" + //
-                                "FROM \r\n" + //
-                                "    Orders o \r\n" + //
-                                "JOIN \r\n" + //
-                                "    OrderDetails od ON o.id = od.orderId \r\n" + //
-                                "JOIN \r\n" + //
-                                "    ProductDetails pd ON od.productdetailid = pd.id \r\n" + //
-                                "JOIN \r\n" + //
-                                "\tProducts p on p.id = pd.idProduct\r\n" + //
-                                "JOIN \r\n" + //
-                                "    ProductCategorys pc ON p.categoryId = pc.id \r\n" + //
-                                "WHERE \r\n" + //
-                                "    o.storeId = :storeId\r\n" + //
-                                "    AND o.orderStatus = 'Hoàn thành' \r\n" + //
-                                "GROUP BY \r\n" + //
-                                "    FORMAT(o.paymentdate, 'MM-yyyy') \r\n" + //
-                                "ORDER BY \r\n" + //
-                                "    month;\r\n" + //
-                                "", nativeQuery = true)
-        List<Map<String, Object>> findRevenueByMonth(@Param("storeId") Integer storeId);
+        @Query(value = "SELECT " +
+                        "FORMAT(o.paymentdate, 'yyyy-MM-dd') AS month, " +
+                        "SUM(od.quantity * od.price * (1 - pc.vat)) AS revenue, " +
+                        "COUNT(o.id) AS orders, " +
+                        "p.name AS productName, " +
+                        "pd.nameDetail AS productDetailName, " +
+                        "p.id AS productId, " +
+                        "pd.id AS productDetailId, " +
+                        "od.id AS orderDetailId, " +
+                        "SUM(od.quantity) AS totalQuantity, " +
+                        "SUM(od.quantity * od.price) AS totalProductRevenue " +
+                        "FROM Orders o " +
+                        "JOIN OrderDetails od ON o.id = od.orderId  " +
+                        "JOIN ProductDetails pd ON od.productdetailid = pd.id " +
+                        "JOIN Products p ON pd.idProduct = p.id " +
+                        "JOIN ProductCategorys pc ON p.categoryId = pc.id " +
+                        "WHERE o.storeId = :storeId " +
+                        "AND o.orderStatus = 'Hoàn thành' " +
+                        "AND (:startDate IS NULL OR o.paymentdate >= :startDate) " +
+                        "AND (:endDate IS NULL OR o.paymentdate <= :endDate) " +
+                        "GROUP BY FORMAT(o.paymentdate, 'yyyy-MM-dd'), p.name, pd.nameDetail, p.id, pd.id, od.id", nativeQuery = true)
+        List<Map<String, Object>> findRevenueByMonthWithProducts(
+                        @Param("storeId") Integer storeId,
+                        @Param("startDate") String startDate,
+                        @Param("endDate") String endDate);
 
 }

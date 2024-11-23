@@ -36,5 +36,5 @@ public class VoucherAdminDetail implements Serializable {
     @JoinColumn(name = "idproductdetail")
     ProductDetail productDetail;
 
-    Float discountPrice;
+    Float discountprice;
 }
