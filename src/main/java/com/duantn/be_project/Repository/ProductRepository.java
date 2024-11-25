@@ -195,4 +195,54 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
             "    year;\r\n" + //
             "", nativeQuery = true)
     List<Object[]> findRevenueByStoreId(@Param("storeId") Integer storeId);
+
+    //all san pham
+@Query(value = """
+    WITH ProductSales AS (
+        SELECT 
+            pd.id AS productDetailId, 
+            COALESCE(SUM(od.quantity), 0) AS sold 
+        FROM 
+            ProductDetails pd 
+        LEFT JOIN 
+            OrderDetails od ON pd.id = od.productDetailId 
+        LEFT JOIN 
+            Orders o ON od.orderId = o.id 
+        WHERE 
+            o.orderStatus = 'Hoàn thành' 
+        GROUP BY 
+            pd.id
+    )
+    SELECT 
+        p.id AS productId, 
+        p.name AS productName,  -- Added productName from Products table
+        pd.id AS productDetailId, 
+        pd.nameDetail AS nameDetail, 
+        pd.imageDetail AS imageDetail, 
+        (SELECT TOP 1 i.imageName FROM Images i WHERE i.productId = p.id) AS imageName, 
+        pd.price AS priceDetail, 
+        pd.quantity AS quantityRemainingDetail, 
+        COALESCE(ps.sold, 0) AS soldDetail, 
+        pc.name AS nameCategory, 
+        COALESCE(MAX(v.discountPrice), 0) AS discount 
+    FROM 
+        Products p 
+    JOIN 
+        ProductDetails pd ON p.id = pd.idProduct 
+    LEFT JOIN 
+        ProductSales ps ON pd.id = ps.productDetailId 
+    JOIN 
+        ProductCategorys pc ON p.categoryId = pc.id 
+    LEFT JOIN 
+        VoucherAdminDetail vad ON pd.id = vad.idProductDetail 
+    LEFT JOIN 
+        Vouchers v ON vad.idVoucherAdmin = v.id 
+    WHERE 
+        p.storeId = :idStore 
+    GROUP BY 
+        p.id, p.name, pd.id, pd.nameDetail, pd.imageDetail, pd.price, pd.quantity, pc.name, ps.sold 
+    ORDER BY 
+        sold DESC, pd.nameDetail
+""", nativeQuery = true)
+List<Object[]> findAllProductDetailsByStore(@Param("idStore") int idStore);
 }

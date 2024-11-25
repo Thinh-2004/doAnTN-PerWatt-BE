@@ -1,6 +1,10 @@
 package com.duantn.be_project.controller;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,6 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.duantn.be_project.Repository.RoleRepository;
 import com.duantn.be_project.Repository.UserRepository;
+import com.duantn.be_project.Service.FirebaseStorageService;
 import com.duantn.be_project.Service.UserService;
 import com.duantn.be_project.model.Role;
 import com.duantn.be_project.model.User;
@@ -65,9 +70,10 @@ public class UserController {
     UserService userService;
     @Autowired
     authenticateService authenticateService;
-
     @Autowired
     jwtService jwtService;
+    @Autowired
+    FirebaseStorageService firebaseStorageService;
 
     // GetAll
     @PreAuthorize("hasAnyAuthority('Admin')")
@@ -135,7 +141,7 @@ public class UserController {
                 .build();
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer', 'Admin')")
+    // @PreAuthorize("hasAnyAuthority('Seller', 'Buyer', 'Admin')")
     @PostMapping("/refesh")
     ApiResponse<AuthenticationResponse> authenticate(@RequestBody Map<String, String> token)
             throws ParseException, JOSEException {
@@ -165,12 +171,6 @@ public class UserController {
     @PostMapping("/user")
     public ResponseEntity<?> post(@RequestBody User user) {
 
-        // Bắt lỗi dữ liệu yêu cầu
-        // ResponseEntity<String> validateRes = validate(user);
-        // if (validateRes != null) {
-        // return validateRes;
-        // }
-
         // Kiểm tra email đã tồn tại
         if (userRepository.existsByEmail(user.getEmail())) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Email đã tồn tại");
@@ -181,26 +181,42 @@ public class UserController {
                 .orElseThrow(() -> new RuntimeException("Quyền không tồn tại"));
         user.setRole(role);
 
-        // Mã hóa mật khẩu trước khi lưu
+        // Mã hóa mật khẩu
         String encodedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(encodedPassword);
 
-        // Lưu user để lấy ID
+        // Lưu user
         User savedUser = userRepository.save(user);
 
-        // Lưu ảnh đại diện dựa trên giới tính
-        String avatarFilename = uploadImages.saveUserImageBasedOnGender(user.getGender(), savedUser.getId());
-        if (avatarFilename == null) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi lưu trữ ảnh đại diện");
+        // Lấy ảnh mặc định theo giới tính
+        String defaultAvatar = user.getGender() ? "nam.jpg" : "nu.jpg";
+        Path sourcePath = Paths.get("src/main/resources/static/files/images", defaultAvatar);
+
+        try {
+            // Đọc file
+            byte[] fileContent = Files.readAllBytes(sourcePath);
+
+            // Upload lên Firebase
+            String avatarUserUrl = firebaseStorageService.uploadToFirebaseByUserGender(fileContent,
+                    "users/" + savedUser.getId() + ".jpg");
+
+            if (avatarUserUrl == null) {
+                userRepository.deleteById(savedUser.getId());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi upload ảnh lên Firebase");
+            }
+
+            // Cập nhật avatar
+            savedUser.setAvatar(avatarUserUrl);
+            userRepository.save(savedUser);
+
+            return ResponseEntity.ok(savedUser);
+        } catch (IOException e) {
+            userRepository.deleteById(savedUser.getId());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Không thể xử lý ảnh đại diện");
         }
-
-        savedUser.setAvatar(avatarFilename);
-        userRepository.save(savedUser);
-
-        return ResponseEntity.ok(savedUser);
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer','Admin')") // Chỉ vai trò là seller mới được gọi
     @PutMapping("/user/{id}")
     public ResponseEntity<?> updateUser(
             @PathVariable("id") Integer id,
@@ -218,11 +234,6 @@ public class UserController {
 
         try {
             user = objectMapper.readValue(userJson, User.class);
-            // Bắt lỗi
-            // ResponseEntity<String> validateRes = validate(user);
-            // if (validateRes != null) {
-            // return validateRes;
-            // }
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.badRequest().body("Dữ liệu người dùng không hợp lệ: " + e.getMessage());
@@ -244,21 +255,40 @@ public class UserController {
             }
         } else {
             // Nếu mật khẩu mới là null hoặc rỗng, giữ nguyên mật khẩu hiện tại
-            user.setPassword(null);
+            user.setPassword(existingUser.getPassword());
         }
 
-        String oldAvatarUrl = null;
+        // Lưu tên ảnh cũ
+        String oldImageDetail = existingUser.getAvatar();
+        // Giải mã URL trước
+        String decodedUrl = java.net.URLDecoder.decode(oldImageDetail,
+                java.nio.charset.StandardCharsets.UTF_8);
 
+        // Loại bỏ phần https://firebasestorage.googleapis.com/v0/b/ và lấy phần sau o/
+        String filePath = decodedUrl.split("o/")[1]; // Tách phần sau "o/"
+
+        // Loại bỏ phần ?alt=media
+        int queryIndex = filePath.indexOf("?"); // Tìm vị trí của dấu hỏi "?"
+        if (queryIndex != -1) {
+            filePath = filePath.substring(0, queryIndex); // Cắt bỏ phần sau dấu hỏi
+        }
         // Xử lý hình ảnh nếu có
         if (avatar != null && !avatar.isEmpty()) {
-            // Lưu thông tin ảnh cũ nếu có
-            oldAvatarUrl = userRepository.findById(id)
-                    .map(User::getAvatar)
-                    .orElse(null);
-
             try {
-                // Lưu hình ảnh mới và lấy URL hoặc tên tệp
-                String newAvatarUrl = uploadImages.saveUserImage(avatar, id);
+                // Lưu hình ảnh mới lên Firebase và lấy URL
+                String newAvatarUrl = firebaseStorageService.uploadToFirebase(avatar,
+                        "users");
+
+                // Xóa ảnh cũ trên Firebase nếu có
+                if (oldImageDetail != null && !oldImageDetail.isEmpty()) {
+                    try {
+                        firebaseStorageService.deleteFileFromFirebase(filePath);
+                    } catch (Exception e) {
+                        System.err.println("Không thể xóa ảnh cũ trên Firebase: " + e.getMessage());
+                    }
+                }
+
+                // Cập nhật avatar mới
                 user.setAvatar(newAvatarUrl);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -266,31 +296,13 @@ public class UserController {
                         .body("Không thể lưu hình ảnh: " + e.getMessage());
             }
         } else {
-            String setOldAvatarUrl = userRepository.findById(id)
-                    .map(User::getAvatar)
-                    .orElse(null);
-            user.setAvatar(setOldAvatarUrl);
+            // Nếu không có hình ảnh mới, giữ nguyên avatar cũ
+            user.setAvatar(existingUser.getAvatar());
         }
 
         // Lưu người dùng đã cập nhật
         try {
             User updatedUser = userRepository.save(user);
-
-            // Xóa ảnh cũ nếu có
-            if (oldAvatarUrl != null) {
-                String filePath = String.format("src/main/resources/static/files/user/%d/%s", id, oldAvatarUrl);
-                File file = new File(filePath);
-                if (file.exists()) {
-                    if (file.delete()) {
-                        System.out.println("Đã xóa ảnh cũ: " + filePath);
-                    } else {
-                        System.out.println("Không thể xóa ảnh cũ: " + filePath);
-                    }
-                } else {
-                    System.out.println("Ảnh cũ không tồn tại: " + filePath);
-                }
-            }
-
             return ResponseEntity.ok(updatedUser);
         } catch (Exception e) {
             e.printStackTrace();
@@ -338,26 +350,25 @@ public class UserController {
                     user.setEmail(email);
                     user.setFullname(name);
                     user.setRole(role); // Đặt chức vụ là Buyer khi được tạo tài khoản
+                    user.setAvatar(pictureUrl);
 
                     // Lưu user tạm để lấy id
-                    User saveBeta = userRepository.save(user);
+                    // User saveBeta = userRepository.save(user);
 
-                    // Tải ảnh từ URL và lưu vào server
-                    String avatarFilename = uploadImages.saveImageUserByLoginGoogle(pictureUrl, saveBeta.getId());
-                    if (avatarFilename == null) {
-                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                                "Lỗi khi lưu trữ ảnh đại diện");
-                    }
-                    user.setAvatar(avatarFilename);
+                    // // Tải ảnh từ URL và lưu vào server
+                    // String avatarFilename = uploadImages.saveImageUserByLoginGoogle(pictureUrl,
+                    // saveBeta.getId());
+                    // if (avatarFilename == null) {
+                    // throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    // "Lỗi khi lưu trữ ảnh đại diện");
+                    // }
+
                 } else {
                     user.setFullname(name);
                     user.setEmail(email);
                     userRepository.save(user);
                 }
 
-                // String jsonData = new ObjectMapper().writeValueAsString(savedUser); // Chuyển
-                // đổi đối tượng thành Json
-                // String encrytedData = encryption.encrypt(jsonData);
                 // Trả về thông tin người dùng
                 User savedUser = userRepository.save(user);
                 // Khởi tạo AuthenticateRequest để chưa giá trị

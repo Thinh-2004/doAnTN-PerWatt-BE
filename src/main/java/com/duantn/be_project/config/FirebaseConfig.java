@@ -1,6 +1,8 @@
 package com.duantn.be_project.config;
 
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 import org.springframework.context.annotation.Configuration;
 
@@ -16,14 +18,27 @@ public class FirebaseConfig {
     @PostConstruct
     public void initializeFirebase() {
         try {
-            FileInputStream serviceAccount = new FileInputStream("src/main/resources/firebase-service-account.json");
-            FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                    .setStorageBucket("image-perwatt.firebasestorage.app")
-                    .build();
-            FirebaseApp.initializeApp(options);
-        } catch (Exception e) {
+            // Kiểm tra xem FirebaseApp đã được khởi tạo chưa
+            if (FirebaseApp.getApps().isEmpty()) {
+                // Sử dụng InputStream để đọc tệp từ resources
+                InputStream serviceAccount = getClass().getClassLoader()
+                        .getResourceAsStream("firebase-service-account.json");
+
+                if (serviceAccount == null) {
+                    throw new IOException("Tệp firebase-service-account.json không tìm thấy.");
+                }
+
+                // Cấu hình Firebase với thông tin xác thực
+                FirebaseOptions options = new FirebaseOptions.Builder()
+                        .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                        .build();
+
+                // Khởi tạo FirebaseApp nếu chưa được khởi tạo
+                FirebaseApp.initializeApp(options);
+            }
+        } catch (IOException e) {
             e.printStackTrace();
+            // Xử lý ngoại lệ nếu có lỗi khi đọc tệp JSON hoặc cấu hình Firebase
         }
     }
 }

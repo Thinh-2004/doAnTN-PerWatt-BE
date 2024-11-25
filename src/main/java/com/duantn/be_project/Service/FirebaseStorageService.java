@@ -1,9 +1,11 @@
 package com.duantn.be_project.Service;
 
 import com.google.cloud.storage.Blob;
-import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Bucket;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.cloud.StorageClient;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,29 +17,20 @@ import java.util.UUID;
 @Service
 public class FirebaseStorageService {
 
-    // // Hàm lưu file lên Firebase Storage
-    // public String uploadToFirebase(MultipartFile file, String path) throws
-    // IOException {
-    // // Lấy bucket Firebase
-    // Bucket bucket = StorageClient.getInstance().bucket();
+    private static final String BUCKET_NAME = "image-perwatt.firebasestorage.app";
 
-    // // Tạo đường dẫn file trong bucket
-    // String fileName = path + "/" + file.getOriginalFilename();
-
-    // // Lưu file lên Firebase
-    // Blob blob = bucket.create(fileName, file.getBytes(), file.getContentType());
-
-    // // Trả về URL công khai của file
-    // return String.format("https://storage.googleapis.com/%s/%s",
-    // bucket.getName(), blob.getName());
-    // }
-
+    // Hàm lưu file lên Firebase Storage
     public String uploadToFirebase(MultipartFile file, String path) throws IOException {
-        // Lấy bucket Firebase
-        Bucket bucket = StorageClient.getInstance().bucket();
+        // Kiểm tra file có hợp lệ không
+        if (file.isEmpty()) {
+            throw new IOException("File không hợp lệ hoặc trống.");
+        }
 
-        // Tạo đường dẫn file trong bucket
-        String fileName = path + "/" + file.getOriginalFilename();
+        // Lấy bucket Firebase từ StorageClient và chỉ định tên bucket
+        Bucket bucket = StorageClient.getInstance().bucket(BUCKET_NAME);
+
+        // Tạo đường dẫn file trong bucket với UUID để tránh trùng tên
+        String fileName = path + "/" + UUID.randomUUID().toString() + "-" + file.getOriginalFilename();
 
         // Lưu file lên Firebase
         Blob blob = bucket.create(fileName, file.getBytes(), file.getContentType());
@@ -48,11 +41,34 @@ public class FirebaseStorageService {
                 URLEncoder.encode(blob.getName(), StandardCharsets.UTF_8.toString()));
     }
 
+    // Hàm xử lí upload hình ảnh theo gender user
+    public String uploadToFirebaseByUserGender(byte[] content, String filePath) {
+        try {
+            // Lấy bucket mặc định từ StorageClient
+            Bucket bucket = StorageClient.getInstance().bucket(BUCKET_NAME);
+
+            if (bucket == null) {
+                throw new IllegalStateException("Bucket không được cấu hình đúng!");
+            }
+
+            // Tạo file trên Firebase Storage
+            Blob blob = bucket.create(filePath, content, "image/jpeg");
+
+            // Trả về URL công khai
+            return String.format("https://firebasestorage.googleapis.com/v0/b/%s/o/%s?alt=media",
+                    bucket.getName(),
+                    URLEncoder.encode(blob.getName(), StandardCharsets.UTF_8.toString()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     // Xóa file từ Firebase Storage
     public void deleteFileFromFirebase(String filePath) {
         try {
             // Lấy bucket Firebase
-            Bucket bucket = StorageClient.getInstance().bucket();
+            Bucket bucket = StorageClient.getInstance().bucket(BUCKET_NAME);
 
             // Lấy reference đến file trong bucket
             Blob blob = bucket.get(filePath);
@@ -70,7 +86,6 @@ public class FirebaseStorageService {
         }
     }
 
-
     // Cập nhật file (tải lên lại file mới và xóa file cũ)
     public String updateFileInFirebase(MultipartFile newFile, String oldFilePath, String path) throws IOException {
         // Xóa file cũ nếu có
@@ -79,5 +94,4 @@ public class FirebaseStorageService {
         // Tải lên file mới và lấy URL
         return uploadToFirebase(newFile, path);
     }
-
 }
