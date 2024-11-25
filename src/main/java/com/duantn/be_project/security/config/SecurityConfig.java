@@ -49,7 +49,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                         "/api-docs/*", "/api-docs" };
 
         // Tự config post
-        private final String[] PUBLIC_ENDPONIT = { "/login", "/user", "/loginByGoogle", "/api/*" };
+        private final String[] PUBLIC_ENDPONIT = { "/login", "/user", "/loginByGoogle", "/api/*","/refesh" };
 
         // Tự config get
         private final String[] Get_Public_endpoint = {

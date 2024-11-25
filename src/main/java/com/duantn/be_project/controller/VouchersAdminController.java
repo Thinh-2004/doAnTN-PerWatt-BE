@@ -241,18 +241,22 @@ public class VouchersAdminController {
         Date currentDate = new Date();
 
         for (VoucherAdmin voucher : vouchers) {
-            String newStatus = "đang hoạt động"; // Mặc định là không hoạt động
+            String newStatus = "không hoạt động"; // Mặc định là không hoạt động
 
             Date startDate = voucher.getStartday();
             Date endDate = voucher.getEndday();
 
-            // Nếu ngày bắt đầu nhỏ hơn ngày hiện tại và ngày kết thúc lớn hơn hoặc bằng
-            // ngày hiện tại
-            if (startDate.before(currentDate) && endDate.after(currentDate) || endDate.equals(currentDate)) {
+            // Nếu currentDate nhỏ hơn startDate, voucher sẽ "đang hoạt động"
+            if (currentDate.before(startDate)) {
                 newStatus = "đang hoạt động";
             }
-            // Nếu ngày kết thúc nhỏ hơn ngày hiện tại thì voucher không hoạt động
-            if (endDate.before(currentDate)) {
+            // Nếu currentDate lớn hơn hoặc bằng startDate và nhỏ hơn hoặc bằng endDate,
+            // voucher sẽ "đang hoạt động"
+            else if (!currentDate.before(startDate) && !currentDate.after(endDate)) {
+                newStatus = "đang hoạt động";
+            }
+            // Nếu currentDate lớn hơn endDate, voucher sẽ "không hoạt động"
+            else if (currentDate.after(endDate)) {
                 newStatus = "không hoạt động";
             }
 

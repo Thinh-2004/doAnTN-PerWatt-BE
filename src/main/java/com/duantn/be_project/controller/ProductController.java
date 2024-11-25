@@ -949,7 +949,7 @@ public class ProductController {
 
                         // Lưu hình ảnh lên Firebase và lấy đường dẫn
                         String imageDetailUrl = firebaseStorageService.uploadToFirebase(imageDetail,
-                                "productDetails/" + savedDetail.getId());
+                                "productDetails");
                         savedDetail.setImagedetail(imageDetailUrl); // Cập nhật đường dẫn thực tế
                     } else {
                         savedDetail.setImagedetail(null);
@@ -973,7 +973,7 @@ public class ProductController {
         List<String> imageUrls = new ArrayList<>();
         for (MultipartFile file : files) {
             try {
-                String imageUrl = firebaseStorageService.uploadToFirebase(file, "products/" + savedProduct.getId());
+                String imageUrl = firebaseStorageService.uploadToFirebase(file, "products");
                 System.out.println("Image uploaded: " + imageUrl);
                 if (imageUrl != null) {
                     imageUrls.add(imageUrl); // Thêm vào danh sách imageUrls
@@ -1107,7 +1107,7 @@ public class ProductController {
             return ResponseEntity.badRequest().body("Dữ liệu sản phẩm không hợp lệ: " + e.getMessage());
         }
 
-        // Lưu sản phẩm đã cập nhật
+        // Lưu sản phẩm đã cập nhật (không thay đổi hình ảnh cũ)
         Product updatedProduct;
         try {
             updatedProduct = productRepository.save(product);
@@ -1121,21 +1121,12 @@ public class ProductController {
         if (files != null && files.length > 0) {
             List<String> imageUrls = new ArrayList<>();
 
-            // Xóa các hình ảnh cũ nếu có
-            for (Image image : updatedProduct.getImages()) {
-                // Xóa hình ảnh trên Firebase (nếu cần)
-                firebaseStorageService.deleteFileFromFirebase(image.getImagename());
-
-                // Xóa hình ảnh khỏi CSDL
-                imageRepository.delete(image);
-            }
-
             // Tải hình ảnh mới lên Firebase
             for (MultipartFile file : files) {
                 System.out.println("Đã nhận tệp: " + file.getOriginalFilename());
 
                 // Lưu tệp lên Firebase và lấy URL hoặc tên tệp
-                String imageUrl = firebaseStorageService.uploadToFirebase(file, "products/" + updatedProduct.getId());
+                String imageUrl = firebaseStorageService.uploadToFirebase(file, "products");
 
                 if (imageUrl != null) {
                     imageUrls.add(imageUrl);
@@ -1151,12 +1142,11 @@ public class ProductController {
                 images.add(image);
             }
 
-            // Lưu các hình ảnh mới vào cơ sở dữ liệu
+            // Lưu các hình ảnh mới vào cơ sở dữ liệu mà không xóa ảnh cũ
             try {
                 imageRepository.saveAll(images); // Đảm bảo bạn có repository để lưu hình ảnh
-                updatedProduct.getImages().clear(); // Xóa các hình ảnh cũ trong sản phẩm
                 updatedProduct.getImages().addAll(images); // Thêm hình ảnh mới vào sản phẩm
-                productRepository.save(updatedProduct); // Lưu sản phẩm đã cập nhật
+                productRepository.save(updatedProduct); // Lưu sản phẩm đã cập nhật với hình ảnh mới
             } catch (Exception e) {
                 e.printStackTrace();
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -1170,7 +1160,7 @@ public class ProductController {
     // Delete
     @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @DeleteMapping("/ProductDelete/{id}")
-    public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
+    public ResponseEntity<?> delete(@PathVariable("id") Integer id) {
         // Kiểm tra xem sản phẩm có tồn tại không
         if (!productRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -1179,34 +1169,65 @@ public class ProductController {
         // Lấy thông tin sản phẩm để lấy danh sách hình ảnh
         Product product = productRepository.findById(id).orElse(null);
         if (product != null) {
-            // Xóa hình ảnh từ cơ sở dữ liệu
+            // Lấy danh sách hình ảnh của sản phẩm
             List<Image> images = product.getImages();
+
+            // Xóa các hình ảnh từ Firebase và cơ sở dữ liệu
             for (Image image : images) {
-                // Xóa hình ảnh khỏi hệ thống tệp
+                // Xóa hình ảnh khỏi Firebase Storage
                 try {
-                    uploadImages.deleteFolderAndFile(
-                            Paths.get("src/main/resources/static/files/product-images/" + id).toString());
+                    // Giải mã URL trước
+                    String decodedUrl = java.net.URLDecoder.decode(image.getImagename(),
+                            java.nio.charset.StandardCharsets.UTF_8);
+
+                    // Loại bỏ phần https://firebasestorage.googleapis.com/v0/b/ và lấy phần sau o/
+                    String filePath = decodedUrl.split("o/")[1]; // Tách phần sau "o/"
+
+                    // Loại bỏ phần ?alt=media
+                    int queryIndex = filePath.indexOf("?"); // Tìm vị trí của dấu hỏi "?"
+                    if (queryIndex != -1) {
+                        filePath = filePath.substring(0, queryIndex); // Cắt bỏ phần sau dấu hỏi
+                    }
+                    firebaseStorageService.deleteFileFromFirebase(filePath);
                 } catch (Exception e) {
-                    // Xử lý lỗi nếu không thể xóa hình ảnh
                     e.printStackTrace();
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body("Không thể xóa hình ảnh khỏi Firebase: " + e.getMessage());
                 }
-                imageRepository.delete(image); // Xóa hình ảnh khỏi cơ sở dữ liệu
+
+                // Xóa hình ảnh khỏi cơ sở dữ liệu
+                imageRepository.delete(image);
             }
 
-            // Xóa detailProduct từ cơ sở dữ liệu
+            // Xóa các chi tiết sản phẩm liên quan
             List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(id);
             for (ProductDetail detail : productDetails) {
-                // Xóa hình ảnh khỏi hệ thống tệp
+                // Xóa hình ảnh chi tiết sản phẩm khỏi Firebase
                 try {
-                    uploadImages.deleteFolderAndFile(
-                            Paths.get("src/main/resources/static/files/detailProduct/" + detail.getId()).toString());
+                    if (detail.getImagedetail() != null) {
+                        // Giải mã URL trước
+                        String decodedUrl = java.net.URLDecoder.decode(detail.getImagedetail(),
+                                java.nio.charset.StandardCharsets.UTF_8);
+
+                        // Loại bỏ phần https://firebasestorage.googleapis.com/v0/b/ và lấy phần sau o/
+                        String filePath = decodedUrl.split("o/")[1]; // Tách phần sau "o/"
+
+                        // Loại bỏ phần ?alt=media
+                        int queryIndex = filePath.indexOf("?"); // Tìm vị trí của dấu hỏi "?"
+                        if (queryIndex != -1) {
+                            filePath = filePath.substring(0, queryIndex); // Cắt bỏ phần sau dấu hỏi
+                        }
+                        firebaseStorageService
+                                .deleteFileFromFirebase(filePath);
+                    }
                 } catch (Exception e) {
-                    // Xử lý lỗi nếu không thể xóa hình ảnh
                     e.printStackTrace();
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body("Không thể xóa hình ảnh chi tiết sản phẩm khỏi Firebase: " + e.getMessage());
                 }
-                productDetailRepository.delete(detail); // Xóa chi tiết sản phẩm khỏi cơ sở dữ liệu
+
+                // Xóa chi tiết sản phẩm khỏi cơ sở dữ liệu
+                productDetailRepository.delete(detail);
             }
         }
 
@@ -1310,5 +1331,39 @@ public class ProductController {
             @RequestParam(required = false) String endDate) {
         List<Map<String, Object>> data = orderRepository.findRevenueByMonthWithProducts(storeId, startDate, endDate);
         return ResponseEntity.ok(data);
+    }
+
+    //ChooseProduct
+    //voucher
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là admin mới được gọi
+    @GetMapping("/productDetails/store/{idStore}")
+    public ResponseEntity<List<Map<String, Object>>> getAllProductDetailsByStore(@PathVariable int idStore) {
+        // Lấy dữ liệu từ repository
+        List<Object[]> productDetails = productRepository.findAllProductDetailsByStore(idStore);
+    
+        // Kiểm tra nếu danh sách kết quả rỗng
+        if (productDetails == null || productDetails.isEmpty()) {
+            return ResponseEntity.notFound().build(); // Trả về 404 nếu không tìm thấy
+        }
+    
+        // Chuyển đổi danh sách Object[] thành danh sách Map
+        List<Map<String, Object>> mappedDetails = productDetails.stream().map(product -> {
+            Map<String, Object> productMap = new HashMap<>();
+            productMap.put("productId", product[0]); // productId
+            productMap.put("productName", product[1]); // productName (mới bổ sung)
+            productMap.put("productDetailId", product[2]); // productDetailId
+            productMap.put("nameDetail", product[3]); // nameDetail
+            productMap.put("imageDetail", product[4]); // imageDetail
+            productMap.put("imageName", product[5]); // imageName
+            productMap.put("priceDetail", product[6]); // priceDetail
+            productMap.put("quantityRemainingDetail", product[7]); // quantityRemainingDetail
+            productMap.put("soldDetail", product[8]); // soldDetail
+            productMap.put("nameCategory", product[9]); // nameCategory
+            productMap.put("discount", product[10]); // discount
+            return productMap;
+        }).collect(Collectors.toList());
+    
+        // Trả về danh sách sản phẩm dưới dạng JSON
+        return ResponseEntity.ok(mappedDetails);
     }
 }

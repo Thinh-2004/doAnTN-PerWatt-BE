@@ -1,6 +1,7 @@
 package com.duantn.be_project.controller;
 
 import java.io.File;
+import java.net.URLDecoder;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +23,7 @@ import com.duantn.be_project.Repository.RoleRepository;
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Repository.UserRepository;
 import com.duantn.be_project.Repository.WalletRepository;
+import com.duantn.be_project.Service.FirebaseStorageService;
 import com.duantn.be_project.Service.SlugText.SlugText;
 import com.duantn.be_project.model.ProductCategory;
 import com.duantn.be_project.model.Role;
@@ -55,6 +57,8 @@ public class StoreController {
     SlugText slugText;
     @Autowired
     WalletRepository walletRepository;
+    @Autowired
+    FirebaseStorageService firebaseStorageService;
 
     // Get All
     @GetMapping("/store")
@@ -141,6 +145,7 @@ public class StoreController {
             return ResponseEntity.notFound().build();
         }
 
+        // Chuyển đổi
         ObjectMapper objectMapper = new ObjectMapper();
         Store store;
         try {
@@ -165,6 +170,7 @@ public class StoreController {
         }
 
         store.setId(id);
+        Store existingStore = storeRepository.findById(store.getId()).orElseThrow();
         // Kiểm tra sự tồn tại của slug
         if (!store.getSlug().isEmpty() || store.getSlug() != null) {
             store.setSlug(slugText.generateUniqueSlug(store.getNamestore()));
@@ -174,43 +180,49 @@ public class StoreController {
         // store.setCreatedtime(LocalDateTime.now());
         // }
 
-        String oldImageUrl = null;
+        String oldImageUrl = existingStore.getImgbackgound();
+        // Giải mã URL trước
+        String decodedUrl = java.net.URLDecoder.decode(oldImageUrl,
+                java.nio.charset.StandardCharsets.UTF_8);
+
+        // Loại bỏ phần https://firebasestorage.googleapis.com/v0/b/ và lấy phần sau o/
+        String filePath = decodedUrl.split("o/")[1]; // Tách phần sau "o/"
+
+        // Loại bỏ phần ?alt=media
+        int queryIndex = filePath.indexOf("?"); // Tìm vị trí của dấu hỏi "?"
+        if (queryIndex != -1) {
+            filePath = filePath.substring(0, queryIndex); // Cắt bỏ phần sau dấu hỏi
+        }
 
         if (imgbackgound != null && !imgbackgound.isEmpty()) {
-            oldImageUrl = storeRepository.findById(id)
-                    .map(Store::getImgbackgound)
-                    .orElse(null);
             try {
-                String imgBgUrl = uploadImages.saveStoreImage(imgbackgound, id);
-                store.setImgbackgound(imgBgUrl);
+                // Lưu hình ảnh mới lên Firebase và lấy URL
+                String newAvatarUrl = firebaseStorageService.uploadToFirebase(imgbackgound,
+                        "stores");
+
+                // Xóa ảnh cũ trên Firebase nếu có
+                if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
+                    try {
+                        firebaseStorageService.deleteFileFromFirebase(filePath);
+                    } catch (Exception e) {
+                        System.err.println("Không thể xóa ảnh cũ trên Firebase: " + e.getMessage());
+                    }
+                }
+
+                // Cập nhật avatar mới
+                store.setImgbackgound(newAvatarUrl);
             } catch (Exception e) {
                 e.printStackTrace();
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("Không thể lưu hình ảnh: " + e.getMessage());
             }
         } else {
-            String setOldImageUrl = storeRepository.findById(id).map(Store::getImgbackgound).orElse(null);
-            store.setImgbackgound(setOldImageUrl);
+            store.setImgbackgound(existingStore.getImgbackgound());
 
         }
 
         try {
             Store storeUpdate = storeRepository.save(store);
-
-            if (oldImageUrl != null) {
-                String filePath = String.format("src/main/resources/static/files/store/%d/%s", id, oldImageUrl);
-                File file = new File(filePath);
-                if (file.exists()) {
-                    if (file.delete()) {
-                        System.out.println("Đã xóa ảnh cũ: " + filePath);
-                    } else {
-                        System.out.println("Không thể xóa ảnh cũ: " + filePath);
-                    }
-                } else {
-                    System.out.println("Ảnh cũ không tồn tại: " + filePath);
-                }
-            }
-
             return ResponseEntity.ok(storeUpdate);
         } catch (Exception e) {
             e.printStackTrace();

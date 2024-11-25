@@ -79,7 +79,7 @@ public class OrderController {
         return ResponseEntity.ok(sortedOrders);
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Admin')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller', 'Admin', 'Buyer')") // Chỉ vai trò là seller mới được gọi
     @PutMapping("/order/{id}/status")
     @Transactional
     public ResponseEntity<Order> updateOrderStatus(@PathVariable("id") Integer id,
