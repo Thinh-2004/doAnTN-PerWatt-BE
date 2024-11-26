@@ -24,7 +24,7 @@ import lombok.Setter;
 @Entity
 @Table(name = "Voucheradmindetail")
 public class VoucherAdminDetail implements Serializable {
-     @Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
 
