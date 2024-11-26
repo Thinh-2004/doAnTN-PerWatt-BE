@@ -193,45 +193,8 @@ public class VouchersAdminController {
         return ResponseEntity.ok(details);
     }
 
-    // Xóa voucherAdminDetails theo ProductDetail ID
-    @PreAuthorize("hasAnyAuthority('Admin')")
-    @DeleteMapping("/voucherAdminDetails/deleteByProductDetail/{idProductDetail}")
-    @Transactional
-    public ResponseEntity<?> deleteVoucherAdminDetailsByProductDetail(@PathVariable Integer idProductDetail) {
-        try {
-            voucherAdminDetailRepository.deleteByIdProductDetail(idProductDetail);
-            return ResponseEntity.ok("Deleted successfully");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting voucher details");
-        }
-    }
-
-    // Cập nhật giá giảm cho sản phẩm theo ProductDetail ID
-    @PreAuthorize("hasAnyAuthority('Admin')")
-    @PutMapping("/voucherAdminDetails/updateDiscountByProductDetail/{idProductDetail}")
-    @Transactional
-    public ResponseEntity<?> updateDiscountByProductDetail(
-            @PathVariable Integer idProductDetail,
-            @RequestParam Float newDiscountPrice) {
-        try {
-            List<VoucherAdminDetail> details = voucherAdminDetailRepository.findByIdProductDetail(idProductDetail);
-
-            if (details.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Không tìm thấy VoucherAdminDetail cho sản phẩm này");
-            }
-
-            details.forEach(detail -> {
-                detail.setDiscountprice(newDiscountPrice);
-                voucherAdminDetailRepository.save(detail);
-            });
-
-            return ResponseEntity.ok("Cập nhật giá giảm thành công");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Đã xảy ra lỗi khi cập nhật giá giảm: " + e.getMessage());
-        }
-    }
+    
+    
 
     // Cập nhật trạng thái voucher mỗi ngày lúc 00:00 @Scheduled(cron = "0 0 0 * *
     // ?")

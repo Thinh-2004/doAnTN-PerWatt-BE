@@ -16,6 +16,12 @@ import java.util.List;
 @Repository
 public interface VoucherAdminDetailRepository extends JpaRepository<VoucherAdminDetail, Integer> {
 
+    // FindAll by idStore
+    @Query("""
+            select vad from VoucherAdminDetail vad where vad.productDetail.product.store.id = ?1
+            """)
+    List<VoucherAdminDetail> findAllByidStore(Integer idStore);
+
     // Custom query để tìm VoucherAdminDetail theo ProductDetail
     @Query("SELECT vad FROM VoucherAdminDetail vad WHERE vad.productDetail = :productDetail")
     VoucherAdminDetail findByProductDetail(@Param("productDetail") ProductDetail productDetail);
@@ -23,19 +29,18 @@ public interface VoucherAdminDetailRepository extends JpaRepository<VoucherAdmin
     // Phương thức tìm danh sách VoucherAdminDetail dựa trên VoucherAdmin ID
     List<VoucherAdminDetail> findByVoucherAdminId(Integer voucherAdminId);
 
-    
-//14/10
-   // Phương thức tìm danh sách VoucherAdminDetail theo idProductDetail
-   @Query("SELECT vad FROM VoucherAdminDetail vad WHERE vad.productDetail.id = :idProductDetail")
-   List<VoucherAdminDetail> findByIdProductDetail(@Param("idProductDetail") Integer idProductDetail);
-    
-   //xóa tất cả liên quan tới VoucherAdminDetail
-//    @Transactional
-   @Modifying
+    // 14/10
+    // Phương thức tìm danh sách VoucherAdminDetail theo idProductDetail
+    @Query("SELECT vad FROM VoucherAdminDetail vad WHERE vad.productDetail.id = :idProductDetail")
+    List<VoucherAdminDetail> findByIdProductDetail(@Param("idProductDetail") Integer idProductDetail);
+
+    // xóa tất cả liên quan tới VoucherAdminDetail
+    // @Transactional
+    @Modifying
     @Query("DELETE FROM VoucherAdminDetail vad WHERE vad.voucherAdmin.id = :voucherAdminId")
     void deleteByVoucherAdminId(int voucherAdminId);
 
-    //xóa từng VoucherAdminDetail
+    // xóa từng VoucherAdminDetail
     // @Transactional
     @Modifying
     @Query("DELETE FROM VoucherAdminDetail vad WHERE vad.productDetail.id = :idProductDetail")
@@ -46,9 +51,5 @@ public interface VoucherAdminDetailRepository extends JpaRepository<VoucherAdmin
     @Modifying
     @Query("UPDATE VoucherAdminDetail v SET v.discountprice = :discountPrice WHERE v.id = :id")
     void updateDiscountPrice(@Param("id") Integer id, @Param("discountPrice") Float discountPrice);
-    
 
- 
-
-   
 }
