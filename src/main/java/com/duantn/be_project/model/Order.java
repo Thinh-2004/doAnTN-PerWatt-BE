@@ -34,9 +34,14 @@ public class Order implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
+    
     String orderstatus;
+
     @Temporal(TemporalType.TIMESTAMP)
     Date paymentdate;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    Date receivedate;
 
     @ManyToOne
     @JoinColumn(name = "paymentmethodid")
@@ -68,8 +73,6 @@ public class Order implements Serializable {
 
     String note;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    Date receivedate;
-
     Float totalamount;
+
 }
