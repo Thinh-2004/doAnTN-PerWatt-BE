@@ -73,6 +73,6 @@ public class Order implements Serializable {
 
     String note;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    Date receivedate;
+    Float totalamount;
+
 }

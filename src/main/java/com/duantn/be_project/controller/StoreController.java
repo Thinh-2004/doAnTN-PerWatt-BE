@@ -122,6 +122,7 @@ public class StoreController {
             wallet.setUser(store.getUser());
             wallet.setBalance(0f);
             wallet.setCreatedat(new Date());
+            wallet.setPasscode(0);
             walletRepository.save(wallet);
         }
 

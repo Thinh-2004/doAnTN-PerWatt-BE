@@ -1,12 +1,10 @@
 package com.duantn.be_project.controller;
 
 import java.io.File;
-<<<<<<< HEAD
-=======
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
->>>>>>> a6abd943928eae065c0e9d81e347ca6ca254abf4
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +42,7 @@ public class ProductDetailController {
     // MinMax theo danh sách findMore
     @GetMapping("/sidlerMinMax/{name}")
     public ResponseEntity<?> silderMinMax(@PathVariable("name") String name) throws UnsupportedEncodingException {
-         String decodeName = URLDecoder.decode(name, StandardCharsets.UTF_8.name());
+        String decodeName = URLDecoder.decode(name, StandardCharsets.UTF_8.name());
         List<Object[]> respone = productDetailRepository.minMaxPriceDetail("%" + decodeName + "%");
         return ResponseEntity.ok(respone);
     }

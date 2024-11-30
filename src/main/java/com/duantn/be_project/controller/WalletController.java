@@ -35,16 +35,35 @@ public class WalletController {
     @GetMapping("/wallet/{id}")
     public ResponseEntity<Wallet> getByUserId(@PathVariable("id") Integer id) {
         Optional<Wallet> optionalWallet = walletRepository.findByUserId(id);
-
         return ResponseEntity.ok(optionalWallet.get());
     }
 
+    @PostMapping("/wallet/createNew")
+    public ResponseEntity<Wallet> post(@RequestBody Wallet wallet) {
+        Wallet savedWallet = walletRepository.save(wallet);
+
+        savedWallet.setBalance(0f);
+        savedWallet = walletRepository.save(savedWallet);
+
+        return ResponseEntity.ok(savedWallet);
+    }
+
     @PutMapping("/wallet/update/{id}")
-    public ResponseEntity<Wallet> updateBalance(@PathVariable("id") Integer id, @RequestBody Wallet updatedWallet) {
+    public ResponseEntity<?> updateBalance(@PathVariable("id") Integer id, @RequestBody Wallet updatedWallet) {
         Optional<Wallet> optionalWallet = walletRepository.findByUserId(id);
 
         Wallet wallet = optionalWallet.get();
         wallet.setBalance(updatedWallet.getBalance());
+        walletRepository.save(wallet);
+        return ResponseEntity.ok(wallet);
+    }
+
+    @PutMapping("/wallet/updatePassCode/{id}")
+    public ResponseEntity<?> updateBalancePassCode(@PathVariable("id") Integer id, @RequestBody Wallet updatedWallet) {
+        Optional<Wallet> optionalWallet = walletRepository.findByUserId(id);
+
+        Wallet wallet = optionalWallet.get();
+        wallet.setPasscode(updatedWallet.getPasscode());
         walletRepository.save(wallet);
         return ResponseEntity.ok(wallet);
     }
@@ -79,8 +98,4 @@ public class WalletController {
         return ResponseEntity.ok(wallet);
     }
 
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> a6abd943928eae065c0e9d81e347ca6ca254abf4
