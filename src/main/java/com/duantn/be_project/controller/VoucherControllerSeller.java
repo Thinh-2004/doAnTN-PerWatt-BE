@@ -6,9 +6,12 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -18,6 +21,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -50,6 +54,7 @@ public class VoucherControllerSeller {
     @Autowired
     SlugText slugText;
 
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @GetMapping("fillProduct/{idStore}")
     public ResponseEntity<List<Product>> getProduct(@PathVariable Integer idStore) {
         List<Product> products = productRepository.findAllByStoreId(idStore);
@@ -141,65 +146,98 @@ public class VoucherControllerSeller {
     // return ResponseEntity.ok(response);
     // }
 
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @GetMapping("fillVoucher/{idStore}")
-    public ResponseEntity<?> fillVoucher(@PathVariable Integer idStore,
+    public ResponseEntity<?> fillVoucher(
+            @PathVariable Integer idStore,
             @RequestParam("pageNo") Optional<Integer> pageNo,
             @RequestParam("pageSize") Optional<Integer> pageSize,
             @RequestParam(name = "keyWord", defaultValue = "") String keyWord,
             @RequestParam(name = "status", defaultValue = "") String status,
             @RequestParam(name = "sortBy", defaultValue = "") String sortBy) {
 
-        // Truy vấn danh sách vouchername duy nhất
-        List<String> voucherNames = voucherSellerRepository.findAllByIdStore(idStore, "%" + keyWord + "%",
-                status.isEmpty() ? "%" : status);
+        // Lấy danh sách Voucher đã sắp xếp từ cơ sở dữ liệu
+        List<Voucher> vouchers = voucherSellerRepository.findAllByIdStore(idStore, "%" + keyWord + "%",
+                status.isEmpty() ? "%" : status, sortBy);
 
-        // Sắp xếp danh sách voucher theo id (tăng dần hoặc giảm dần)
-        // Comparator<Voucher> comparator;
-        // switch (sortBy) {
-        //     case "newVouchers":
-        //         comparator = Comparator.comparingInt(Voucher::getId).reversed(); // sắp xếp giảm dần theo id
-        //         break;
-        //     case "oldVouchers":
-        //         comparator = Comparator.comparingInt(Voucher::getId); // sắp xếp tăng dần theo id
-        //         break;
-        //     case "disCountPriceASC":
-        //         comparator = Comparator.comparingInt(Voucher::getDiscountprice); // sắp xếp theo giá trị giảm giá
-        //                                                                             // tăng dần
-        //         break;
-        //     case "disCountPriceDESC":
-        //         comparator = Comparator.comparingInt(Voucher::getDiscountprice).reversed(); // sắp xếp theo giá trị
-        //                                                                                        // giảm giá giảm dần
-        //         break;
-        //     default:
-        //         comparator = Comparator.comparingInt(Voucher::getId).reversed(); // mặc định sắp xếp giảm dần theo id
-        // }
+        // Nhóm voucher theo nameVoucher, giữ nguyên thứ tự từ cơ sở dữ liệu
+        Map<String, List<Voucher>> groupedVouchers = vouchers.stream()
+                .collect(Collectors.groupingBy(
+                        Voucher::getVouchername,
+                        LinkedHashMap::new,
+                        Collectors.toList()));
 
-        // // Áp dụng sắp xếp
-        // voucherNames.sort(comparator);
-
-        // Phân trang thủ công
+        // Áp dụng phân trang thủ công
         int page = pageNo.orElse(0);
         int size = pageSize.orElse(10);
-        int start = Math.min(page * size, voucherNames.size());
-        int end = Math.min((page + 1) * size, voucherNames.size());
-        List<String> paginatedVoucherNames = voucherNames.subList(start, end);
+        int totalItems = groupedVouchers.size();
+        int totalPages = (int) Math.ceil((double) totalItems / size);
+        int start = page * size;
+        int end = Math.min(start + size, totalItems);
 
-        // Lấy từng nhóm voucher theo namevoucher
-        List<Map<String, Object>> vouchersGrouped = new ArrayList<>();
-        for (String nameVoucher : paginatedVoucherNames) {
-            List<Voucher> vouchers = voucherSellerRepository.findByIdStoreAndNameVoucher(idStore, nameVoucher);
-            Map<String, Object> group = new HashMap<>();
-            group.put("nameVoucher", nameVoucher);
-            group.put("vouchers", vouchers);
-            vouchersGrouped.add(group);
-        }
+        List<Map<String, Object>> paginatedVouchersGrouped = new ArrayList<>(groupedVouchers.entrySet())
+                .subList(start, end)
+                .stream()
+                .map(entry -> {
+                    Map<String, Object> group = new HashMap<>();
+                    group.put("nameVoucher", entry.getKey());
+                    group.put("vouchers", entry.getValue());
+                    return group;
+                })
+                .collect(Collectors.toList());
 
-        // Tạo 1 Map để trả về dữ liệu
+        // // Sắp xếp theo id hoặc discountprice
+        // if ("newVouchers".equalsIgnoreCase(sortBy)) {
+        // paginatedVouchersGrouped.sort((g1, g2) -> (Integer) g2.get("id") - (Integer)
+        // g1.get("id"));
+        // } else if ("oldVouchers".equalsIgnoreCase(sortBy)) {
+        // paginatedVouchersGrouped.sort((g1, g2) -> (Integer) g1.get("id") - (Integer)
+        // g2.get("id"));
+        // } else if ("disCountPriceASC".equalsIgnoreCase(sortBy)) {
+        // paginatedVouchersGrouped.sort((g1, g2) -> {
+        // // Ép kiểu Object sang List<Voucher>
+        // List<Voucher> vouchers1 = (List<Voucher>) g1.get("vouchers");
+        // List<Voucher> vouchers2 = (List<Voucher>) g2.get("vouchers");
+
+        // // Tìm discountPrice nhỏ nhất
+        // Integer discount1 = vouchers1.stream()
+        // .map(Voucher::getDiscountprice) // Giả sử getDiscountPrice() trả về Double
+        // .min(Integer::compareTo)
+        // .orElse(Integer.MAX_VALUE);
+        // Integer discount2 = vouchers2.stream()
+        // .map(Voucher::getDiscountprice)
+        // .min(Integer::compareTo)
+        // .orElse(Integer.MAX_VALUE);
+
+        // return discount2.compareTo(discount1);
+        // });
+        // } else if ("disCountPriceDESC".equalsIgnoreCase(sortBy)) {
+        // paginatedVouchersGrouped.sort((g1, g2) -> {
+        // // Ép kiểu Object sang List<Voucher>
+        // List<Voucher> vouchers1 = (List<Voucher>) g1.get("vouchers");
+        // List<Voucher> vouchers2 = (List<Voucher>) g2.get("vouchers");
+
+        // // Tìm discountPrice lớn nhất
+        // Integer discount1 = vouchers1.stream()
+        // .map(Voucher::getDiscountprice)
+        // .max(Integer::compareTo)
+        // .orElse(Integer.MIN_VALUE);
+        // Integer discount2 = vouchers2.stream()
+        // .map(Voucher::getDiscountprice)
+        // .max(Integer::compareTo)
+        // .orElse(Integer.MIN_VALUE);
+
+        // return discount1.compareTo(discount2);
+        // });
+        // }
+
+        // Tạo Map để trả về dữ liệu
         Map<String, Object> response = new HashMap<>();
-        response.put("vouchersGrouped", vouchersGrouped); // Danh sách nhóm voucher
-        response.put("currentPage", page); // Trang hiện tại
-        response.put("totalPage", (int) Math.ceil((double) voucherNames.size() / size)); // Tổng số trang
-        response.put("totalItem", voucherNames.size()); // Tổng số nhóm nameVoucher
+        response.put("vouchersGrouped", paginatedVouchersGrouped);
+        response.put("currentPage", page);
+        response.put("totalPage", totalPages);
+        response.put("totalItem", totalItems);
+
         return ResponseEntity.ok(response);
     }
 
@@ -212,6 +250,7 @@ public class VoucherControllerSeller {
         return ResponseEntity.ok(vouchers);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @GetMapping("editVoucherShop/{slug}")
     public ResponseEntity<?> getVouchersByVoucherName(@PathVariable("slug") String slug)
             throws UnsupportedEncodingException {
@@ -222,6 +261,7 @@ public class VoucherControllerSeller {
         return ResponseEntity.ok(vouchers);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @PostMapping("addVouchers")
     public ResponseEntity<?> addVoucher(@RequestBody VoucherRequest voucherRequest) {
 
@@ -273,6 +313,7 @@ public class VoucherControllerSeller {
         return ResponseEntity.ok("Thêm voucher thành công");
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @PutMapping("updateVoucher/{slug}")
     public ResponseEntity<?> updateVoucher(@PathVariable String slug,
             @RequestBody VoucherRequest voucherRequest) {
@@ -351,6 +392,7 @@ public class VoucherControllerSeller {
         return ResponseEntity.ok("Cập nhật thành công");
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @DeleteMapping("delete/{slug}")
     public ResponseEntity<Void> deleteVoucher(@PathVariable String slug) {
         if (voucherSellerRepository.existsBySlug(slug)) {

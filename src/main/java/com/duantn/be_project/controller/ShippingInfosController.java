@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +25,7 @@ public class ShippingInfosController {
     @Autowired
     ShippingInfosRepository shippingInfosRepository;
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
     @GetMapping("/shippingInfo")
     public ResponseEntity<List<ShippingInfor>> getAll(@RequestParam("userId") Integer idUser) {
         List<ShippingInfor> sortedShippingInfos = shippingInfosRepository.findAllByUserId(idUser).stream()
@@ -33,12 +35,14 @@ public class ShippingInfosController {
         return ResponseEntity.ok(sortedShippingInfos);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
     @PostMapping("/shippingInfoCreate")
     public ResponseEntity<ShippingInfor> post(@RequestBody ShippingInfor shippingInfor) {
         ShippingInfor savedShippingInfor = shippingInfosRepository.save(shippingInfor);
         return ResponseEntity.ok(savedShippingInfor);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
     @PutMapping("/shippingInfoUpdate/{id}")
     public ResponseEntity<ShippingInfor> update(@PathVariable Integer id, @RequestBody ShippingInfor shippingInfor) {
         shippingInfor.setId(id);
@@ -46,6 +50,7 @@ public class ShippingInfosController {
         return ResponseEntity.ok(updatedShippingInfor);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
     @DeleteMapping("/shippingInfoDelete/{id}")
     public ResponseEntity<String> delete(@PathVariable Integer id) {
         shippingInfosRepository.deleteById(id);

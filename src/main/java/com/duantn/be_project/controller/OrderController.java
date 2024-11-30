@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -34,11 +35,13 @@ public class OrderController {
     @Autowired
     ProductDetailRepository productRepository;
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
     @GetMapping("/order")
     public ResponseEntity<List<Order>> getAll(Model model) {
         return ResponseEntity.ok(orderRepository.findAll());
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
     @GetMapping("/order/{id}")
     public ResponseEntity<Order> getById(@PathVariable("id") Integer id) {
         Order order = orderRepository.findById(id).orElseThrow();
@@ -48,6 +51,7 @@ public class OrderController {
         return ResponseEntity.ok(order);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
     @GetMapping("/orderFill/{id}")
     public ResponseEntity<List<Order>> getById2(@PathVariable("id") Integer id) {
         List<Order> orders = orderRepository.findAllByUserId(id);
@@ -62,6 +66,7 @@ public class OrderController {
         return ResponseEntity.ok(sortedOrders);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
     @GetMapping("/orderSeller/{id}")
     public ResponseEntity<List<Order>> getOrdersByStoreId(@PathVariable("id") Integer id) {
         List<Order> orders = orderRepository.findAllByStoreId(id);
@@ -74,6 +79,7 @@ public class OrderController {
         return ResponseEntity.ok(sortedOrders);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Admin', 'Buyer')") // Chỉ vai trò là seller mới được gọi
     @PutMapping("/order/{id}/status")
     @Transactional
     public ResponseEntity<Order> updateOrderStatus(@PathVariable("id") Integer id,
@@ -109,6 +115,7 @@ public class OrderController {
         return ResponseEntity.ok(order);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Admin')") // Chỉ vai trò là seller mới được gọi
     @DeleteMapping("/order/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
         if (!orderRepository.existsById(id)) {

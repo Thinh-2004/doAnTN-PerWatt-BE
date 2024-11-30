@@ -15,6 +15,7 @@ import java.util.TimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -25,7 +26,7 @@ import com.duantn.be_project.Repository.CartRepository;
 import com.duantn.be_project.Repository.OrderDetailRepository;
 import com.duantn.be_project.Repository.OrderRepository;
 import com.duantn.be_project.Repository.ProductDetailRepository;
-import com.duantn.be_project.Service.Config;
+import com.duantn.be_project.config.Config;
 import com.duantn.be_project.model.CartItem;
 import com.duantn.be_project.model.Order;
 import com.duantn.be_project.model.OrderDetail;
@@ -36,6 +37,7 @@ import com.duantn.be_project.model.Request_Response.PaymentResDTO;
 import com.duantn.be_project.model.Request_Response.TotalMoneyDTO;
 
 @RestController
+@PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
 @RequestMapping("/api/payment")
 public class PaymentController {
     @Autowired
