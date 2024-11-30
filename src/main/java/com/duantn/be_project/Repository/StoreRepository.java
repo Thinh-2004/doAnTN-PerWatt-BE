@@ -2,6 +2,8 @@ package com.duantn.be_project.Repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import com.duantn.be_project.model.Store;
 
 import java.util.List;
@@ -139,34 +141,47 @@ public interface StoreRepository extends JpaRepository<Store, Integer> {
             "    [Year];", nativeQuery = true)
     List<Map<String, Object>> findRevenueByYear();
 
+    // Doanh thu theo tháng
     @Query(value = "SELECT " +
             "DATEPART(YEAR, o.paymentDate) AS [Year], " +
             "DATEPART(MONTH, o.paymentDate) AS [Month], " +
-            "SUM(od.quantity * od.price * pc.vat ) AS TotalVATCollected " +
+            "s.nameStore AS StoreName, " +
+            "SUM(od.quantity * od.price * pc.vat) AS TotalVATCollected, " +
+            "od.price AS PriceDetail, " +
+            "od.quantity AS QuantityDetail, " +
+            "pc.vat AS VAT " +
             "FROM Orders o " +
             "INNER JOIN OrderDetails od ON o.id = od.orderId " +
             "INNER JOIN ProductDetails pd ON od.productDetailId = pd.id " +
-            "INNER JOIN Products p on p.id = pd.idProduct " +
+            "INNER JOIN Products p ON p.id = pd.idProduct " +
             "INNER JOIN ProductCategorys pc ON p.categoryId = pc.id " +
             "INNER JOIN Stores s ON p.storeId = s.id " +
             "WHERE o.orderStatus = 'Hoàn thành' " +
-            "GROUP BY DATEPART(YEAR, o.paymentDate), DATEPART(MONTH, o.paymentDate) " +
-            "ORDER BY [Year], [Month]", nativeQuery = true)
-    List<Map<String, Object>> findTotalVATByMonth();
+            "AND (o.paymentDate >= :startDate OR :startDate IS NULL) " +
+            "AND (o.paymentDate <= :endDate OR :endDate IS NULL) " +
+            "GROUP BY DATEPART(YEAR, o.paymentDate), DATEPART(MONTH, o.paymentDate), s.nameStore, od.price, od.quantity, pc.vat "
+            +
+            "ORDER BY [Year], [Month], StoreName", nativeQuery = true)
+    List<Map<String, Object>> findTotalVATByMonth(@Param("startDate") String startDate,
+            @Param("endDate") String endDate);
 
     // Doanh thu theo ngày
     @Query(value = "SELECT " +
             "CAST(o.paymentDate AS DATE) AS OrderDate, " +
-            "SUM(od.quantity * od.price * pc.vat ) AS TotalRevenue " +
+            "SUM(od.quantity * od.price * pc.vat) AS TotalRevenue " +
             "FROM Orders o " +
             "INNER JOIN OrderDetails od ON o.id = od.orderId " +
             "INNER JOIN ProductDetails pd ON od.productDetailId = pd.id " +
-            "INNER JOIN Products p on p.id = pd.idProduct " +
+            "INNER JOIN Products p ON p.id = pd.idProduct " +
             "INNER JOIN ProductCategorys pc ON p.categoryId = pc.id " +
             "WHERE o.orderStatus = 'Hoàn thành' " +
+            "AND (:startDate IS NULL OR CAST(o.paymentDate AS DATE) >= :startDate) " +
+            "AND (:endDate IS NULL OR CAST(o.paymentDate AS DATE) <= :endDate) " +
             "GROUP BY CAST(o.paymentDate AS DATE) " +
             "ORDER BY OrderDate", nativeQuery = true)
-    List<Map<String, Object>> findRevenueByDay();
+    List<Map<String, Object>> findRevenueByDay(
+            @Param("startDate") String startDate,
+            @Param("endDate") String endDate);
 
     // Đếm sô lượng cửa hàng được tạo theo tháng
     @Query(value = "SELECT YEAR(createdTime) AS Year, MONTH(createdTime) AS Month, COUNT(*) AS TotalStores " +

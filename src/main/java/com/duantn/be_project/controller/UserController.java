@@ -51,7 +51,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PutMapping;
 
 @CrossOrigin("*")
@@ -109,7 +108,7 @@ public class UserController {
     }
 
     // checkmkProfileUser
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer', 'Admin')")
     @PostMapping("/checkPass")
     public ResponseEntity<Map<String, Object>> checkPass(@RequestBody User userRequest) {
         Map<String, Object> response = new HashMap<>();
@@ -131,7 +130,7 @@ public class UserController {
         }
     }
 
-    @PostMapping("/login")
+    @PostMapping("/form/login")
     public ApiResponse<AuthenticationResponse> login(@RequestBody AuthenticateRequest request) {
 
         AuthenticationResponse result = authenticateService.authenticate(request);
@@ -141,7 +140,7 @@ public class UserController {
     }
 
     // @PreAuthorize("hasAnyAuthority('Seller', 'Buyer', 'Admin')")
-    @PostMapping("/refesh")
+    @PostMapping("/form/refesh")
     ApiResponse<AuthenticationResponse> authenticate(@RequestBody Map<String, String> token)
             throws ParseException, JOSEException {
         AuthenticationResponse result = jwtService.refeshToken(token.get("token"));
@@ -150,8 +149,8 @@ public class UserController {
                 .build();
     }
 
-    @PostMapping("/logout")
     @PreAuthorize("hasAnyAuthority('Seller', 'Buyer', 'Admin')")
+    @PostMapping("/form/logout")
     public ApiResponse<Void> logout(@RequestBody Map<String, String> requestBody) throws ParseException, JOSEException {
         String token = requestBody.get("token"); // Lấy token từ body
         if (token == null || token.isEmpty()) {

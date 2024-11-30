@@ -38,6 +38,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PutMapping;
 
 @CrossOrigin("*")
@@ -289,17 +290,21 @@ public class StoreController {
     // Doanh thu theo tháng Dashboard
     @PreAuthorize("hasAnyAuthority('Admin')")
     @GetMapping("/revenue-by-month")
-    public ResponseEntity<List<Map<String, Object>>> getVATByMonth() {
-        List<Map<String, Object>> vatData = storeRepository.findTotalVATByMonth(); // Cập nhật phương thức trong
-                                                                                   // repository
+    public ResponseEntity<List<Map<String, Object>>> getVATByMonth(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+
+        List<Map<String, Object>> vatData = storeRepository.findTotalVATByMonth(startDate, endDate);
         return ResponseEntity.ok(vatData);
     }
 
     // Doanh thu theo ngày
     @PreAuthorize("hasAnyAuthority('Admin')")
     @GetMapping("/revenue-by-day")
-    public ResponseEntity<List<Map<String, Object>>> getRevenueByDay() {
-        List<Map<String, Object>> revenueData = storeRepository.findRevenueByDay();
+    public ResponseEntity<List<Map<String, Object>>> getRevenueByDay(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        List<Map<String, Object>> revenueData = storeRepository.findRevenueByDay(startDate, endDate);
         return ResponseEntity.ok(revenueData);
     }
 
