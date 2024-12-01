@@ -37,10 +37,10 @@ public class Voucher implements Serializable {
     String vouchername;
 
     @ManyToOne
-    @JoinColumn(name = "idproductdetail")
-    ProductDetail productDetail;
+    @JoinColumn(name = "idproduct")
+    Product product;
 
-    Float discountprice;
+    Integer discountprice;
 
     @Temporal(TemporalType.TIMESTAMP)
     Date startday;
@@ -54,5 +54,9 @@ public class Voucher implements Serializable {
     @JsonIgnore
     @OneToMany(mappedBy = "voucher")
     List<Order> orders;
+
+    String status;
+    String slug;
+    Integer quantityvoucher;
 
 }

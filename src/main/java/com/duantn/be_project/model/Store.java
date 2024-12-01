@@ -1,7 +1,7 @@
 package com.duantn.be_project.model;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -40,7 +40,7 @@ public class Store implements Serializable{
     String phone;
     String cccdnumber;
     @Temporal(TemporalType.TIMESTAMP)
-    LocalDateTime createdtime;
+    Date createdtime;
     String imgbackgound;
 
     @ManyToOne

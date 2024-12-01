@@ -19,7 +19,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @SuppressWarnings("serial")
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -44,8 +43,11 @@ public class Comment implements Serializable {
     @JoinColumn(name = "storeid")
     Store store;
 
-    @Temporal(TemporalType.TIME)
+    @Temporal(TemporalType.TIMESTAMP)
     Date commentdate;
     Integer rating;
     
+    @ManyToOne
+    @JoinColumn(name = "replyid")
+    Comment reply;
 }

@@ -17,4 +17,16 @@ public interface CategoryRepository extends JpaRepository<ProductCategory, Integ
             "inner join Stores C on A.storeId = C.id\r\n" + //
             "where A.storeId = ?1", nativeQuery = true)
     List<ProductCategory> cateProductInStore(Integer idStore);
+
+    //Kiểm tra keyWord 
+    @Query("select case when count(c) > 0 then true else false end from ProductCategory c where c.name like ?1")
+    Boolean checkEmptyCategory(String keyWord);
+
+    //FindAllBy DESC
+    @Query("""
+            select c from ProductCategory c order by c.id desc
+            """)
+    List<ProductCategory> findAllByDESC();
+
+    
 }

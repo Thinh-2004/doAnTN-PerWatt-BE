@@ -1,7 +1,6 @@
 package com.duantn.be_project.model;
 
 import java.io.Serializable;
-import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 
@@ -43,8 +42,8 @@ public class User implements Serializable {
     Boolean gender;
 
     @ManyToOne
-    @JoinColumn(name = "roleid")
-    Role role;
+    @JoinColumn(name = "rolepermissionid")
+    RolePermission rolepPermission;
 
     String address;
     String phone;

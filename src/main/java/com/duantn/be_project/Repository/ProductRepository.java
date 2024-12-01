@@ -3,6 +3,9 @@ package com.duantn.be_project.Repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,162 +13,239 @@ import org.springframework.data.repository.query.Param;
 import com.duantn.be_project.model.Product;
 
 public interface ProductRepository extends JpaRepository<Product, Integer> {
-    @Query("select p from Product p where p.store.id = ?1 ")
+    @Query("select p from Product p where p.store.id = ?1 order by p.id desc ")
     List<Product> findAllByStoreId(Integer idStore);
 
-    @Query("SELECT p FROM Product p LEFT JOIN FETCH p.images WHERE p.store.slug = :slugStore")
-    List<Product> findAllByStoreIdWithSlugStore(@Param("slugStore") String slugStore);
+    @Query("""
+            SELECT p, MAX(pd.price) as maxPrice, COUNT(o.orderstatus) as orderCount, SUM(pd.quantity) as quantityCount
+
+            FROM Product p
+            JOIN p.productDetails pd
+            LEFT JOIN OrderDetail od ON pd.id = od.productDetail.id
+            LEFT JOIN Order o ON od.order.id = o.id AND o.orderstatus LIKE 'Hoàn Thành'
+            WHERE p.store.slug LIKE ?1
+            AND ((p.productcategory.name like ?2 or p.productcategory.name like ?3 or p.productcategory.name like ?4 or p.productcategory.name like ?5 or p.productcategory.name like ?6)
+                          or p.productcategory.id = ?7 or (p.trademark.name like ?2 or  p.trademark.name like ?3 or p.trademark.name like ?4 or p.trademark.name like ?5 or p.trademark.name like ?6))
+            GROUP BY p
+            HAVING (SUM(pd.quantity) = 0 OR ?8 = false)
+            """)
+    Page<Object[]> findAllByStoreIdWithSlugStore(String slugStore, String name1, String name2, String name3,
+            String name4, String name5, Integer idCate, boolean quantityFilter,
+            Pageable pageable);
 
     @Query("select p from Product p order by p.id desc")
     List<Product> findAllDesc();
 
-<<<<<<< HEAD
-    //khai
-    //top sản phẩm bán chạy
-    @Query(value = "WITH RankedImages AS (" +
-    "    SELECT " +
-    "        p.id AS ProductId, " +
-    "        p.name AS ProductName, " +
-    "        i.id AS ImageId, " + // Lấy id của ảnh
-    "        i.imageName AS imageName, " +
-    "        COALESCE(SUM(od.quantity * od.price), 0) AS totalRevenue, " + // Tính tổng doanh thu từ giá và số lượng trong OrderDetails
-    "        COALESCE(SUM(od.quantity), 0) AS totalQuantitySold, " +
-    "        ROW_NUMBER() OVER (PARTITION BY p.id ORDER BY i.imageName) AS rn " +
-    "    FROM Products p " +
-    "    LEFT JOIN OrderDetails od ON p.id = od.productDetailId " + 
-    "    LEFT JOIN Orders o ON od.orderId = o.id " +
-    "    LEFT JOIN Images i ON p.id = i.productId " +
-    "    WHERE o.orderStatus = 'Hoàn thành' " +
-    "    GROUP BY p.id, p.name, i.id, i.imageName " + // Nhóm theo các trường cần thiết
-    ") " +
-    "SELECT " +
-    "    ProductId, " + 
-    "    ProductName, " +
-    "    ImageId, " + 
-    "    imageName, " +
-    "    totalRevenue, " +
-    "    totalQuantitySold " +
-    "FROM RankedImages " +
-    "ORDER BY totalRevenue DESC", nativeQuery = true)
-List<Object[]> findTopSellingProducts();
 
 
+    @Query("select p from Product p where p.store.id = ?1")
+    List<Product> CountProductByIdStore(Integer id);
 
-
-
-
-@Query(value = "SELECT " +
-    "    p.name AS nameProduct, " +
-    "    pd.imageDetail AS image, " +
-    "    pd.price, " +
-    "    pd.quantity AS quantityRemaining, " +
-    "    COALESCE(SUM(od.quantity), 0) AS quantitySold, " +
-    "    pc.name AS nameCategory, " +
-    "    COALESCE(MAX(v.discountPrice), 0) AS discount " +
-    "FROM " +
-    "    Products p " +
-    "JOIN " +
-    "    ProductDetails pd ON p.id = pd.idProduct " +
-    "LEFT JOIN " +
-    "    OrderDetails od ON p.id = od.productId " +
-    "JOIN " +
-    "    ProductCategorys pc ON p.categoryId = pc.id " +
-    "LEFT JOIN " +
-    "    VoucherAdminDetail vad ON p.id = vad.idProduct " +
-    "LEFT JOIN " +
-    "    Vouchers v ON vad.idVoucherAdmin = v.id " +
-    "GROUP BY " +
-    "    p.name, pd.imageDetail, pd.price, pd.quantity, pc.name " +
-    "ORDER BY " +
-    "    p.name", nativeQuery = true)
-List<Object[]> findAllProductDetails();
-
-
-@Query(value = "SELECT " +
-    "    p.name AS nameProduct, " +
-    "    pd.imageDetail AS image, " +
-    "    pd.price, " +
-    "    pd.quantity AS quantityRemaining, " +
-    "    COALESCE(SUM(od.quantity), 0) AS quantitySold, " +
-    "    pc.name AS nameCategory, " +
-    "    COALESCE(MAX(v.discountPrice), 0) AS discount " +
-    "FROM " +
-    "    Products p " +
-    "JOIN " +
-    "    ProductDetails pd ON p.id = pd.idProduct " +
-    "LEFT JOIN " +
-    "    OrderDetails od ON p.id = od.productId " +
-    "JOIN " +
-    "    ProductCategorys pc ON p.categoryId = pc.id " +
-    "LEFT JOIN " +
-    "    VoucherAdminDetail vad ON p.id = vad.idProduct " +
-    "LEFT JOIN " +
-    "    Vouchers v ON vad.idVoucherAdmin = v.id " +
-    "WHERE " +
-    "    p.id = :id " +
-    "GROUP BY " +
-    "    p.name, pd.imageDetail, pd.price, pd.quantity, pc.name " +
-    "ORDER BY " +
-    "    p.name", nativeQuery = true)
-Object[] findProductDetailsById(@Param("id") Integer id);
-// top 10 san pham ban chay seller
-@Query(value = "WITH ProductSales AS (" +
-               "    SELECT " +
-               "        p.name AS name, " +
-               "        COALESCE(SUM(od.quantity), 0) AS sold, " +
-               "        MAX(pd.price) AS price, " +
-               "        MAX(i.id) AS imgId, " +  // Lấy ID của hình ảnh lớn nhất nếu có nhiều ảnh
-               "        MAX(i.imageName) AS imgSrc " +  // Lấy ảnh có tên nhỏ nhất theo sản phẩm
-               "    FROM " +
-               "        Products p " +
-               "    INNER JOIN " +
-               "        ProductDetails pd ON p.id = pd.idProduct " +
-               "    LEFT JOIN " +
-               "        OrderDetails od ON pd.id = od.productDetailId " +  
-               "    LEFT JOIN " +
-               "        Orders o ON od.orderId = o.id " +  // Thêm join với bảng Orders để lọc trạng thái
-               "    LEFT JOIN " +
-               "        Images i ON pd.id = i.productid AND i.productid = pd.idProduct " +        
-               "    WHERE " +
-               "        p.storeId = :storeId " +
-               "        AND o.orderStatus = 'Hoàn thành' " +  // Lọc theo trạng thái 'Hoàn thành'
-               "    GROUP BY " +
-               "        p.name " +  // Nhóm theo tên sản phẩm để lấy ảnh đại diện
-               ") " +
-               "SELECT TOP 10 " +
-               "    name, " +
-               "    price, " +
-               "    sold, " +
-               "    imgId AS idImage, " +
-               "    imgSrc AS imageName " +
-               "FROM " +
-               "    ProductSales " +
-               "ORDER BY " +
-               "    sold DESC", nativeQuery = true)
-List<Object[]> findTopSellingProductsByStoreId(@Param("storeId") Integer storeId);
-
-
-@Query(value = "SELECT " +
-"    CAST(o.paymentDate AS DATE) AS date, " +
-"    SUM(od.price * od.quantity) AS revenue " +
-"FROM " +
-"    Orders o " +
-"JOIN " +
-"    OrderDetails od ON o.id = od.orderId " +
-"WHERE " +
-"    o.storeId = :storeId " +
-"    AND o.orderStatus = 'hoàn thành' " +
-"GROUP BY " +
-"    CAST(o.paymentDate AS DATE) " +
-"ORDER BY " +
-"    date", nativeQuery = true)
-List<Object[]> findRevenueByStoreId(@Param("storeId") Integer storeId);
-
-=======
     Optional<Product> findBySlug(String slug); // Thêm phương thức tìm theo slug
 
     // Phương thức kiểm tra tồn tại bằng slug
     boolean existsBySlug(String slug);
->>>>>>> 9788f8b256464d827fc84ddf77fc669f91ca83c3
 
+
+    // Find by namePr, nameCate, nameTrademark
+    @Query("""
+               select p, COUNT(o.orderstatus) AS orderCount from Product p
+                 JOIN p.productDetails pd
+                LEFT JOIN OrderDetail od ON pd.id = od.productDetail.id
+                LEFT JOIN Order o ON od.order.id = o.id
+                AND o.orderstatus LIKE 'Hoàn thành'
+               where (p.name like ?1 or p.name like ?2 or p.name like ?3 or p.name like ?4 or p.name like ?5 )
+               or (p.productcategory.name like ?1 or p.productcategory.name like ?2 or p.productcategory.name like ?3 or p.productcategory.name like ?4 or p.productcategory.name like ?5)
+               or p.productcategory.id = ?6 or (p.trademark.name like ?1 or  p.trademark.name like ?2 or p.trademark.name like ?3 or p.trademark.name like ?4 or p.trademark.name like ?5)
+               group by p
+            """)
+
+    Page<Object[]> findByNamePrCateTrademark(String name1, String name2, String name3, String name4, String name5,
+            Integer idCate, Pageable pageable);
+
+    // Truy vấn sản phẩm liên quan (bao gồm taxcode & noTaxCode)
+    @Query("""
+                SELECT p,
+                       MAX(pd.price) AS maxPrice,
+                       COUNT(o.orderstatus) AS orderCount
+                FROM Product p
+                JOIN p.productDetails pd
+                LEFT JOIN OrderDetail od ON pd.id = od.productDetail.id
+                LEFT JOIN Order o ON od.order.id = o.id
+                AND o.orderstatus LIKE 'Hoàn thành'
+                WHERE (p.productcategory.name = ?1 OR p.trademark.name = ?1)
+                  AND  ((p.name like ?2 or p.name like ?3 or p.name like ?4 or p.name like ?5 or p.name like ?6 )
+                   or (p.productcategory.name like ?2 or p.productcategory.name like ?3 or p.productcategory.name like ?4 or p.productcategory.name like ?5 or p.productcategory.name like ?6)
+                   or (p.trademark.name like ?2 or  p.trademark.name like ?3 or p.trademark.name like ?4 or p.trademark.name like ?5 or p.trademark.name like ?6))
+                  AND pd.price BETWEEN ?7 AND ?8
+                  AND ((?9 is null or 1 IN (?9) AND p.store.taxcode IS NOT NULL)
+                  OR (?9 is null or 2 IN (?9) AND p.store.taxcode IS NULL))
+                  AND (?10 IS NULL OR (p.trademark.name IN (?10)))
+                GROUP BY p
+            """)
+    Page<Object[]> queryFindMore(String nameUrl, String name1, String name2, String name3, String name4,
+            String name5,
+            Integer minPrice, Integer maxPrice,
+            List<Integer> shopType, List<String> tradeMark, Pageable pageable);
+
+    // Truy vấn sản phẩm có taxcode full danh sách
+    @Query("""
+            SELECT p,
+                      MAX(pd.price) AS maxPrice,
+                      COUNT(o.orderstatus) AS orderCount
+               FROM Product p
+               JOIN p.productDetails pd
+               LEFT JOIN OrderDetail od ON pd.id = od.productDetail.id
+               LEFT JOIN Order o ON od.order.id = o.id
+               AND o.orderstatus LIKE 'Hoàn thành'
+               WHERE (p.productcategory.name = ?1 OR p.trademark.name = ?1)
+                 AND (p.name LIKE ?2)
+                 AND pd.price BETWEEN ?3 AND ?4
+                 AND ((?5 is null or 1 IN (?5) AND p.store.taxcode IS NOT NULL)
+                 OR (?5 is null or 2 IN (?5) AND p.store.taxcode IS NULL))
+                 AND (?6 IS NULL OR (p.trademark.name IN (?6)))
+               GROUP BY p
+                        """)
+    List<Object[]> queryFindMoreFullList(String nameUrl, String name, Integer minPrice, Integer maxPrice,
+            List<Integer> shopType, List<String> tradeMark, Sort sort);
+
+    // Danh sách sản phẩm có taxcpde
+    @Query("""
+            select p,  MAX(pd.price) AS maxPrice,
+                      COUNT(o.orderstatus) AS orderCount
+              from Product p
+              JOIN p.productDetails pd
+              LEFT JOIN OrderDetail od ON pd.id = od.productDetail.id
+              LEFT JOIN Order o ON od.order.id = o.id
+                and o.orderstatus LIKE 'Hoàn thành'
+                where (p.store.taxcode is not null) and
+               ((p.name like ?1 or p.name like ?2 or p.name like ?3 or p.name like ?4 or p.name like ?5 )
+                   or (p.productcategory.name like ?1 or p.productcategory.name like ?2 or p.productcategory.name like ?3 or p.productcategory.name like ?4 or p.productcategory.name like ?5)
+                   or (p.trademark.name like ?1 or  p.trademark.name like ?2 or p.trademark.name like ?3 or p.trademark.name like ?4 or p.trademark.name like ?5))
+
+             GROUP BY p
+            """)
+    Page<Object[]> listProductPerMall(String name1, String name2, String name3, String name4, String name5,
+            Pageable pageable);
+
+    @Query(value = """
+                                WITH ProductSales AS (
+                SELECT
+                    p.id AS productId,
+                    pd.id AS productDetailId,
+                    p.name AS productName,
+                    pd.nameDetail AS nameDetail,
+                    COALESCE(SUM(od.quantity), 0) AS sold,
+                    MAX(pd.price) AS priceDetail,
+                    (SELECT TOP 1 i.imageName
+                     FROM Images i
+                     WHERE i.productId = p.id) AS productImage,
+                    pd.imageDetail AS imageNameDetail,
+                    p.slug AS slugProduct
+                FROM
+                    Products p
+                INNER JOIN
+                    ProductDetails pd ON p.id = pd.idProduct
+                LEFT JOIN
+                    OrderDetails od ON pd.id = od.productDetailId
+                LEFT JOIN
+                    Orders o ON od.orderId = o.id
+                WHERE
+                    p.storeId = :storeId
+                    AND o.orderStatus = 'Hoàn thành'
+                    AND od.quantity IS NOT NULL
+                GROUP BY
+                    p.id, pd.id, p.name, pd.nameDetail, pd.imageDetail, p.slug
+            )
+            SELECT TOP 10
+                productId,
+                productDetailId,
+                productName,
+                nameDetail,
+                priceDetail,
+                sold,
+                imageNameDetail,
+                productImage,
+                slugProduct
+            FROM
+                ProductSales
+            ORDER BY
+                sold DESC;
+
+                                """, nativeQuery = true)
+    List<Object[]> findTopSellingProductsByStoreId(@Param("storeId") Integer storeId);
+
+    // Doanh thu theo năm seller
+    @Query(value = "SELECT \r\n" + //
+            "    YEAR(o.paymentDate) AS year, \r\n" + //
+            "    SUM(od.quantity * od.price * (1 - pc.vat)) AS revenue \r\n" + //
+            "FROM \r\n" + //
+            "    Orders o \r\n" + //
+            "JOIN \r\n" + //
+            "    OrderDetails od ON o.id = od.orderId \r\n" + //
+            "JOIN \r\n" + //
+            "    ProductDetails pd ON od.productdetailid = pd.id \r\n" + //
+            "JOIN \r\n" + //
+            "\tProducts p on p.id = pd.idProduct\r\n" + //
+            "JOIN \r\n" + //
+            "    ProductCategorys pc ON p.categoryId = pc.id \r\n" + //
+            "WHERE \r\n" + //
+            "    o.storeId = :storeId  \r\n" + //
+            "    AND o.orderStatus = N'hoàn thành' \r\n" + //
+            "GROUP BY \r\n" + //
+            "    YEAR(o.paymentDate) \r\n" + //
+            "ORDER BY \r\n" + //
+            "    year;\r\n" + //
+            "", nativeQuery = true)
+    List<Object[]> findRevenueByStoreId(@Param("storeId") Integer storeId);
+
+    //all san pham
+@Query(value = """
+    WITH ProductSales AS (
+        SELECT 
+            pd.id AS productDetailId, 
+            COALESCE(SUM(od.quantity), 0) AS sold 
+        FROM 
+            ProductDetails pd 
+        LEFT JOIN 
+            OrderDetails od ON pd.id = od.productDetailId 
+        LEFT JOIN 
+            Orders o ON od.orderId = o.id 
+        WHERE 
+            o.orderStatus = 'Hoàn thành' 
+        GROUP BY 
+            pd.id
+    )
+    SELECT 
+        p.id AS productId, 
+        p.name AS productName,  -- Added productName from Products table
+        pd.id AS productDetailId, 
+        pd.nameDetail AS nameDetail, 
+        pd.imageDetail AS imageDetail, 
+        (SELECT TOP 1 i.imageName FROM Images i WHERE i.productId = p.id) AS imageName, 
+        pd.price AS priceDetail, 
+        pd.quantity AS quantityRemainingDetail, 
+        COALESCE(ps.sold, 0) AS soldDetail, 
+        pc.name AS nameCategory, 
+        COALESCE(MAX(v.discountPrice), 0) AS discount 
+    FROM 
+        Products p 
+    JOIN 
+        ProductDetails pd ON p.id = pd.idProduct 
+    LEFT JOIN 
+        ProductSales ps ON pd.id = ps.productDetailId 
+    JOIN 
+        ProductCategorys pc ON p.categoryId = pc.id 
+    LEFT JOIN 
+        VoucherAdminDetail vad ON pd.id = vad.idProductDetail 
+    LEFT JOIN 
+        Vouchers v ON vad.idVoucherAdmin = v.id 
+    WHERE 
+        p.storeId = :idStore 
+    GROUP BY 
+        p.id, p.name, pd.id, pd.nameDetail, pd.imageDetail, pd.price, pd.quantity, pc.name, ps.sold 
+    ORDER BY 
+        sold DESC, pd.nameDetail
+""", nativeQuery = true)
+List<Object[]> findAllProductDetailsByStore(@Param("idStore") int idStore);
 }

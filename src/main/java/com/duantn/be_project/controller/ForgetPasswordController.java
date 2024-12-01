@@ -9,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,7 +18,6 @@ import com.duantn.be_project.Repository.ForgetPasswordRepository;
 import com.duantn.be_project.Service.ForgetPasswordService;
 
 @Controller
-@CrossOrigin("*")
 @RequestMapping("/api")
 public class ForgetPasswordController {
     @Autowired
@@ -30,7 +28,6 @@ public class ForgetPasswordController {
     private ForgetPasswordService forgetPasswordService;
     @Autowired
     PasswordEncoder passwordEncoder;
-
 
     @PostMapping("/send-otp")
     public ResponseEntity<Map<String, String>> sendForgotPasswordEmail(@RequestBody Map<String, String> request) {
@@ -50,9 +47,11 @@ public class ForgetPasswordController {
         String otp = OTPUtil.generateOTP(6); // Tạo OTP có độ dài 6 ký tự
         try {
             forgetPasswordService.sendOTP(toEmail, otp);
-            return ResponseEntity.ok(Map.of("message", "OTP đã được gửi tới email của bạn.", "otp", otp, "email", toEmail));
+            return ResponseEntity
+                    .ok(Map.of("message", "OTP đã được gửi tới email của bạn.", "otp", otp, "email", toEmail));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Đã xảy ra lỗi khi gửi OTP."));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Đã xảy ra lỗi khi gửi OTP."));
         }
     }
 
@@ -99,7 +98,7 @@ public class ForgetPasswordController {
     public static class OTPUtil {
         private static final String CHARACTERS = "0123456789";
         private static final SecureRandom RANDOM = new SecureRandom();
-        
+
         public static String generateOTP(int length) {
             StringBuilder otp = new StringBuilder(length);
             for (int i = 0; i < length; i++) {
