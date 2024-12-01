@@ -25,7 +25,7 @@ public class ShippingInfosController {
     @Autowired
     ShippingInfosRepository shippingInfosRepository;
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @GetMapping("/shippingInfo")
     public ResponseEntity<List<ShippingInfor>> getAll(@RequestParam("userId") Integer idUser) {
         List<ShippingInfor> sortedShippingInfos = shippingInfosRepository.findAllByUserId(idUser).stream()
@@ -35,14 +35,14 @@ public class ShippingInfosController {
         return ResponseEntity.ok(sortedShippingInfos);
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @PostMapping("/shippingInfoCreate")
     public ResponseEntity<ShippingInfor> post(@RequestBody ShippingInfor shippingInfor) {
         ShippingInfor savedShippingInfor = shippingInfosRepository.save(shippingInfor);
         return ResponseEntity.ok(savedShippingInfor);
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @PutMapping("/shippingInfoUpdate/{id}")
     public ResponseEntity<ShippingInfor> update(@PathVariable Integer id, @RequestBody ShippingInfor shippingInfor) {
         shippingInfor.setId(id);
@@ -50,7 +50,7 @@ public class ShippingInfosController {
         return ResponseEntity.ok(updatedShippingInfor);
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @DeleteMapping("/shippingInfoDelete/{id}")
     public ResponseEntity<String> delete(@PathVariable Integer id) {
         shippingInfosRepository.deleteById(id);

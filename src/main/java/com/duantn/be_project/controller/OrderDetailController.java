@@ -33,13 +33,13 @@ public class OrderDetailController {
     @Autowired
     ProductDetailRepository productDetailRepository;
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @GetMapping("/orderDetail")
     public ResponseEntity<List<OrderDetail>> getAll() {
         return ResponseEntity.ok(orderDetailRepository.findAll());
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @GetMapping("/orderDetail/{id}")
     public ResponseEntity<List<OrderDetail>> getAllById(@PathVariable("id") Integer id) {
         List<OrderDetail> orderDetails = orderDetailRepository.findAllOrderDetailByIdOrder(id);
@@ -47,7 +47,7 @@ public class OrderDetailController {
         return ResponseEntity.ok(orderDetails);
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @PostMapping("/orderDetail/update/{id}")
     public ResponseEntity<List<OrderDetail>> updateOrderDetail(
             @PathVariable("id") Integer id,
@@ -72,7 +72,7 @@ public class OrderDetailController {
         }
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @GetMapping("/orderDetailSeller/{id}")
     public ResponseEntity<List<OrderDetail>> getAllByIdSeller(@PathVariable("id") Integer id) {
         List<OrderDetail> orderDetails = orderDetailRepository.findAllOrderDetailByIdOrder(id);
@@ -80,7 +80,7 @@ public class OrderDetailController {
         return ResponseEntity.ok(orderDetails);
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @PostMapping("/api/orderCreate")
     public ResponseEntity<Order> createOrder(@RequestBody OrderRequest orderRequest) {
         Order order = new Order();

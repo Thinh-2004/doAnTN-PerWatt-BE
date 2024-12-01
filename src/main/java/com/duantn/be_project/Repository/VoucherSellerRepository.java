@@ -26,8 +26,8 @@ public interface VoucherSellerRepository extends JpaRepository<Voucher, Integer>
     @Query("""
                 select v
                 from Voucher v
-                where v.productDetail.product.store.id = ?1
-                and ((v.vouchername like ?2 or v.productDetail.product.name like ?2) and v.status like ?3)
+                where v.product.store.id = ?1
+                and ((v.vouchername like ?2 or v.product.name like ?2) and v.status like ?3)
                 order by 
                 case
                 when ?4 = "newVouchers" then -v.id 
@@ -43,27 +43,22 @@ public interface VoucherSellerRepository extends JpaRepository<Voucher, Integer>
     @Query("""
             select v
             from Voucher v
-            where v.productDetail.product.store.id = ?1
+            where v.product.store.id = ?1
             and v.vouchername = ?2
             """)
     List<Voucher> findByIdStoreAndNameVoucher(Integer idStore, String namevoucher);
 
     // fill all discountPrice by idProduct
     @Query("""
-            select v from Voucher v where v.productDetail.product.id = ?1 order by v.id desc
+            select v from Voucher v where v.product.id = ?1 order by v.id desc
             """)
     List<Voucher> findAllByIdProduct(Integer idStore);
 
     @Query("""
-            select v from Voucher v where v.productDetail.product.store.slug like ?1 order by v.id desc
+            select v from Voucher v where v.product.store.slug like ?1 order by v.id desc
             """)
     List<Voucher> findAllBySlugStore(String slug);
 
-    // Truy vấn trùng mã
-    @Query(value = "select count(*) from Vouchers a\r\n" + //
-            "inner join ProductDetails b on a.idProductDetail = b.id\r\n" + //
-            "where voucherName like ?1 or b.id = ?2", nativeQuery = true)
-    Integer checkTrungNameVoucherAndIdProductDetail(String name, Integer idProductDetail);
 
     // Edit by voucherName
     @Query("""

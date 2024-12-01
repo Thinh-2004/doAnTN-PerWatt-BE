@@ -26,14 +26,14 @@ public class VoucherDetailsSeller {
     @Autowired
     VoucherSellerRepository voucherSellerRepository;
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @GetMapping("/findVoucherByIdUser/{id}")
     public ResponseEntity<?> getMethodName(@PathVariable("id") Integer id) {
         List<VoucherDetail> voucherDetails = voucherDetailsSellerRepository.findAllByIdAUser(id);
         return ResponseEntity.ok(voucherDetails);
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @PostMapping("addVoucherDetails")
     public ResponseEntity<?> postVoucherDeltails(@RequestBody VoucherDetail voucherDetailRequest) {
         List<Voucher> vouchers = voucherSellerRepository

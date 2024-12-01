@@ -37,8 +37,8 @@ public class Voucher implements Serializable {
     String vouchername;
 
     @ManyToOne
-    @JoinColumn(name = "idproductdetail")
-    ProductDetail productDetail;
+    @JoinColumn(name = "idproduct")
+    Product product;
 
     Integer discountprice;
 
@@ -57,5 +57,6 @@ public class Voucher implements Serializable {
 
     String status;
     String slug;
+    Integer quantityvoucher;
 
 }

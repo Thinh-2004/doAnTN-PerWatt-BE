@@ -85,7 +85,7 @@ public class ProductDetailController {
     }
 
     // Post
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @PostMapping("/detailProduct")
     public ResponseEntity<?> postDetailProduct(
             @RequestParam("file") MultipartFile file,
@@ -135,7 +135,7 @@ public class ProductDetailController {
     }
 
     // Put
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @PutMapping("/detailProduct/{id}")
     public ResponseEntity<?> putDetailProduct(
             @PathVariable("id") Integer id,
@@ -207,7 +207,7 @@ public class ProductDetailController {
     }
 
     // Delete
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @DeleteMapping("detailProduct/{id}")
     public ResponseEntity<?> delete(@PathVariable("id") Integer id) {
         // TODO: process PUT request

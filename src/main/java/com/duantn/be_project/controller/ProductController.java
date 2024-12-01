@@ -42,7 +42,6 @@ import com.duantn.be_project.model.Product;
 import com.duantn.be_project.model.ProductDetail;
 import com.duantn.be_project.model.Store;
 import com.duantn.be_project.model.Request_Response.ProductDTO;
-import com.duantn.be_project.untils.FileManagerService;
 import com.duantn.be_project.untils.UploadImages;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -76,8 +75,6 @@ public class ProductController {
     StoreRepository storeRepository;
     @Autowired
     ImageRepository imageRepository;
-    @Autowired
-    FileManagerService fileManagerService;
     @Autowired
     ServletContext servletContext;
     @Autowired
@@ -810,109 +807,7 @@ public class ProductController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
-    // @PostMapping("/productCreate")
-    // public ResponseEntity<?> createProduct(
-    // @RequestPart("product") String productJson,
-    // @RequestPart("productDetails") String productDetailsJson,
-    // @RequestPart("files") MultipartFile[] files) throws JsonMappingException,
-    // JsonProcessingException {
-    // ObjectMapper objectMapper = new ObjectMapper();
-    // Product product;
-    // List<ProductDetail> productDetails;
-
-    // // Chuyển đổi JSON thành đối tượng Product
-    // product = objectMapper.readValue(productJson, Product.class);
-
-    // // Gán tên sản phẩm cho slug
-    // product.setSlug(slugText.generateUniqueSlug(product.getName()));
-
-    // // Lưu Product trước và lấy productId
-    // Product savedProduct = productRepository.save(product);
-    // try {
-    // // Chuyển đổi JSON thành danh sách ProductDetail
-    // TypeReference<List<ProductDetail>> typeRef = new
-    // TypeReference<List<ProductDetail>>() {
-    // };
-    // productDetails = objectMapper.readValue(productDetailsJson, typeRef);
-
-    // // Duyệt qua từng ProductDetail để lưu vào cơ sở dữ liệu trước để lấy id
-    // for (ProductDetail detail : productDetails) {
-    // detail.setProduct(savedProduct); // Gán Product đã lưu vào ProductDetail
-    // ProductDetail savedDetail = productDetailRepository.save(detail); // Lưu tạm
-    // // thời ProductDetail để lấy
-    // // id
-
-    // try {
-    // if (detail.getImagedetail() != null && !detail.getImagedetail().isEmpty()) {
-    // // Chuyển đổi chuỗi base64 thành MultipartFile
-    // MultipartFile imageDetail =
-    // uploadImages.base64ToMultipartFile(detail.getImagedetail());
-    // // Lưu hình ảnh lên server và lấy đường dẫn lưu
-    // String imageDetailPath = uploadImages.saveDetailProductImage(imageDetail,
-    // savedDetail.getId());
-    // savedDetail.setImagedetail(imageDetailPath); // Cập nhật đường dẫn thực tế
-    // // cho imagedetail
-    // } else {
-    // savedDetail.setImagedetail(null); // Cập nhật đường dẫn thực tế cho
-    // // imagedetail
-
-    // }
-
-    // } catch (IOException e) {
-    // e.printStackTrace();
-    // // Xử lý lỗi khi chuyển đổi base64 thành MultipartFile
-    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    // .body("Failed to process image for ProductDetail: " + e.getMessage());
-    // }
-
-    // // Lưu lại ProductDetail sau khi đã cập nhật imagedetail
-    // productDetailRepository.save(savedDetail);
-    // }
-
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // return ResponseEntity.badRequest().body("Invalid data: " + e.getMessage());
-    // }
-
-    // System.out.println("Saved product and details: " + product);
-
-    // // Lưu các ảnh trong files vào server và liên kết với Product
-    // List<String> imageUrls = new ArrayList<>();
-    // for (MultipartFile file : files) {
-    // System.out.println("Received file: " + file.getOriginalFilename());
-
-    // // Lưu file và lấy URL
-    // String imageUrl = fileManagerService.save(file, savedProduct.getId());
-
-    // if (imageUrl != null) {
-    // imageUrls.add(imageUrl);
-    // }
-    // }
-
-    // // Tạo các đối tượng Image và liên kết với Product
-    // List<Image> images = new ArrayList<>();
-    // for (String imageUrl : imageUrls) {
-    // Image image = new Image();
-    // image.setImagename(imageUrl);
-    // image.setProduct(savedProduct);
-    // images.add(image);
-    // }
-
-    // // Lưu danh sách Image vào cơ sở dữ liệu
-    // try {
-    // imageRepository.saveAll(images);
-    // savedProduct.setImages(images);
-    // productRepository.save(savedProduct);
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    // .body("Failed to update product with images: " + e.getMessage());
-    // }
-
-    // return ResponseEntity.ok("Product created successfully with images
-    // anddetails");
-    // }
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @PostMapping("/productCreate")
     public ResponseEntity<?> createProduct(
             @RequestPart("product") String productJson,
@@ -1009,80 +904,7 @@ public class ProductController {
     }
 
     // Put Store Product
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
-    // @PutMapping("/productUpdate/{id}")
-    // public ResponseEntity<?> updateProduct(
-    // @PathVariable("id") Integer id,
-    // @RequestPart("product") String productJson,
-    // @RequestPart(value = "files", required = false) MultipartFile[] files) {
-
-    // // Kiểm tra xem sản phẩm có tồn tại không
-    // if (!productRepository.existsById(id)) {
-    // return ResponseEntity.notFound().build();
-    // }
-
-    // // Chuyển đổi chuỗi JSON thành đối tượng Product
-    // ObjectMapper objectMapper = new ObjectMapper();
-    // Product product;
-    // try {
-    // product = objectMapper.readValue(productJson, Product.class);
-    // if (!product.getSlug().isEmpty() || product.getSlug() != null) {
-    // product.setSlug(slugText.generateUniqueSlug(product.getName()));
-    // }
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // return ResponseEntity.badRequest().body("Dữ liệu sản phẩm không hợp lệ: " +
-    // e.getMessage());
-    // }
-
-    // // Lưu sản phẩm đã cập nhật
-    // Product updatedProduct;
-    // try {
-    // updatedProduct = productRepository.save(product);
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    // .body("Không thể cập nhật sản phẩm: " + e.getMessage());
-    // }
-
-    // // Xử lý các tệp mới nếu có
-    // if (files != null && files.length > 0) {
-    // List<String> imageUrls = new ArrayList<>();
-    // for (MultipartFile file : files) {
-    // System.out.println("Đã nhận tệp: " + file.getOriginalFilename());
-
-    // // Lưu tệp và lấy URL hoặc tên tệp
-    // String imageUrl = fileManagerService.save(file, updatedProduct.getId());
-
-    // if (imageUrl != null) {
-    // imageUrls.add(imageUrl);
-    // }
-    // }
-
-    // // Tạo các đối tượng Image cho từng URL hình ảnh mới và liên kết với sản phẩm
-    // List<Image> images = new ArrayList<>();
-    // for (String imageUrl : imageUrls) {
-    // Image image = new Image();
-    // image.setImagename(imageUrl);
-    // image.setProduct(updatedProduct);
-    // images.add(image);
-    // }
-
-    // // Lưu các hình ảnh mới và cập nhật sản phẩm với các đối tượng hình ảnh
-    // try {
-    // imageRepository.saveAll(images); // Đảm bảo bạn có repository để lưu hình ảnh
-    // updatedProduct.getImages().addAll(images); // Thêm hình ảnh mới vào những
-    // hình ảnh hiện có
-    // productRepository.save(updatedProduct); // Lưu sản phẩm đã cập nhật
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    // .body("Không thể cập nhật sản phẩm với hình ảnh mới: " + e.getMessage());
-    // }
-    // }
-
-    // return ResponseEntity.ok().build();
-    // }
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @PutMapping("/productUpdate/{id}")
     public ResponseEntity<?> updateProduct(
             @PathVariable("id") Integer id,
@@ -1158,7 +980,7 @@ public class ProductController {
     }
 
     // Delete
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @DeleteMapping("/ProductDelete/{id}")
     public ResponseEntity<?> delete(@PathVariable("id") Integer id) {
         // Kiểm tra xem sản phẩm có tồn tại không
@@ -1255,7 +1077,7 @@ public class ProductController {
     }
 
     // Get Top 10 Products by Store Id seller
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là admin mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @GetMapping("/top10-products/{storeId}")
     public ResponseEntity<List<Map<String, Object>>> getTopSellingProductsByStoreId(@PathVariable Integer storeId) {
         try {
@@ -1287,7 +1109,7 @@ public class ProductController {
     }
 
     // Phương thức mới để lấy doanh thu theo storeId biểu đồ
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là admin mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @GetMapping("/revenue/{storeId}")
     public ResponseEntity<List<Map<String, Object>>> getRevenueByStoreId(@PathVariable Integer storeId) {
         List<Object[]> revenueData = productRepository.findRevenueByStoreId(storeId);
@@ -1305,7 +1127,7 @@ public class ProductController {
     }
 
     // biểu đồ tròn
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là admin mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @GetMapping("/pie-chart/{storeId}")
     public ResponseEntity<List<Map<String, Object>>> getPieChartData(@PathVariable Integer storeId) {
         // Giả sử bạn có một phương thức để lấy danh sách sản phẩm theo storeId
@@ -1323,7 +1145,7 @@ public class ProductController {
     }
 
     // biểu đồ mixed-chart
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là admin mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @GetMapping("/mixed-chart/{storeId}")
     public ResponseEntity<List<Map<String, Object>>> getMixedChartData(
             @PathVariable Integer storeId,
@@ -1335,7 +1157,7 @@ public class ProductController {
 
     //ChooseProduct
     //voucher
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là admin mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @GetMapping("/productDetails/store/{idStore}")
     public ResponseEntity<List<Map<String, Object>>> getAllProductDetailsByStore(@PathVariable int idStore) {
         // Lấy dữ liệu từ repository

@@ -56,7 +56,6 @@ public class Product implements Serializable {
     @JoinColumn(name = "storeid")
     Store store;
 
-
     // @JsonIgnore
     @JsonManagedReference
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
@@ -71,8 +70,13 @@ public class Product implements Serializable {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     List<ProductDetail> productDetails;
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "product")
+    List<Voucher> vouchers;
 
-
+    @JsonIgnore
+    @OneToMany(mappedBy = "product")
+    List<VoucherAdminDetail> voucherAdminDetails;
 
     String slug;
 }

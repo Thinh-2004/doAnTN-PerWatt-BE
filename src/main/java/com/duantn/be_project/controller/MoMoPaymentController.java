@@ -38,7 +38,7 @@ public class MoMoPaymentController {
     @Autowired
     CartRepository cartRepository;
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @GetMapping("/pay")
     public ResponseEntity<String> pay(@RequestParam Long amount, @RequestParam String ids,
             @RequestParam String address) {
@@ -77,7 +77,7 @@ public class MoMoPaymentController {
     }
 
     // Tạo đơn auto ra momo
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @PostMapping("/createMoMoOrder")
     public ResponseEntity<Order> createOrderVnPay(@RequestBody OrderRequest orderRequest) {
         System.out.println("API called");

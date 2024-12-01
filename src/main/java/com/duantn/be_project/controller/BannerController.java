@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,8 +34,6 @@ public class BannerController {
     private UserRepository userRepository;
 
     @Autowired
-    private UploadImages uploadImages;
-    @Autowired
     FirebaseStorageService firebaseStorageService;
 
     // Get all banners
@@ -45,10 +44,17 @@ public class BannerController {
         return ResponseEntity.ok(banners);
     }
 
+    @GetMapping("list")
+    public ResponseEntity<List<Banner>> getAllBannersForAmin() {
+        List<Banner> banners = bannerRepository.findAll();
+        logger.info("Fetched all banners successfully.");
+        return ResponseEntity.ok(banners);
+    }
+
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function','Admin_Manage_Banner')")
     @GetMapping("checkShowBannerMid")
     public ResponseEntity<?> checkShowBannerMid() {
         List<Banner> banners = bannerRepository.findBannerByParameter();
-
         return ResponseEntity.ok(banners);
     }
 
@@ -66,6 +72,7 @@ public class BannerController {
     }
 
     // Create a new banner
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function','Admin_Manage_Banner')")
     @PostMapping
     public ResponseEntity<Banner> createBanner(
             @RequestParam("banner") String bannerJson,
@@ -103,6 +110,7 @@ public class BannerController {
     }
 
     // Update an existing banner
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function','Admin_Manage_Banner')")
     @PutMapping("/{id}")
     public ResponseEntity<Banner> updateBanner(
             @PathVariable Integer id,
@@ -174,6 +182,7 @@ public class BannerController {
     }
 
     // Delete a banner
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function','Admin_Manage_Banner')")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteBanner(@PathVariable Integer id) {
         Banner banner = bannerRepository.findById(id).orElseThrow();
