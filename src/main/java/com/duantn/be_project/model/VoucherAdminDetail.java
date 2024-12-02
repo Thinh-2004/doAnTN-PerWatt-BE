@@ -24,7 +24,7 @@ import lombok.Setter;
 @Entity
 @Table(name = "Voucheradmindetail")
 public class VoucherAdminDetail implements Serializable {
-     @Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
 
@@ -33,8 +33,8 @@ public class VoucherAdminDetail implements Serializable {
     VoucherAdmin voucherAdmin;
 
     @ManyToOne
-    @JoinColumn(name = "idproductdetail")
-    ProductDetail productDetail;
+    @JoinColumn(name = "idproduct")
+    Product product;
 
-    Float discountPrice;
+    Float discountprice;
 }

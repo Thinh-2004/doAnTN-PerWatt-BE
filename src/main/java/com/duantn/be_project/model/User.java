@@ -44,8 +44,8 @@ public class User implements Serializable {
     Boolean gender;
 
     @ManyToOne
-    @JoinColumn(name = "roleid")
-    Role role;
+    @JoinColumn(name = "rolepermissionid")
+    RolePermission rolepPermission;
 
     String address;
     String phone;

@@ -12,11 +12,11 @@ import java.util.stream.Collectors;
 
 @CrossOrigin("*")
 @RestController
-@RequestMapping("/revenue")
 public class RevenueController {
-
+//Khải nói đéo xài
     @Autowired
     private StoreRepository storeRepository;
+
 
     @GetMapping("/total-revenue-by-store")
     public ResponseEntity<List<Map<String, Object>>> getTotalRevenueByStore() {

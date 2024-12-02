@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -50,7 +51,8 @@ public class VoucherAdmin implements Serializable {
     @JsonIgnore
     @OneToMany(mappedBy = "voucherAdmin")
     List<Order> orders;
+    
     @JsonIgnore
-    @OneToMany(mappedBy = "voucherAdmin")
+    @OneToMany(mappedBy = "voucherAdmin" , cascade = CascadeType.ALL, orphanRemoval = true)
     List<VoucherAdminDetail> voucherAdminDetails;
 }

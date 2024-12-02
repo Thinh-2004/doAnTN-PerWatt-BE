@@ -20,8 +20,8 @@ import lombok.Setter;
 @SuppressWarnings("serial")
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
 @Setter
+@Getter
 @Entity
 @Table(name = "productdetails")
 public class ProductDetail implements Serializable{
@@ -45,13 +45,18 @@ public class ProductDetail implements Serializable{
     @OneToMany(mappedBy = "productDetail")
     List<CartItem> cartItems;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "productDetail")
-    List<Voucher> vouchers;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "productDetail")
-    List<VoucherAdminDetail> voucherAdminDetails;
+    
 
     String imagedetail;
+
+    public void add(ProductDetail newProductDetail) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'add'");
+    }
+
+    public boolean contains(ProductDetail newProductDetail) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'contains'");
+    }
 }

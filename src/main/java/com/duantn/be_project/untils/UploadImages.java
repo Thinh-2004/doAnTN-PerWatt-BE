@@ -225,4 +225,8 @@ public class UploadImages {
         return new Base64MultipartFile(imageBytes, "image.png", "image/png");
     }
 
+    public String saveBannerImage(MultipartFile file, Integer bannerId) {
+        return save(file, "banner/" + bannerId);
+    }
+
 }

@@ -7,7 +7,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.duantn.be_project.Repository.ProductDetailRepository;
 import com.duantn.be_project.Repository.ProductRepository;
+import com.duantn.be_project.Service.FirebaseStorageService;
 import com.duantn.be_project.model.Product;
 import com.duantn.be_project.model.ProductDetail;
 import com.duantn.be_project.untils.UploadImages;
@@ -37,11 +40,13 @@ public class ProductDetailController {
     ProductRepository productRepository;
     @Autowired
     UploadImages uploadImages;
+    @Autowired
+    FirebaseStorageService firebaseStorageService;
 
     // MinMax theo danh sách findMore
     @GetMapping("/sidlerMinMax/{name}")
     public ResponseEntity<?> silderMinMax(@PathVariable("name") String name) throws UnsupportedEncodingException {
-         String decodeName = URLDecoder.decode(name, StandardCharsets.UTF_8.name());
+        String decodeName = URLDecoder.decode(name, StandardCharsets.UTF_8.name());
         List<Object[]> respone = productDetailRepository.minMaxPriceDetail("%" + decodeName + "%");
         return ResponseEntity.ok(respone);
     }
@@ -72,7 +77,7 @@ public class ProductDetailController {
     // GetByIdProduct
     @GetMapping("/findIdProductByIdProduct/{id}")
     public ResponseEntity<List<ProductDetail>> getIdProductBySlugProduct(@PathVariable("id") Integer id) {
-        List<ProductDetail> productDetails = productDetailRepository.findIdProductByIdProduct(id);
+        List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(id);
         if (productDetails == null | productDetails.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -80,6 +85,7 @@ public class ProductDetailController {
     }
 
     // Post
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @PostMapping("/detailProduct")
     public ResponseEntity<?> postDetailProduct(
             @RequestParam("file") MultipartFile file,
@@ -98,34 +104,49 @@ public class ProductDetailController {
 
         productDetail.setProduct(product);
 
-        // Kiểm tra xem sản phẩm đã tồn tại chưa
+        // Kiểm tra xem sản phẩm chi tiết đã tồn tại chưa
         if (productDetail.getId() != null && productDetailRepository.existsById(productDetail.getId())) {
-            return ResponseEntity.badRequest().body("Sản phẩm đã tồn tại.");
+            return ResponseEntity.badRequest().body("Chi tiết sản phẩm đã tồn tại.");
         }
 
-        // Lưu sản phẩm chi tiết
         ProductDetail savedProductDetail = productDetailRepository.save(productDetail);
 
-        // Lưu ảnh phân loại sản phẩm
-        String imageDetailProduct = uploadImages.saveDetailProductImage(file, savedProductDetail.getId());
+        // Tải ảnh phân loại sản phẩm lên Firebase
+        if (file != null && !file.isEmpty()) {
+            try {
+                // Tải file lên Firebase và nhận URL hoặc tên file
+                String imageDetailProduct = firebaseStorageService.uploadToFirebase(file,
+                        "productDetails");
 
-        // Cập nhật lại thuộc tính imagedetail
-        savedProductDetail.setImagedetail(imageDetailProduct);
-        productDetailRepository.save(savedProductDetail);
+                // Cập nhật lại thuộc tính `imagedetail` với tên file Firebase
+                savedProductDetail.setImagedetail(imageDetailProduct);
+                productDetailRepository.save(savedProductDetail); // Lưu lại chi tiết sản phẩm
+            } catch (Exception e) {
+                // Xóa chi tiết sản phẩm nếu upload ảnh thất bại
+                productDetailRepository.deleteById(savedProductDetail.getId());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Lỗi khi tải ảnh lên Firebase: " + e.getMessage());
+            }
+        } else {
+            return ResponseEntity.badRequest().body("File hình ảnh không hợp lệ.");
+        }
 
         return ResponseEntity.ok(savedProductDetail);
     }
 
     // Put
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @PutMapping("/detailProduct/{id}")
     public ResponseEntity<?> putDetailProduct(
             @PathVariable("id") Integer id,
             @RequestParam(value = "file", required = false) MultipartFile file,
             @RequestParam("productDetail") String productDetailJson) {
 
+        // Lấy thông tin ProductDetail hiện tại từ CSDL
         ProductDetail existingProductDetail = productDetailRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("ProductDetail not found"));
 
+        // Chuyển đổi JSON sang đối tượng ProductDetail
         ProductDetail updatedProductDetail;
         try {
             updatedProductDetail = new ObjectMapper().readValue(productDetailJson, ProductDetail.class);
@@ -133,7 +154,7 @@ public class ProductDetailController {
             return ResponseEntity.badRequest().body("Lỗi chuyển đổi JSON: " + e.getMessage());
         }
 
-        // Kiểm tra xem sản phẩm có tồn tại không
+        // Kiểm tra xem sản phẩm liên quan có tồn tại không
         Product product = productRepository.findById(updatedProductDetail.getProduct().getId())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
@@ -142,24 +163,37 @@ public class ProductDetailController {
 
         // Lưu tên ảnh cũ
         String oldImageDetail = existingProductDetail.getImagedetail();
+        // Giải mã URL trước
+        String decodedUrl = java.net.URLDecoder.decode(oldImageDetail,
+                java.nio.charset.StandardCharsets.UTF_8);
 
-        // Nếu có tệp ảnh mới, lưu ảnh mới và cập nhật thuộc tính imagedetail
+        // Loại bỏ phần https://firebasestorage.googleapis.com/v0/b/ và lấy phần sau o/
+        String filePath = decodedUrl.split("o/")[1]; // Tách phần sau "o/"
+
+        // Loại bỏ phần ?alt=media
+        int queryIndex = filePath.indexOf("?"); // Tìm vị trí của dấu hỏi "?"
+        if (queryIndex != -1) {
+            filePath = filePath.substring(0, queryIndex); // Cắt bỏ phần sau dấu hỏi
+        }
+
+        // Nếu có tệp ảnh mới, lưu lên Firebase và cập nhật thuộc tính imagedetail
         if (file != null && !file.isEmpty()) {
-            String imageDetailProduct = uploadImages.saveDetailProductImage(file, id);
-            updatedProductDetail.setImagedetail(imageDetailProduct);
+            try {
+                // Tải file lên Firebase và nhận URL hoặc tên file
+                String imageDetailProduct = firebaseStorageService.uploadToFirebase(file, "productDetails");
+                updatedProductDetail.setImagedetail(imageDetailProduct);
 
-            // Xóa ảnh cũ sau khi cập nhật thành công ảnh mới
-            if (oldImageDetail != null && !oldImageDetail.isEmpty()) {
-                String filePath = String.format("src/main/resources/static/files/detailProduct/%d/%s", id,
-                        oldImageDetail);
-                File fileOld = new File(filePath);
-                if (fileOld.exists()) {// Nếu file tồn tại
-                    fileOld.delete();
-                } else {
-                    System.out.println("Không xóa được ảnh");
+                // Xóa ảnh cũ khỏi Firebase nếu tồn tại
+                if (oldImageDetail != null && !oldImageDetail.isEmpty()) {
+                    try {
+                        firebaseStorageService.deleteFileFromFirebase(filePath);
+                    } catch (Exception e) {
+                        System.err.println("Không thể xóa ảnh cũ trên Firebase: " + e.getMessage());
+                    }
                 }
-            } else {
-                System.out.println("Ảnh cũ không tồn tại");
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Lỗi khi tải ảnh lên Firebase: " + e.getMessage());
             }
         } else {
             // Nếu không có tệp ảnh mới, giữ nguyên ảnh cũ
@@ -173,11 +207,35 @@ public class ProductDetailController {
     }
 
     // Delete
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @DeleteMapping("detailProduct/{id}")
-    public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
+    public ResponseEntity<?> delete(@PathVariable("id") Integer id) {
         // TODO: process PUT request
-        if (!productDetailRepository.existsById(id)) {// Nếu id không được tìm thấy
+        ProductDetail productDetail = productDetailRepository.findById(id).orElse(null);
+        if (productDetail == null || productDetail.getId() == null) {// Nếu id không được tìm thấy
             return ResponseEntity.notFound().build(); // Trả lỗi 404
+        }
+        // Xóa hình ảnh khỏi Firebase Storage
+        try {
+            // Giải mã URL trước
+            String decodedUrl = java.net.URLDecoder.decode(productDetail.getImagedetail(),
+                    java.nio.charset.StandardCharsets.UTF_8);
+
+            // Loại bỏ phần https://firebasestorage.googleapis.com/v0/b/ và lấy phần sau o/
+            String filePath = decodedUrl.split("o/")[1]; // Tách phần sau "o/"
+
+            // Loại bỏ phần ?alt=media
+            int queryIndex = filePath.indexOf("?"); // Tìm vị trí của dấu hỏi "?"
+            if (queryIndex != -1) {
+                filePath = filePath.substring(0, queryIndex); // Cắt bỏ phần sau dấu hỏi
+            }
+
+            // Gọi Firebase Storage Service để xóa file
+            firebaseStorageService.deleteFileFromFirebase(filePath); // Xóa file khỏi Firebase
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Không thể xóa hình ảnh khỏi Firebase: " + e.getMessage());
         }
         productDetailRepository.deleteById(id);
         return ResponseEntity.ok().build();
