@@ -59,7 +59,6 @@ public class SecurityConfig implements WebMvcConfigurer {
                         "/banners/**",
                         // image
                         "imageByProduct/{id}",
-
                         // product
                         "/home/product/list",
                         "/findMore/{name}",
@@ -93,6 +92,8 @@ public class SecurityConfig implements WebMvcConfigurer {
                         "/CateProductInStore/{id}",
                         // Comments
                         "/comment/**",
+                        //user
+                        "/checkPass"
 
         };
 

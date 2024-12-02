@@ -45,7 +45,7 @@ public class TradeMarkController {
     }
 
     //Post
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function')")
     @PostMapping("/brand")
     public ResponseEntity<TradeMark> post(@RequestBody TradeMark tradeMark) {
         //TODO: process POST request
@@ -56,7 +56,7 @@ public class TradeMarkController {
     }
 
     //Put
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function')")
     @PutMapping("/brand/{id}")
     public ResponseEntity<TradeMark> put(@PathVariable("id") Integer id, @RequestBody TradeMark tradeMark) {
         //TODO: process PUT request
@@ -66,7 +66,7 @@ public class TradeMarkController {
         return ResponseEntity.ok(tradeMarkRepository.save(tradeMark));
     }
     
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function')")
     @DeleteMapping("/brand/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
         // TODO: process PUT request

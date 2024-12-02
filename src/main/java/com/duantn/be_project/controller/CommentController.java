@@ -63,7 +63,7 @@ public class CommentController {
         return ResponseEntity.ok(comments);
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller','Buyer')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @PostMapping("/comment")
     public ResponseEntity<?> addComment(@RequestBody Map<String, Object> data) {
         Comment comment = new Comment();
@@ -89,7 +89,7 @@ public class CommentController {
         return ResponseEntity.ok(comment);
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller','Buyer')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @PutMapping("/comment")
     public ResponseEntity<?> updateComment(@RequestBody Map<String, Object> data) {
         Comment comment = new Comment();
@@ -116,7 +116,7 @@ public class CommentController {
         return ResponseEntity.ok(comment);
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller','Buyer')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @DeleteMapping("/comment/{commentId}")
     public ResponseEntity<?> deleteComment(@PathVariable Integer commentId) {
         Comment comment = commentRepository.findById(commentId).orElseThrow();

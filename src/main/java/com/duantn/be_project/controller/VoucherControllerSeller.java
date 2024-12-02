@@ -146,7 +146,7 @@ public class VoucherControllerSeller {
     // return ResponseEntity.ok(response);
     // }
 
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')") // Chỉ vai trò là seller mới được gọi
     @GetMapping("fillVoucher/{idStore}")
     public ResponseEntity<?> fillVoucher(
             @PathVariable Integer idStore,
@@ -250,7 +250,7 @@ public class VoucherControllerSeller {
         return ResponseEntity.ok(vouchers);
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')") // Chỉ vai trò là seller mới được gọi
     @GetMapping("editVoucherShop/{slug}")
     public ResponseEntity<?> getVouchersByVoucherName(@PathVariable("slug") String slug)
             throws UnsupportedEncodingException {
@@ -261,30 +261,17 @@ public class VoucherControllerSeller {
         return ResponseEntity.ok(vouchers);
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @PostMapping("addVouchers")
     public ResponseEntity<?> addVoucher(@RequestBody VoucherRequest voucherRequest) {
-
-        // Kiểm tra trùng tên voucher hoặc id
-        for (ProductDetail getById : voucherRequest.getProductDetails()) {
-            Integer checkTrungNameVoucher = voucherSellerRepository.checkTrungNameVoucherAndIdProductDetail(
-                    "%" + voucherRequest.getVoucher().getVouchername() + "%",
-                    getById.getId());
-            if (checkTrungNameVoucher > 0) {
-                return ResponseEntity
-                        .status(HttpStatus.BAD_REQUEST)
-                        .body("Tên voucher hoặc phân loại sản phẩm đã bị trùng.");
-            }
-        }
-
         // Lấy ngày hiện tại
         LocalDate currentDate = LocalDate.now();
 
         // Lặp qua các ProductDetail để thêm Voucher
-        for (ProductDetail x : voucherRequest.getProductDetails()) {
+        for (Product x : voucherRequest.getProducts()) {
             Voucher voucher = new Voucher();
             voucher.setVouchername(voucherRequest.getVoucher().getVouchername());
-            voucher.setProductDetail(x);
+            voucher.setProduct(x);
             voucher.setDiscountprice(voucherRequest.getVoucher().getDiscountprice());
             voucher.setStartday(voucherRequest.getVoucher().getStartday());
             voucher.setEndday(voucherRequest.getVoucher().getEndday());
@@ -313,7 +300,7 @@ public class VoucherControllerSeller {
         return ResponseEntity.ok("Thêm voucher thành công");
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @PutMapping("updateVoucher/{slug}")
     public ResponseEntity<?> updateVoucher(@PathVariable String slug,
             @RequestBody VoucherRequest voucherRequest) {
@@ -322,39 +309,25 @@ public class VoucherControllerSeller {
         if (existingVouchers.isEmpty()) {
             return ResponseEntity.notFound().build(); // Nếu không tìm thấy, trả về 404
         }
-
-        // Kiểm tra trùng tên voucher hoặc id
-        List<Voucher> vouchers = voucherSellerRepository
-                .checkTrungVoucher(voucherRequest.getVoucher().getVouchername());
-        for (ProductDetail getById : voucherRequest.getProductDetails()) {
-            Integer checkTrungNameVoucher = voucherSellerRepository.checkTrungNameVoucherAndIdProductDetail(
-                    "%" + voucherRequest.getVoucher().getVouchername() + "%",
-                    getById.getId());
-            if (checkTrungNameVoucher > vouchers.size()) {
-                return ResponseEntity
-                        .status(HttpStatus.BAD_REQUEST)
-                        .body("Tên voucher hoặc phân loại sản phẩm đã bị trùng.");
-            }
-        }
-
+        
         // Lấy ngày hiện tại
         LocalDate currentDate = LocalDate.now();
 
         // Lấy danh sách voucher mới từ voucherRequest
-        List<ProductDetail> productDetails = voucherRequest.getProductDetails();
-        int sizeDifference = existingVouchers.size() - productDetails.size();
+        List<Product> products = voucherRequest.getProducts();
+        int sizeDifference = existingVouchers.size() - products.size();
 
         // Nếu số lượng voucher trong cơ sở dữ liệu nhiều hơn, xóa các voucher không còn
         // cần thiết
         if (sizeDifference > 0) {
             // Xóa bớt voucher thừa
-            for (int i = existingVouchers.size() - 1; i >= productDetails.size(); i--) {
+            for (int i = existingVouchers.size() - 1; i >= products.size(); i--) {
                 voucherSellerRepository.delete(existingVouchers.get(i)); // Xóa voucher thừa
             }
         }
 
         // Cập nhật hoặc thêm mới voucher
-        for (int i = 0; i < productDetails.size(); i++) {
+        for (int i = 0; i < products.size(); i++) {
             Voucher saved;
             if (i < existingVouchers.size()) {
                 saved = existingVouchers.get(i); // Cập nhật voucher đã tồn tại
@@ -381,8 +354,8 @@ public class VoucherControllerSeller {
             saved.setEndday(voucherRequest.getVoucher().getEndday());
 
             // Cập nhật ProductDetail cho voucher
-            ProductDetail productDetail = productDetails.get(i);
-            saved.setProductDetail(productDetail);
+            Product product = products.get(i);
+            saved.setProduct(product);
 
             // Lưu lại voucher đã cập nhật hoặc tạo mới
             voucherSellerRepository.save(saved);
@@ -392,7 +365,7 @@ public class VoucherControllerSeller {
         return ResponseEntity.ok("Cập nhật thành công");
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @DeleteMapping("delete/{slug}")
     public ResponseEntity<Void> deleteVoucher(@PathVariable String slug) {
         if (voucherSellerRepository.existsBySlug(slug)) {

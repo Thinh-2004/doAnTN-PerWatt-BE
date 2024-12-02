@@ -42,7 +42,7 @@ public class ImageController {
         return ResponseEntity.ok(imageRepository.findAllByIdProduct(id));
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @DeleteMapping("image/{id}")
     public ResponseEntity<?> deleteById(@PathVariable("id") Integer id) {
         // Tìm hình ảnh trong cơ sở dữ liệu

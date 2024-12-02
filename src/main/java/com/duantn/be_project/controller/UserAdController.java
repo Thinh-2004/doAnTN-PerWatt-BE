@@ -17,7 +17,7 @@ public class UserAdController {
     @Autowired
     private UserAdRepository userAdRepository;
 
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function','Admin_Manage_Revenue')")
     @GetMapping("/total-users")
     public ResponseEntity<List<Map<String, Object>>> getTotalUsers() {
         List<Map<String, Object>> results = userAdRepository.findTotalUsers();

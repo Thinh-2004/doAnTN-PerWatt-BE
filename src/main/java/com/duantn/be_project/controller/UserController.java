@@ -25,11 +25,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.duantn.be_project.Repository.RolePermissionReponsitory;
 import com.duantn.be_project.Repository.RoleRepository;
 import com.duantn.be_project.Repository.UserRepository;
 import com.duantn.be_project.Service.FirebaseStorageService;
 import com.duantn.be_project.Service.UserService;
 import com.duantn.be_project.model.Role;
+import com.duantn.be_project.model.RolePermission;
 import com.duantn.be_project.model.User;
 import com.duantn.be_project.model.Request_Response.TokenRequest;
 import com.duantn.be_project.security.model.ApiResponse;
@@ -59,7 +61,7 @@ public class UserController {
     @Autowired
     UserRepository userRepository;
     @Autowired
-    RoleRepository roleRepository;
+    RolePermissionReponsitory rolePermissionReponsitory;
     @Autowired
     UploadImages uploadImages;
     @Autowired
@@ -74,7 +76,7 @@ public class UserController {
     FirebaseStorageService firebaseStorageService;
 
     // GetAll
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Support')")
     @GetMapping("/user")
     public ResponseEntity<List<User>> getAll(Model model) {
         return ResponseEntity.ok(userRepository.findAll());
@@ -108,7 +110,6 @@ public class UserController {
     }
 
     // checkmkProfileUser
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer', 'Admin')")
     @PostMapping("/checkPass")
     public ResponseEntity<Map<String, Object>> checkPass(@RequestBody User userRequest) {
         Map<String, Object> response = new HashMap<>();
@@ -149,7 +150,7 @@ public class UserController {
                 .build();
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer', 'Admin')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer', 'Admin_All_Function', 'Admin_Manage_Category', 'Admin_Manage_Banner', 'Admin_Manage_Revenue', 'Admin_Manage_Support','Admin_Manage_Promotion')")
     @PostMapping("/form/logout")
     public ApiResponse<Void> logout(@RequestBody Map<String, String> requestBody) throws ParseException, JOSEException {
         String token = requestBody.get("token"); // Lấy token từ body
@@ -175,9 +176,9 @@ public class UserController {
         }
 
         // Tìm role
-        Role role = roleRepository.findById(user.getRole().getId())
+        RolePermission rolePermission = rolePermissionReponsitory.findById(user.getRolepPermission().getId())
                 .orElseThrow(() -> new RuntimeException("Quyền không tồn tại"));
-        user.setRole(role);
+        user.setRolepPermission(rolePermission);
 
         // Mã hóa mật khẩu
         String encodedPassword = passwordEncoder.encode(user.getPassword());
@@ -214,7 +215,7 @@ public class UserController {
         }
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer','Admin')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer', 'Admin_All_Function', 'Admin_Manage_Category', 'Admin_Manage_Banner', 'Admin_Manage_Revenue', 'Admin_Manage_Support','Admin_Manage_Promotion')")
     @PutMapping("/user/{id}")
     public ResponseEntity<?> updateUser(
             @PathVariable("id") Integer id,
@@ -310,7 +311,7 @@ public class UserController {
     }
 
     // delete
-    @PreAuthorize("hasAnyAuthority('Admin')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Support')")
     @DeleteMapping("/user/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
         if (!userRepository.existsById(id)) {
@@ -343,11 +344,12 @@ public class UserController {
                 if (user == null) {
                     // Nếu người dùng chưa tồn tại, tạo mới và lưu vào cơ sở dữ liệu
                     user = new User();
-                    Role role = new Role();
-                    role.setId(3);
+                    RolePermission rolePermission = new RolePermission();
+                    rolePermission.setId(6);
+
                     user.setEmail(email);
                     user.setFullname(name);
-                    user.setRole(role); // Đặt chức vụ là Buyer khi được tạo tài khoản
+                    user.setRolepPermission(rolePermission); // Đặt chức vụ là Buyer khi được tạo tài khoản
                     user.setAvatar(pictureUrl);
 
                     // Lưu user tạm để lấy id

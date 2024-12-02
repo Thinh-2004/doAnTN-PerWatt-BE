@@ -12,7 +12,7 @@ import java.util.Map;
 
 @CrossOrigin("*")
 @RestController
-@PreAuthorize("hasAnyAuthority('Admin')")
+@PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Revenue')")
 @RequestMapping("/order-details")
 public class OrderDetailsController {
     // Khải nói là đéo xài

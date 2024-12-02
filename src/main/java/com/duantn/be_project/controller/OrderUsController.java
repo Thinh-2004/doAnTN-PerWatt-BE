@@ -19,7 +19,7 @@ public class OrderUsController {
     @Autowired
     private OrderUsRepository orderUsRepository;
 
-    @PreAuthorize("hasAnyAuthority('Seller')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @GetMapping("/count-orders/{storeId}")
     public ResponseEntity<?> getOrdersByStatusForStore(@PathVariable("storeId") Integer storeId) {
         try {

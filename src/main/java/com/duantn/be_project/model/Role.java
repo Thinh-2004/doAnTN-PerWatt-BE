@@ -35,7 +35,4 @@ public class Role implements Serializable{
     @OneToMany(mappedBy = "role")
     List<RolePermission> rolepermissions;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "role")
-    List<User> users;
 }
