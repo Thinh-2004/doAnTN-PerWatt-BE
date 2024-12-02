@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,6 +39,7 @@ public class CartController {
     ProductDetailRepository productDetailRepository;
 
     // hiển danh sách productDetail bằng product id
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @GetMapping("/productDetailByProductId/{id}")
     public ResponseEntity<List<ProductDetail>> getByProductId(@PathVariable("id") Integer id) {
         List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(id);
@@ -45,6 +47,7 @@ public class CartController {
         return ResponseEntity.ok(productDetails);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @PutMapping("/cartProductDetailUpdate/{id}")
     public ResponseEntity<?> updateProductDetail(@PathVariable("id") Integer id,
             @RequestBody Map<String, Integer> payload) {
@@ -72,19 +75,7 @@ public class CartController {
         return ResponseEntity.ok(cartItem);
     }
 
-<<<<<<< HEAD
-    @RequestMapping("/cart") 
-    public ResponseEntity<?> getProductByIds(@RequestParam("id") String ids) {
-        String[] cartIds = ids.split(","); 
-        List<CartItem> cartItems = new ArrayList<>(); 
-
-        for (String id : cartIds) { 
-            CartItem cartItem = cartRepository.findById(Integer.parseInt(id)).orElse(null); 
-            if (cartItem != null) { 
-                cartItems.add(cartItem); // Thêm vào danh sách kết quả
-            } else {
-                return ResponseEntity.notFound().build(); // Trả về 404 nếu không tìm thấy CartItem
-=======
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @RequestMapping("/cart")
     public ResponseEntity<?> getProductByIds(@RequestParam("id") String ids) {
         String[] cartIds = ids.split(",");
@@ -105,13 +96,13 @@ public class CartController {
             CartItem cartItem = cartRepository.findById(Integer.parseInt(id)).orElse(null);
             if (cartItem != null) {
                 cartItems.add(cartItem);
->>>>>>> a6abd943928eae065c0e9d81e347ca6ca254abf4
             }
         }
 
         return ResponseEntity.ok(cartItems); // Trả về danh sách CartItem tìm thấy
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @PutMapping("/cartUpdate/{id}")
     public ResponseEntity<CartItem> updateQuantity(@PathVariable("id") Integer id, @RequestBody Integer quantity) {
         CartItem cartItem = cartRepository.findById(id).orElse(null);
@@ -125,21 +116,19 @@ public class CartController {
         return ResponseEntity.ok(cartItem);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @GetMapping("/cart/{id}")
     public ResponseEntity<List<CartItem>> getById(@PathVariable("id") Integer id) {
         List<CartItem> cartItems = cartRepository.findAllCartItemlByIdUser(id);
 
-<<<<<<< HEAD
-        return ResponseEntity.ok(cartItems);
-=======
         List<CartItem> sortedCartItems = cartItems.stream()
                 .sorted((o1, o2) -> o2.getId().compareTo(o1.getId()))
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(sortedCartItems);
->>>>>>> a6abd943928eae065c0e9d81e347ca6ca254abf4
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @GetMapping("/countCartIdUser/{id}")
     public ResponseEntity<List<CartItem>> getByAllCartByUserId(@PathVariable("id") Integer id) {
         List<CartItem> cartItems = cartRepository.findAllCartItemlByIdUser(id);
@@ -147,6 +136,7 @@ public class CartController {
         return ResponseEntity.ok(cartItems);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @PostMapping("/cart/add")
     public ResponseEntity<?> addToCart(@RequestBody CartItem cartItem) {
         try {
@@ -174,12 +164,14 @@ public class CartController {
         }
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @DeleteMapping("/cartDelete/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
         cartRepository.deleteById(id);
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
     @GetMapping("/cartCount/{userId}/{productDetailId}")
     public ResponseEntity<Long> getCartItemCount(@PathVariable("userId") Integer userId,
             @PathVariable("productDetailId") Integer productDetailId) {

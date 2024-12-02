@@ -38,4 +38,6 @@ public class OrderDetail implements Serializable {
     ProductDetail productDetail;
     
     Float price;
+
+    String status;
 }

@@ -1,6 +1,7 @@
 package com.duantn.be_project.controller;
 
 import java.io.File;
+import java.net.URLDecoder;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,6 +23,7 @@ import com.duantn.be_project.Repository.RoleRepository;
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Repository.UserRepository;
 import com.duantn.be_project.Repository.WalletRepository;
+import com.duantn.be_project.Service.FirebaseStorageService;
 import com.duantn.be_project.Service.SlugText.SlugText;
 import com.duantn.be_project.model.ProductCategory;
 import com.duantn.be_project.model.Role;
@@ -35,6 +38,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PutMapping;
 
 @CrossOrigin("*")
@@ -54,6 +58,8 @@ public class StoreController {
     SlugText slugText;
     @Autowired
     WalletRepository walletRepository;
+    @Autowired
+    FirebaseStorageService firebaseStorageService;
 
     // Get All
     @GetMapping("/store")
@@ -80,6 +86,7 @@ public class StoreController {
     }
 
     // Post
+    @PreAuthorize("hasAnyAuthority('Buyer')")
     @PostMapping("/store")
     public ResponseEntity<?> post(@RequestBody Store store) {
         // TODO: process POST request
@@ -122,6 +129,7 @@ public class StoreController {
             wallet.setUser(store.getUser());
             wallet.setBalance(0f);
             wallet.setCreatedat(new Date());
+            wallet.setPasscode(0);
             walletRepository.save(wallet);
         }
 
@@ -131,6 +139,7 @@ public class StoreController {
         return ResponseEntity.ok(savedStore);
     }
 
+    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
     @PutMapping("/store/{id}")
     public ResponseEntity<?> put(@PathVariable("id") Integer id, @RequestPart("store") String storeJson,
             @RequestPart(value = "imgbackgound", required = false) MultipartFile imgbackgound) {
@@ -138,6 +147,7 @@ public class StoreController {
             return ResponseEntity.notFound().build();
         }
 
+        // Chuyển đổi
         ObjectMapper objectMapper = new ObjectMapper();
         Store store;
         try {
@@ -162,6 +172,7 @@ public class StoreController {
         }
 
         store.setId(id);
+        Store existingStore = storeRepository.findById(store.getId()).orElseThrow();
         // Kiểm tra sự tồn tại của slug
         if (!store.getSlug().isEmpty() || store.getSlug() != null) {
             store.setSlug(slugText.generateUniqueSlug(store.getNamestore()));
@@ -171,43 +182,49 @@ public class StoreController {
         // store.setCreatedtime(LocalDateTime.now());
         // }
 
-        String oldImageUrl = null;
+        String oldImageUrl = existingStore.getImgbackgound();
+        // Giải mã URL trước
+        String decodedUrl = java.net.URLDecoder.decode(oldImageUrl,
+                java.nio.charset.StandardCharsets.UTF_8);
+
+        // Loại bỏ phần https://firebasestorage.googleapis.com/v0/b/ và lấy phần sau o/
+        String filePath = decodedUrl.split("o/")[1]; // Tách phần sau "o/"
+
+        // Loại bỏ phần ?alt=media
+        int queryIndex = filePath.indexOf("?"); // Tìm vị trí của dấu hỏi "?"
+        if (queryIndex != -1) {
+            filePath = filePath.substring(0, queryIndex); // Cắt bỏ phần sau dấu hỏi
+        }
 
         if (imgbackgound != null && !imgbackgound.isEmpty()) {
-            oldImageUrl = storeRepository.findById(id)
-                    .map(Store::getImgbackgound)
-                    .orElse(null);
             try {
-                String imgBgUrl = uploadImages.saveStoreImage(imgbackgound, id);
-                store.setImgbackgound(imgBgUrl);
+                // Lưu hình ảnh mới lên Firebase và lấy URL
+                String newAvatarUrl = firebaseStorageService.uploadToFirebase(imgbackgound,
+                        "stores");
+
+                // Xóa ảnh cũ trên Firebase nếu có
+                if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
+                    try {
+                        firebaseStorageService.deleteFileFromFirebase(filePath);
+                    } catch (Exception e) {
+                        System.err.println("Không thể xóa ảnh cũ trên Firebase: " + e.getMessage());
+                    }
+                }
+
+                // Cập nhật avatar mới
+                store.setImgbackgound(newAvatarUrl);
             } catch (Exception e) {
                 e.printStackTrace();
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                         .body("Không thể lưu hình ảnh: " + e.getMessage());
             }
         } else {
-            String setOldImageUrl = storeRepository.findById(id).map(Store::getImgbackgound).orElse(null);
-            store.setImgbackgound(setOldImageUrl);
+            store.setImgbackgound(existingStore.getImgbackgound());
 
         }
 
         try {
             Store storeUpdate = storeRepository.save(store);
-
-            if (oldImageUrl != null) {
-                String filePath = String.format("src/main/resources/static/files/store/%d/%s", id, oldImageUrl);
-                File file = new File(filePath);
-                if (file.exists()) {
-                    if (file.delete()) {
-                        System.out.println("Đã xóa ảnh cũ: " + filePath);
-                    } else {
-                        System.out.println("Không thể xóa ảnh cũ: " + filePath);
-                    }
-                } else {
-                    System.out.println("Ảnh cũ không tồn tại: " + filePath);
-                }
-            }
-
             return ResponseEntity.ok(storeUpdate);
         } catch (Exception e) {
             e.printStackTrace();
@@ -217,6 +234,7 @@ public class StoreController {
     }
 
     // Delete
+    @PreAuthorize("hasAnyAuthority('Admin')") // Chỉ vai trò là seller mới được gọi
     @DeleteMapping("/store/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
         // TODO: process PUT request
@@ -244,6 +262,77 @@ public class StoreController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Mã không hợp lệ");
         }
+    }
+
+    // all sản phẩm bán chạy store (ProductList)
+    @PreAuthorize("hasAnyAuthority('Admin')")
+    @GetMapping("/product-sales")
+    public List<Map<String, Object>> getProductSalesByStore() {
+        // Gọi phương thức findProductSalesByStore từ StoreRepository
+        return storeRepository.findProductSalesByStore();
+    }
+
+    // Doanh thu cửa all cửa hàng bên admin (ProductList)
+    @PreAuthorize("hasAnyAuthority('Admin')")
+    @GetMapping("/revenue/net-store-revenue")
+    public List<Map<String, Object>> getNetRevenueByStore() {
+        return storeRepository.findNetRevenueByStore();
+    }
+
+    // Doanh thu theo năm
+    @PreAuthorize("hasAnyAuthority('Admin')")
+    @GetMapping("/revenue-by-year")
+    public ResponseEntity<List<Map<String, Object>>> getRevenueByYear() {
+        List<Map<String, Object>> revenueData = storeRepository.findRevenueByYear();
+        return ResponseEntity.ok(revenueData);
+
+    }
+
+    // Doanh thu theo tháng Dashboard
+    @PreAuthorize("hasAnyAuthority('Admin')")
+    @GetMapping("/revenue-by-month")
+    public ResponseEntity<List<Map<String, Object>>> getVATByMonth(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+
+        List<Map<String, Object>> vatData = storeRepository.findTotalVATByMonth(startDate, endDate);
+        return ResponseEntity.ok(vatData);
+    }
+
+    // Doanh thu theo ngày
+    @PreAuthorize("hasAnyAuthority('Admin')")
+    @GetMapping("/revenue-by-day")
+    public ResponseEntity<List<Map<String, Object>>> getRevenueByDay(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        List<Map<String, Object>> revenueData = storeRepository.findRevenueByDay(startDate, endDate);
+        return ResponseEntity.ok(revenueData);
+    }
+
+    // Tổng cửa hàng được tạo (card số lượng cửa hàng) Dashboard
+    @PreAuthorize("hasAnyAuthority('Admin')")
+    @GetMapping("/total-stores-count")
+    public ResponseEntity<Map<String, Long>> getTotalStoresCount() {
+        long totalStoresCount = storeRepository.countTotalStores();
+        Map<String, Long> response = new HashMap<>();
+        response.put("totalStoresCount", totalStoresCount);
+        return ResponseEntity.ok(response);
+    }
+
+    // Số lượng cửa hàng theo tháng
+    @PreAuthorize("hasAnyAuthority('Admin')")
+    @GetMapping("/stores-by-month")
+    public ResponseEntity<List<Map<String, Object>>> getCountStoresByMonth() {
+        List<Map<String, Object>> storeCountData = storeRepository.countStoresByMonth();
+        return ResponseEntity.ok(storeCountData);
+    }
+
+    // Số lượng cửa hàng theo ngày
+    @PreAuthorize("hasAnyAuthority('Admin')")
+    @GetMapping("/stores-by-day")
+    public ResponseEntity<List<Map<String, Object>>> getCountStoresByDay() {
+        List<Map<String, Object>> storeCountData = storeRepository.countStoresByDay();
+        return ResponseEntity.ok(storeCountData);
     }
 
     // Bắt lỗi
