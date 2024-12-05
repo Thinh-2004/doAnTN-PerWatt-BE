@@ -34,7 +34,7 @@ public class Order implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    
+
     String orderstatus;
 
     @Temporal(TemporalType.TIMESTAMP)
@@ -70,6 +70,10 @@ public class Order implements Serializable {
     @JsonIgnore
     @OneToMany(mappedBy = "order")
     List<OrderDetail> orderdetails;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "order")
+    List<Report> reports;
 
     String note;
 

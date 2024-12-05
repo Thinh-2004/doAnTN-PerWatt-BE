@@ -23,7 +23,6 @@ import com.duantn.be_project.Repository.RolePermissionReponsitory;
 import com.duantn.be_project.Repository.RoleRepository;
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Repository.UserRepository;
-import com.duantn.be_project.Repository.WalletRepository;
 import com.duantn.be_project.Service.FirebaseStorageService;
 import com.duantn.be_project.Service.SlugText.SlugText;
 import com.duantn.be_project.model.ProductCategory;
@@ -31,7 +30,6 @@ import com.duantn.be_project.model.Role;
 import com.duantn.be_project.model.RolePermission;
 import com.duantn.be_project.model.Store;
 import com.duantn.be_project.model.User;
-import com.duantn.be_project.model.Wallet;
 import com.duantn.be_project.untils.UploadImages;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -58,8 +56,6 @@ public class StoreController {
     CategoryRepository categoryRepository;
     @Autowired
     SlugText slugText;
-    @Autowired
-    WalletRepository walletRepository;
     @Autowired
     FirebaseStorageService firebaseStorageService;
 
@@ -117,21 +113,14 @@ public class StoreController {
 
         // Gán giá trị tên cửa hàng cho slug
         store.setSlug(slugText.generateUniqueSlug(store.getNamestore()));
+        store.setBlock(false);
+        store.setStatus("Hoạt động");
 
         // Tìm user
         User user = userRepository.findById(store.getUser().getId()).orElseThrow();
-        if (user.getRolepPermission().getId() == 6) {
+        if (user.getRolePermission().getId() == 6) {
             RolePermission newRolePermission = rolePermissionReponsitory.findById(5).orElseThrow();
-            user.setRolepPermission(newRolePermission);
-        }
-
-        Wallet wallet = walletRepository.findByUserIdStoreId(user.getId());
-        if (wallet == null) {
-            wallet = new Wallet(); // Khởi tạo đối tượng Wallet mới
-            wallet.setUser(store.getUser());
-            wallet.setBalance(0f);
-            wallet.setCreatedat(new Date());
-            walletRepository.save(wallet);
+            user.setRolePermission(newRolePermission);
         }
 
         userRepository.save(user); // Cập nhật lại role khi tạo store
@@ -263,6 +252,26 @@ public class StoreController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Mã không hợp lệ");
         }
+    }
+
+    // put for admin
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Support')")
+    @PutMapping("/store/ban/{id}")
+    public ResponseEntity<?> putStoreForAdmin(@PathVariable("id") Integer id, @RequestBody Store storeRequest) {
+        Store store = storeRepository.findById(id).orElse(null);
+        if (store.getId() == null || store == null) {
+            return ResponseEntity.notFound().build();
+        }
+        // cập nhật lại thông tin
+        store.setBlock(storeRequest.getBlock());
+        store.setStatus(storeRequest.getStatus());
+        store.setStartday(storeRequest.getStartday());
+        store.setEndday(storeRequest.getEndday());
+        store.setReason(storeRequest.getReason());
+
+        Store savedStore = storeRepository.save(store);
+        return ResponseEntity.ok(savedStore);
+
     }
 
     // all sản phẩm bán chạy store (ProductList)

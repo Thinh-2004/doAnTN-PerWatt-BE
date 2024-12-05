@@ -30,7 +30,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "stores")
-public class Store implements Serializable{
+public class Store implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
@@ -55,7 +55,6 @@ public class Store implements Serializable{
     @OneToMany(mappedBy = "store")
     List<Comment> comments;
 
-
     @JsonIgnore
     @OneToMany(mappedBy = "store")
     List<Follow> follows;
@@ -64,6 +63,15 @@ public class Store implements Serializable{
     @OneToMany(mappedBy = "store")
     List<Order> orders;
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "store")
+    List<Report> reports;
+
     String taxcode;
     String slug;
+    Boolean block;
+    String status;
+    Date startday;
+    Date endday;
+    String reason;
 }

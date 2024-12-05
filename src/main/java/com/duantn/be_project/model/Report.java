@@ -1,17 +1,16 @@
 package com.duantn.be_project.model;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinColumns;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -25,8 +24,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "Wallets")
-public class Wallet implements Serializable {
+@Table(name = "Reports")
+public class Report implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
@@ -35,11 +34,17 @@ public class Wallet implements Serializable {
     @JoinColumn(name = "userid")
     User user;
 
-    Float balance;
+    @ManyToOne
+    @JoinColumn(name = "storeid")
+    Store store;
 
-    Integer passcode;
+    @ManyToOne
+    @JoinColumn(name = "orderid")
+    Order order;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    Date createdat;
-
+    String content;
+    String media;
+    String status;
+    LocalDateTime createdat;
+    String replyreport;
 }

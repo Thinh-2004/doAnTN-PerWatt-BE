@@ -44,6 +44,7 @@ public class BannerController {
         return ResponseEntity.ok(banners);
     }
 
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function','Admin_Manage_Banner')")
     @GetMapping("list")
     public ResponseEntity<List<Banner>> getAllBannersForAmin() {
         List<Banner> banners = bannerRepository.findAll();
@@ -51,7 +52,6 @@ public class BannerController {
         return ResponseEntity.ok(banners);
     }
 
-    @PreAuthorize("hasAnyAuthority('Admin_All_Function','Admin_Manage_Banner')")
     @GetMapping("checkShowBannerMid")
     public ResponseEntity<?> checkShowBannerMid() {
         List<Banner> banners = bannerRepository.findBannerByParameter();

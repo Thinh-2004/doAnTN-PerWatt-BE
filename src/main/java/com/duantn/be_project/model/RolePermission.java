@@ -27,7 +27,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "Rolepermissions")
-public class RolePermission implements Serializable{
+public class RolePermission implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
@@ -39,6 +39,8 @@ public class RolePermission implements Serializable{
     @ManyToOne
     @JoinColumn(name = "permissionid")
     Permission permission;
+
+    String note;
 
     @JsonIgnore
     @OneToMany

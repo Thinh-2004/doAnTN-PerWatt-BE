@@ -39,7 +39,7 @@ public class OrderDetailController {
         return ResponseEntity.ok(orderDetailRepository.findAll());
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer','Admin_All_Function', 'Admin_Manage_Support')")
     @GetMapping("/orderDetail/{id}")
     public ResponseEntity<List<OrderDetail>> getAllById(@PathVariable("id") Integer id) {
         List<OrderDetail> orderDetails = orderDetailRepository.findAllOrderDetailByIdOrder(id);
