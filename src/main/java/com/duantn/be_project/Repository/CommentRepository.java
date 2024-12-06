@@ -31,4 +31,10 @@ public interface CommentRepository extends JpaRepository<Comment, Integer> {
             """)
     List<Comment> commentByIdProduct(Integer idProduct);
 
+    // tính đánh giá trung bình cửa hàng
+    @Query("""
+            select c.rating from Comment c where c.reply is null and c.store.id = ?1
+            """)
+    List<Integer> evaluateByStore(Integer idStore);
+
 }

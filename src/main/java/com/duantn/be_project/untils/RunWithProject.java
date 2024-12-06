@@ -10,8 +10,12 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.duantn.be_project.Repository.ProductRepository;
+import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Repository.VoucherDetailsSellerRepository;
 import com.duantn.be_project.Repository.VoucherSellerRepository;
+import com.duantn.be_project.model.Product;
+import com.duantn.be_project.model.Store;
 import com.duantn.be_project.model.Voucher;
 
 @Component // Đánh dấu lớp này là một Spring Bean
@@ -20,6 +24,10 @@ public class RunWithProject {
     VoucherSellerRepository voucherSellerRepository;
     @Autowired
     VoucherDetailsSellerRepository voucherDetailsSellerRepository;
+    @Autowired
+    StoreRepository storeRepository;
+    @Autowired
+    ProductRepository productRepository;
 
     // @Async
     @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Ho_Chi_Minh") // Chạy mỗi ngày vào lúc 00:00
@@ -64,4 +72,74 @@ public class RunWithProject {
         // runDateUpdate().join(); // Chờ method chạy xong thì mới được xóa
         voucherDetailsSellerRepository.deleteByVoucherStatus("Ngừng hoạt động");
     }
+
+    // Kiểm tra cửa hàng
+    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Ho_Chi_Minh") // Chạy mỗi ngày vào lúc 00:00
+    public CompletableFuture<Void> runDateUpdateStore() {
+        // Lấy tất cả các store trong cơ sở dữ liệu
+        List<Store> stores = storeRepository.findAll();
+
+        // Lấy ngày hiện tại
+        LocalDate currentDate = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")); // Lấy ngày hiện tại theo múi giờ của Việt
+                                                                              // Nam
+
+        // Kiểm tra và cập nhật trạng thái của từng store
+        for (Store store : stores) {
+            // Kiểm tra nếu endday không phải là null
+            if (store.getEndday() != null) {
+                // Chuyển đổi từ Date sang LocalDate với múi giờ đúng
+                LocalDate endDay = store.getEndday().toInstant()
+                        .atZone(ZoneId.of("Asia/Ho_Chi_Minh"))
+                        .toLocalDate();
+
+                // Kiểm tra và cập nhật store nếu endDay bằng ngày hiện tại
+                if (endDay.isEqual(currentDate)) {
+                    store.setBlock(false);
+                    store.setStatus("Hoạt động");
+                    store.setStartday(null);
+                    store.setEndday(null);
+                    store.setReason(null);
+                }
+
+                // Cập nhật lại trạng thái store vào cơ sở dữ liệu
+                storeRepository.save(store);
+            }
+        }
+        return CompletableFuture.completedFuture(null); // Trả về khi hoàn thành
+    }
+
+    // Kiểm tra cửa hàng
+    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Ho_Chi_Minh") // Chạy mỗi ngày vào lúc 00:00
+    public CompletableFuture<Void> runDateUpdateProduct() {
+        // Lấy tất cả các store trong cơ sở dữ liệu
+        List<Product> products = productRepository.findAll();
+
+        // Lấy ngày hiện tại
+        LocalDate currentDate = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")); // Lấy ngày hiện tại theo múi giờ của Việt
+                                                                              // Nam
+
+        // Kiểm tra và cập nhật trạng thái của từng store
+        for (Product product : products) {
+            if (product.getEndday() != null) {
+                // Chuyển đổi từ Date sang LocalDate với múi giờ đúng
+                LocalDate endDay = product.getEndday().toInstant()
+                        .atZone(ZoneId.of("Asia/Ho_Chi_Minh"))
+                        .toLocalDate();
+
+                // Kiểm tra và cập nhật store
+                if (endDay.isEqual(currentDate)) {
+                    product.setBlock(false);
+                    product.setStatus("Hoạt động");
+                    product.setStartday(null);
+                    product.setEndday(null);
+                    product.setReason(null);
+                }
+
+                // Cập nhật lại trạng thái store vào cơ sở dữ liệu
+                productRepository.save(product);
+            }
+        }
+        return CompletableFuture.completedFuture(null); // Trả về khi hoàn thành
+    }
+
 }

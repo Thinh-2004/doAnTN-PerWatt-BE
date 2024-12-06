@@ -56,6 +56,17 @@ public class CommentController {
         return commentRepository.countByProduct(product);
     }
 
+    @GetMapping("/comment/evaluate/store/{idStore}")
+    public ResponseEntity<Float> getMethodName(@PathVariable("idStore") Integer idStore) {
+        List<Integer> averageEvaluates = commentRepository.evaluateByStore(idStore);
+        if (averageEvaluates.isEmpty()) {
+            return ResponseEntity.ok(0.0f);
+        }
+        // Tính trung bình số sao
+        int totalStars = averageEvaluates.stream().mapToInt(Integer::intValue).sum();
+        return ResponseEntity.ok((float) totalStars / averageEvaluates.size());
+    }
+
     @GetMapping("/comment/reply")
     public ResponseEntity<?> getCommentsReply(@RequestParam("commentId") Integer commentId) {
         Comment comment = commentRepository.findById(commentId).orElseThrow();

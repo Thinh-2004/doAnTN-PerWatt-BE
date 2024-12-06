@@ -58,7 +58,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import org.springframework.web.bind.annotation.PutMapping;
-
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -609,7 +609,181 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/showAllProduct/{slug}")
+    public ResponseEntity<?> showAllProductInStore(
+            @PathVariable("slug") String slug,
+            @RequestParam("pageNo") Optional<Integer> pageNo,
+            @RequestParam("pageSize") Optional<Integer> pageSize,
+            @RequestParam(name = "keyWord", defaultValue = "") String keyWord,
+            @RequestParam(name = "sortBy", defaultValue = "") String sortBy,
+            @RequestParam(name = "soldOutProduct", defaultValue = "false") Boolean soldOutProduct) {
+
+        // Tách từ khóa thành mảng các chuỗi con
+        String[] keywords = keyWord.split(" ");
+
+        // Khởi tạo danh sách để lưu các chuỗi hợp lệ
+        List<String> listSearch = new ArrayList<>();
+
+        // Kiểm tra từng từ khóa trong mảng keywords
+        Arrays.stream(keywords).forEach(string -> {
+            Boolean checkCate = categoryRepository.checkEmptyCategory("%" + string.split(" ") + "%");
+            Boolean checkTradeMark = tradeMarkRepository.checkEmptyTradeMark("%" + string.split(" ") + "%");
+
+            // Nếu tồn tại trong category hoặc trademark, thêm từ khóa vào listSearch
+            if (checkCate || checkTradeMark) {
+                listSearch.add(string);
+            }
+        });
+
+        // In ra danh sách các từ khóa hợp lệ để kiểm tra
+        // System.out.println("Các từ khóa hợp lệ: " + listSearch);
+
+        // Xác định Sort dựa trên sortBy
+        Sort sort = Sort.by(Direction.DESC, "p.id"); // Sử dụng tên trường đúng
+
+        switch (sortBy) {
+            case "newItems":
+                sort = Sort.by(Direction.DESC, "p.id");
+                break;
+            case "oldItems":
+                sort = Sort.by(Direction.ASC, "p.id");
+                break;
+            case "priceASC":
+                sort = Sort.by(Direction.ASC, "maxPrice"); // Sắp xếp theo giá cao nhất tăng dần
+                break;
+            case "priceDESC":
+                sort = Sort.by(Direction.DESC, "maxPrice"); // Sắp xếp theo giá cao nhất giảm dần
+                break;
+            case "bestSeller":
+                sort = Sort.by(Direction.DESC, "orderCount"); // Sắp xếp theo sản phẩm bán chạy
+                break;
+            case "quantityASC":
+                sort = Sort.by(Direction.ASC, "quantityCount");
+                break;
+            case "quantityDESC":
+                sort = Sort.by(Direction.DESC, "quantityCount");
+                break;
+            default:
+                sort = Sort.by(Direction.DESC, "p.id");
+                break;
+        }
+
+        Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20), sort);
+        Page<Object[]> prPage;
+        Integer idCate = null;
+
+        // Kiểm tra keyWord
+        if (keyWord.toLowerCase().matches(".*\bhot\b.*") || keyWord.toLowerCase().contains("yêu thích")
+                || keyWord.toLowerCase().contains("bán chạy") ||
+                keyWord.toLowerCase().contains("phổ biến") || keyWord.toLowerCase().contains("được ưa chuộng")
+                || keyWord.toLowerCase().contains("hàng đầu")
+                || keyWord.toLowerCase().contains("nổi bật")
+                || keyWord.toLowerCase().contains("xu hướng") ||
+                keyWord.toLowerCase().contains("top")
+                || keyWord.toLowerCase().contains("săn đón") ||
+                keyWord.toLowerCase().contains("được quan tâm")
+                || keyWord.toLowerCase().contains("bán nhiều") ||
+                keyWord.toLowerCase().contains("best seller") ||
+                keyWord.toLowerCase().contains("bestseller") ||
+                keyWord.toLowerCase().contains("best-seller") ||
+                keyWord.toLowerCase().contains("được đánh giá cao") ||
+                keyWord.toLowerCase().contains("được mua nhiều")) {
+            sort = Sort.by(Direction.DESC, "orderCount");
+
+            pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20),
+                    sort);
+
+            prPage = productRepository.showAllProductInStore(slug,
+                    "%",
+                    "%",
+                    "%",
+                    "%",
+                    "%",
+                    idCate,
+                    soldOutProduct,
+                    pageable);
+        } else {
+            pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20),
+                    sort);
+
+            // Kiểm tra nếu keyword có thể chuyển đổi thành số
+            if (!keyWord.isEmpty()) {
+                try {
+                    // Tìm theo category ID danh mục
+                    idCate = Integer.parseInt(keyWord);
+                    prPage = productRepository.showAllProductInStore(slug, "", "", "", "", "", idCate,
+                            soldOutProduct, pageable);
+
+                } catch (NumberFormatException e) {
+                    // Nếu keyword không phải là số thì tìm theo tên hoặc danh mục
+                    // Đảm bảo listSearch có đủ 5 phần tử
+                    while (listSearch.size() < 5) {
+                        listSearch.add(""); // Thêm phần tử rỗng nếu kích thước nhỏ hơn 5
+                    }
+
+                    // Tạo một mảng để lưu các tham số cho hàm tìm kiếm
+                    String[] searchParams = new String[5];
+
+                    for (int i = 0; i < searchParams.length; i++) {
+                        // Kiểm tra xem phần tử có phải là chuỗi không rỗng hay không
+                        if (i < listSearch.size() && !listSearch.get(i).isEmpty()) {
+                            searchParams[i] = "%" + listSearch.get(i) + "%"; // Thêm ký tự '%' nếu không rỗng
+                        } else {
+                            searchParams[i] = ""; // Nếu phần tử rỗng, thêm chuỗi rỗng
+                        }
+                    }
+
+                    // Gọi hàm tìm kiếm với các tham số đã xử lý
+                    prPage = productRepository.showAllProductInStore(slug,
+                            searchParams[0],
+                            searchParams[1],
+                            searchParams[2],
+                            searchParams[3],
+                            searchParams[4],
+                            null,
+                            soldOutProduct,
+                            pageable);
+
+                }
+            } else {
+                prPage = productRepository.showAllProductInStore(slug,
+                        "%",
+                        "%",
+                        "%",
+                        "%",
+                        "%",
+                        null,
+                        soldOutProduct,
+                        pageable);
+            }
+
+        }
+
+        // Tạo danh sách sản phẩm từ dữ liệu trả về
+        List<Product> products = prPage.getContent().stream()
+                .map(obj -> (Product) obj[0]) // Chỉ lấy sản phẩm từ mảng
+                .collect(Collectors.toList());
+
+        // Truy vấn từng id
+        List<ProductDTO> productDTOs = products.stream().map(product -> {
+            List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(product.getId());
+            Integer countOrderSuccess = productDetails.stream()
+                    .mapToInt((detailProduct) -> orderRepository.countOrderBuyed(detailProduct.getId())).sum();
+            return new ProductDTO(product, productDetails, countOrderSuccess);
+        }).collect(Collectors.toList());
+
+        // Tạo Map chỉ chứa số liệu cần thiết
+        Map<String, Object> response = new HashMap<>();
+        response.put("products", productDTOs); // Dánh sách sản phẩm
+        response.put("currentPage", prPage.getNumber() + 1); // Trang hiện tại
+        response.put("totalPage", prPage.getTotalPages()); // Tổng số trang
+        response.put("totalItems", prPage.getTotalElements()); // Tổng số phần tử
+
+        return ResponseEntity.ok(response);
+    }
+
     // GetAllByIdStore
+    // @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @GetMapping("/productStore/{slug}")
     public ResponseEntity<?> getStoreBySlugStore(
             @PathVariable("slug") String slug,
@@ -823,6 +997,7 @@ public class ProductController {
 
         // Gán tên sản phẩm cho slug
         product.setSlug(slugText.generateUniqueSlug(product.getName()));
+        product.setBlock(false);
 
         // Lưu Product trước và lấy productId
         Product savedProduct = productRepository.save(product);
@@ -924,6 +1099,7 @@ public class ProductController {
             if (product.getSlug() != null && !product.getSlug().isEmpty()) {
                 product.setSlug(slugText.generateUniqueSlug(product.getName()));
             }
+
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.badRequest().body("Dữ liệu sản phẩm không hợp lệ: " + e.getMessage());
@@ -1059,6 +1235,39 @@ public class ProductController {
         return ResponseEntity.ok().build();
     }
 
+    // Put ban product for admin
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Support')")
+    @PutMapping("/ban/product/{id}")
+    public ResponseEntity<?> updateProduct(
+            @PathVariable("id") Integer id,
+            @RequestBody Product productRequest) {
+
+        // Kiểm tra xem sản phẩm có tồn tại không
+        Product product = productRepository.findById(id).orElse(null);
+        if (product.getId() == null || product == null) {
+            return ResponseEntity.notFound().build();
+        }
+        product.setBlock(productRequest.getBlock());
+        product.setStatus(productRequest.getStatus());
+        product.setStartday(productRequest.getStartday());
+        product.setEndday(productRequest.getEndday());
+        product.setReason(productRequest.getReason());
+
+        Product savedProdcut = productRepository.save(product);
+
+        return ResponseEntity.ok(savedProdcut);
+    }
+
+    // CheckBan
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
+    @GetMapping("check/ban/shop/{idStore}")
+    public ResponseEntity<Integer> checkBan(
+            @PathVariable("idStore") Integer idStore) {
+        Integer checkban = productRepository.checkBan(idStore);
+
+        return ResponseEntity.ok(checkban);
+    }
+
     // Tìm idStore
     @GetMapping("/searchStore/{id}")
     public ResponseEntity<Store> getIdStoreByIdUser(@PathVariable("id") Integer idUser) {
@@ -1155,19 +1364,19 @@ public class ProductController {
         return ResponseEntity.ok(data);
     }
 
-    //ChooseProduct
-    //voucher
+    // ChooseProduct
+    // voucher
     @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @GetMapping("/productDetails/store/{idStore}")
     public ResponseEntity<List<Map<String, Object>>> getAllProductDetailsByStore(@PathVariable int idStore) {
         // Lấy dữ liệu từ repository
         List<Object[]> productDetails = productRepository.findAllProductDetailsByStore(idStore);
-    
+
         // Kiểm tra nếu danh sách kết quả rỗng
         if (productDetails == null || productDetails.isEmpty()) {
             return ResponseEntity.notFound().build(); // Trả về 404 nếu không tìm thấy
         }
-    
+
         // Chuyển đổi danh sách Object[] thành danh sách Map
         List<Map<String, Object>> mappedDetails = productDetails.stream().map(product -> {
             Map<String, Object> productMap = new HashMap<>();
@@ -1184,7 +1393,7 @@ public class ProductController {
             productMap.put("discount", product[10]); // discount
             return productMap;
         }).collect(Collectors.toList());
-    
+
         // Trả về danh sách sản phẩm dưới dạng JSON
         return ResponseEntity.ok(mappedDetails);
     }

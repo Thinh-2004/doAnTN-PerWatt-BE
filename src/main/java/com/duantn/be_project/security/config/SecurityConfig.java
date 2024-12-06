@@ -64,7 +64,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                         "/findMore/{name}",
                         "productPerMall/list",
                         "findMore/productPerMall/list",
-                        "/productStore/{slug}",
+                        "/showAllProduct/{slug}",
                         "/countBySlugProduct/{id}",
                         "/product/{slug}",
                         "/countOrderSuccess/{id}",
@@ -93,7 +93,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                         // Comments
                         "/comment/**",
                         //user
-                        "/checkPass"
+                        "/checkPass",
 
         };
 

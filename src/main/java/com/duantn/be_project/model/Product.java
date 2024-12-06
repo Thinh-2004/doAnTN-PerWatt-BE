@@ -82,7 +82,7 @@ public class Product implements Serializable {
     
 
     String slug;
-    String block;
+    Boolean block;
     String status;
     Date startday;
     Date endday;
