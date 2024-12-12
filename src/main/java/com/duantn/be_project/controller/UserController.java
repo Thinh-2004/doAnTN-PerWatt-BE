@@ -7,7 +7,6 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -24,7 +23,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.ui.Model;
+
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,12 +31,11 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.duantn.be_project.Repository.RolePermissionReponsitory;
-import com.duantn.be_project.Repository.RoleRepository;
+
 import com.duantn.be_project.Repository.UserRepository;
 import com.duantn.be_project.Service.FirebaseStorageService;
 import com.duantn.be_project.Service.UserService;
-import com.duantn.be_project.model.Image;
-import com.duantn.be_project.model.Role;
+
 import com.duantn.be_project.model.RolePermission;
 import com.duantn.be_project.model.User;
 import com.duantn.be_project.model.Request_Response.TokenRequest;
@@ -507,40 +505,46 @@ public class UserController {
 
         // Lưu tên ảnh cũ
         String oldImageDetail = existingUser.getAvatar();
-        // Giải mã URL trước
-        String decodedUrl = java.net.URLDecoder.decode(oldImageDetail,
-                java.nio.charset.StandardCharsets.UTF_8);
 
-        // Loại bỏ phần https://firebasestorage.googleapis.com/v0/b/ và lấy phần sau o/
-        String filePath = decodedUrl.split("o/")[1]; // Tách phần sau "o/"
-
-        // Loại bỏ phần ?alt=media
-        int queryIndex = filePath.indexOf("?"); // Tìm vị trí của dấu hỏi "?"
-        if (queryIndex != -1) {
-            filePath = filePath.substring(0, queryIndex); // Cắt bỏ phần sau dấu hỏi
-        }
         // Xử lý hình ảnh nếu có
         if (avatar != null && !avatar.isEmpty()) {
-            try {
-                // Lưu hình ảnh mới lên Firebase và lấy URL
-                String newAvatarUrl = firebaseStorageService.uploadToFirebase(avatar,
-                        "users");
+            if (existingUser.getAvatar().equalsIgnoreCase(oldImageDetail)) {
+                // Nếu không có hình ảnh mới, giữ nguyên avatar cũ
+                user.setAvatar(existingUser.getAvatar());
+            } else {
+                // Giải mã URL trước
+                String decodedUrl = java.net.URLDecoder.decode(oldImageDetail,
+                        java.nio.charset.StandardCharsets.UTF_8);
 
-                // Xóa ảnh cũ trên Firebase nếu có
-                if (oldImageDetail != null && !oldImageDetail.isEmpty()) {
-                    try {
-                        firebaseStorageService.deleteFileFromFirebase(filePath);
-                    } catch (Exception e) {
-                        System.err.println("Không thể xóa ảnh cũ trên Firebase: " + e.getMessage());
-                    }
+                // Loại bỏ phần https://firebasestorage.googleapis.com/v0/b/ và lấy phần sau o/
+                String filePath = decodedUrl.split("o/")[1]; // Tách phần sau "o/"
+
+                // Loại bỏ phần ?alt=media
+                int queryIndex = filePath.indexOf("?"); // Tìm vị trí của dấu hỏi "?"
+                if (queryIndex != -1) {
+                    filePath = filePath.substring(0, queryIndex); // Cắt bỏ phần sau dấu hỏi
                 }
+                try {
+                    // Lưu hình ảnh mới lên Firebase và lấy URL
+                    String newAvatarUrl = firebaseStorageService.uploadToFirebase(avatar,
+                            "users");
 
-                // Cập nhật avatar mới
-                user.setAvatar(newAvatarUrl);
-            } catch (Exception e) {
-                e.printStackTrace();
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Không thể lưu hình ảnh: " + e.getMessage());
+                    // Xóa ảnh cũ trên Firebase nếu có
+                    if (oldImageDetail != null && !oldImageDetail.isEmpty()) {
+                        try {
+                            firebaseStorageService.deleteFileFromFirebase(filePath);
+                        } catch (Exception e) {
+                            System.err.println("Không thể xóa ảnh cũ trên Firebase: " + e.getMessage());
+                        }
+                    }
+
+                    // Cập nhật avatar mới
+                    user.setAvatar(newAvatarUrl);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body("Không thể lưu hình ảnh: " + e.getMessage());
+                }
             }
         } else {
             // Nếu không có hình ảnh mới, giữ nguyên avatar cũ

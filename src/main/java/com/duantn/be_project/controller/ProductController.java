@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -28,6 +27,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.duantn.be_project.Repository.BlockRepository;
 import com.duantn.be_project.Repository.CategoryRepository;
 import com.duantn.be_project.Repository.ImageRepository;
 import com.duantn.be_project.Repository.OrderRepository;
@@ -37,6 +37,7 @@ import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Repository.TradeMarkRepository;
 import com.duantn.be_project.Service.FirebaseStorageService;
 import com.duantn.be_project.Service.SlugText.SlugText;
+import com.duantn.be_project.model.Block;
 import com.duantn.be_project.model.Image;
 import com.duantn.be_project.model.Product;
 import com.duantn.be_project.model.ProductDetail;
@@ -47,9 +48,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.cloud.storage.Blob;
-import com.google.cloud.storage.Bucket;
-import com.google.firebase.cloud.StorageClient;
 
 import jakarta.servlet.ServletContext;
 
@@ -81,6 +79,8 @@ public class ProductController {
     OrderRepository orderRepository;
     @Autowired
     ProductDetailRepository productDetailRepository;
+    @Autowired
+    BlockRepository blockRepository;
     @Autowired
     UploadImages uploadImages;
     @Autowired
@@ -998,6 +998,7 @@ public class ProductController {
         // Gán tên sản phẩm cho slug
         product.setSlug(slugText.generateUniqueSlug(product.getName()));
         product.setBlock(false);
+        product.setStatus("Không hiệu lực");
 
         // Lưu Product trước và lấy productId
         Product savedProduct = productRepository.save(product);
@@ -1093,7 +1094,9 @@ public class ProductController {
 
         // Chuyển đổi chuỗi JSON thành đối tượng Product
         ObjectMapper objectMapper = new ObjectMapper();
+        // Khởi tạo đối tượng product
         Product product;
+
         try {
             product = objectMapper.readValue(productJson, Product.class);
             if (product.getSlug() != null && !product.getSlug().isEmpty()) {
@@ -1109,6 +1112,7 @@ public class ProductController {
         Product updatedProduct;
         try {
             updatedProduct = productRepository.save(product);
+           
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -1247,13 +1251,22 @@ public class ProductController {
         if (product.getId() == null || product == null) {
             return ResponseEntity.notFound().build();
         }
+        // Xử lí cập nhật sản phẩm ban
         product.setBlock(productRequest.getBlock());
         product.setStatus(productRequest.getStatus());
         product.setStartday(productRequest.getStartday());
         product.setEndday(productRequest.getEndday());
         product.setReason(productRequest.getReason());
 
+        // Xử lý cập nhật blocks ban
+        Block block = new Block();
+        block.setProduct(product);
+        block.setNameproduct(product.getName());
+
+        // Lưu thông tin sản phẩm bị ban
         Product savedProdcut = productRepository.save(product);
+        // Lưu thông tin tên sản phẩm bị ban
+        blockRepository.save(block);
 
         return ResponseEntity.ok(savedProdcut);
     }

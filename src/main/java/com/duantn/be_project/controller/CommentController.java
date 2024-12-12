@@ -1,6 +1,7 @@
 package com.duantn.be_project.controller;
 
 import com.duantn.be_project.Repository.CommentRepository;
+import com.duantn.be_project.Repository.OrderRepository;
 import com.duantn.be_project.Repository.ProductRepository;
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Repository.UserRepository;
@@ -36,33 +37,55 @@ public class CommentController {
     UserRepository userRepository;
     @Autowired
     ProductRepository productRepository;
+    @Autowired
+    OrderRepository orderRepository;
 
     @GetMapping("/comment/list")
     public ResponseEntity<?> getComments(
             @RequestParam("productId") Integer productId,
             @RequestParam("page") int page,
             @RequestParam("limit") int limit,
-            @RequestParam("sort") String sort) {
+            @RequestParam(value = "sort") String sort,
+            @RequestParam(value = "ratingSort", required = false) String ratingSort) {
+
         Product product = productRepository.findById(productId).orElseThrow();
-        Pageable pageable = PageRequest.of(page - 1, limit,
-                sort.equals("newest") ? Sort.by("commentdate").descending() : Sort.by("commentdate").ascending());
+
+        // Xác định sắp xếp theo ngày
+        Sort dateSort = sort.equals("newest") ? Sort.by("commentdate").descending()
+                : Sort.by("commentdate").ascending();
+
+        // Xác định sắp xếp theo số sao (rating)
+        Sort ratingSortObj = null;
+        if (ratingSort != null) {
+            if (ratingSort.equals("highest")) {
+                ratingSortObj = Sort.by("rating").descending(); // Sắp xếp theo số sao từ cao đến thấp
+            } else if (ratingSort.equals("lowest")) {
+                ratingSortObj = Sort.by("rating").ascending(); // Sắp xếp theo số sao từ thấp đến cao
+            }
+        }
+
+        // Chọn ra cách sắp xếp cuối
+        Sort finalSort = (ratingSortObj != null) ? ratingSortObj : dateSort;
+
+        Pageable pageable = PageRequest.of(page - 1, limit, finalSort);
         Page<Comment> commentsPage = commentRepository.findByProductAndReplyIsNull(product, pageable);
+
         return ResponseEntity.ok(commentsPage.getContent());
     }
 
     @GetMapping("/comment/count")
     public int getCountComment(@RequestParam("productId") Integer productId) {
         Product product = productRepository.findById(productId).orElseThrow();
-        return commentRepository.countByProduct(product);
+        return commentRepository.countByProductAndReplyIsNull(product);
     }
 
     @GetMapping("/comment/evaluate/store/{idStore}")
-    public ResponseEntity<Float> getMethodName(@PathVariable("idStore") Integer idStore) {
+    public ResponseEntity<Float> AvageEvaluate(@PathVariable("idStore") Integer idStore) {
         List<Integer> averageEvaluates = commentRepository.evaluateByStore(idStore);
         if (averageEvaluates.isEmpty()) {
             return ResponseEntity.ok(0.0f);
         }
-        // Tính trung bình số sao
+        // Tính trung bình đánh giá dựa vào tất cả comment sản phẩm
         int totalStars = averageEvaluates.stream().mapToInt(Integer::intValue).sum();
         return ResponseEntity.ok((float) totalStars / averageEvaluates.size());
     }
@@ -137,6 +160,24 @@ public class CommentController {
         }
         commentRepository.delete(comment);
         return ResponseEntity.ok(comment);
+    }
+
+    // Bổ sung mới
+
+    @GetMapping("/comment/count/user")
+    public int getCountCommentByProductOfUser(
+            @RequestParam("userId") Integer userId,
+            @RequestParam("productId") Integer productId) {
+        Product product = productRepository.findById(productId).orElseThrow();
+        User user = userRepository.findById(userId).orElseThrow();
+        return commentRepository.countByProductAndUser(product, user);
+    }
+
+    @GetMapping("/comment/count/ordered")
+    public int getCountOrderedByMainProductOfUser(
+            @RequestParam("userId") Integer userId,
+            @RequestParam("productId") Integer productId) {
+        return orderRepository.countOrderBuyedOfProductByUser(userId, productId);
     }
 
     // Bổ sung của Thịnh

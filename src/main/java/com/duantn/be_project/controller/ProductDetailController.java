@@ -1,6 +1,5 @@
 package com.duantn.be_project.controller;
 
-import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -61,7 +60,7 @@ public class ProductDetailController {
     @GetMapping("/detailProduct/{id}")
     public ResponseEntity<List<ProductDetail>> getByIdProduct(@PathVariable("id") Integer id) {
         List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(id);
-        if (productDetails == null | productDetails.isEmpty()) {
+        if (productDetails == null || productDetails.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(productDetails);
@@ -78,7 +77,7 @@ public class ProductDetailController {
     @GetMapping("/findIdProductByIdProduct/{id}")
     public ResponseEntity<List<ProductDetail>> getIdProductBySlugProduct(@PathVariable("id") Integer id) {
         List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(id);
-        if (productDetails == null | productDetails.isEmpty()) {
+        if (productDetails == null || productDetails.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(productDetails);
@@ -163,28 +162,35 @@ public class ProductDetailController {
 
         // Lưu tên ảnh cũ
         String oldImageDetail = existingProductDetail.getImagedetail();
-        // Giải mã URL trước
-        String decodedUrl = java.net.URLDecoder.decode(oldImageDetail,
-                java.nio.charset.StandardCharsets.UTF_8);
-
-        // Loại bỏ phần https://firebasestorage.googleapis.com/v0/b/ và lấy phần sau o/
-        String filePath = decodedUrl.split("o/")[1]; // Tách phần sau "o/"
-
-        // Loại bỏ phần ?alt=media
-        int queryIndex = filePath.indexOf("?"); // Tìm vị trí của dấu hỏi "?"
-        if (queryIndex != -1) {
-            filePath = filePath.substring(0, queryIndex); // Cắt bỏ phần sau dấu hỏi
-        }
 
         // Nếu có tệp ảnh mới, lưu lên Firebase và cập nhật thuộc tính imagedetail
+        // Nếu có tệp ảnh mới, lưu lên Firebase và cập nhật thuộc tính imagedetail
         if (file != null && !file.isEmpty()) {
+            String filePath = null;
+
+            // Kiểm tra nếu oldImageDetail không null và không rỗng
+            if (oldImageDetail != null && !oldImageDetail.isEmpty()) {
+                // Giải mã URL trước
+                String decodedUrl = java.net.URLDecoder.decode(oldImageDetail,
+                        java.nio.charset.StandardCharsets.UTF_8);
+
+                // Loại bỏ phần https://firebasestorage.googleapis.com/v0/b/ và lấy phần sau o/
+                filePath = decodedUrl.split("o/")[1]; // Tách phần sau "o/"
+
+                // Loại bỏ phần ?alt=media
+                int queryIndex = filePath.indexOf("?"); // Tìm vị trí của dấu hỏi "?"
+                if (queryIndex != -1) {
+                    filePath = filePath.substring(0, queryIndex); // Cắt bỏ phần sau dấu hỏi
+                }
+            }
+
             try {
                 // Tải file lên Firebase và nhận URL hoặc tên file
                 String imageDetailProduct = firebaseStorageService.uploadToFirebase(file, "productDetails");
                 updatedProductDetail.setImagedetail(imageDetailProduct);
 
-                // Xóa ảnh cũ khỏi Firebase nếu tồn tại
-                if (oldImageDetail != null && !oldImageDetail.isEmpty()) {
+                // Xóa ảnh cũ khỏi Firebase nếu filePath không null
+                if (filePath != null) {
                     try {
                         firebaseStorageService.deleteFileFromFirebase(filePath);
                     } catch (Exception e) {
@@ -210,7 +216,7 @@ public class ProductDetailController {
     @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @DeleteMapping("detailProduct/{id}")
     public ResponseEntity<?> delete(@PathVariable("id") Integer id) {
-        // TODO: process PUT request
+
         ProductDetail productDetail = productDetailRepository.findById(id).orElse(null);
         if (productDetail == null || productDetail.getId() == null) {// Nếu id không được tìm thấy
             return ResponseEntity.notFound().build(); // Trả lỗi 404

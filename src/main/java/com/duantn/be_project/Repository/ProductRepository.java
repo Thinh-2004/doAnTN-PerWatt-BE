@@ -48,7 +48,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
             JOIN p.productDetails pd
             LEFT JOIN OrderDetail od ON pd.id = od.productDetail.id
             LEFT JOIN Order o ON od.order.id = o.id AND o.orderstatus LIKE 'Hoàn Thành'
-            WHERE p.store.slug LIKE ?1 AND p.block = false AND p.store.block = false
+            WHERE p.store.slug LIKE ?1 AND (p.block = false or p.store.block = false)
             AND ((p.productcategory.name like ?2 or p.productcategory.name like ?3 or p.productcategory.name like ?4 or p.productcategory.name like ?5 or p.productcategory.name like ?6)
                           or p.productcategory.id = ?7 or (p.trademark.name like ?2 or  p.trademark.name like ?3 or p.trademark.name like ?4 or p.trademark.name like ?5 or p.trademark.name like ?6))
             GROUP BY p
@@ -76,7 +76,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
                 JOIN p.productDetails pd
                 LEFT JOIN OrderDetail od ON pd.id = od.productDetail.id
                 LEFT JOIN Order o ON od.order.id = o.id AND o.orderstatus LIKE 'Hoàn thành'
-                WHERE p.block = false AND p.store.block = false
+                WHERE (p.block = false or p.store.block = false)
                   AND (
                        p.name LIKE ?1 OR p.name LIKE ?2 OR p.name LIKE ?3 OR p.name LIKE ?4 OR p.name LIKE ?5
                        OR p.productcategory.name LIKE ?1 OR p.productcategory.name LIKE ?2 OR p.productcategory.name LIKE ?3 OR p.productcategory.name LIKE ?4 OR p.productcategory.name LIKE ?5
@@ -98,7 +98,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
                 LEFT JOIN OrderDetail od ON pd.id = od.productDetail.id
                 LEFT JOIN Order o ON od.order.id = o.id
                 AND o.orderstatus LIKE 'Hoàn thành'
-                WHERE p.block = false AND p.store.block = false AND  (p.productcategory.name = ?1 OR p.trademark.name = ?1)
+                WHERE (p.block = false or p.store.block = false) AND  (p.productcategory.name = ?1 OR p.trademark.name = ?1)
                   AND  ((p.name like ?2 or p.name like ?3 or p.name like ?4 or p.name like ?5 or p.name like ?6 )
                    or (p.productcategory.name like ?2 or p.productcategory.name like ?3 or p.productcategory.name like ?4 or p.productcategory.name like ?5 or p.productcategory.name like ?6)
                    or (p.trademark.name like ?2 or  p.trademark.name like ?3 or p.trademark.name like ?4 or p.trademark.name like ?5 or p.trademark.name like ?6))
@@ -123,7 +123,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
                LEFT JOIN OrderDetail od ON pd.id = od.productDetail.id
                LEFT JOIN Order o ON od.order.id = o.id
                AND o.orderstatus LIKE 'Hoàn thành'
-               WHERE  p.block = false AND p.store.block = false AND (p.productcategory.name = ?1 OR p.trademark.name = ?1)
+               WHERE (p.block = false or p.store.block = false) AND (p.productcategory.name = ?1 OR p.trademark.name = ?1)
                  AND (p.name LIKE ?2)
                  AND pd.price BETWEEN ?3 AND ?4
                  AND ((?5 is null or 1 IN (?5) AND p.store.taxcode IS NOT NULL)
@@ -134,7 +134,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     List<Object[]> queryFindMoreFullList(String nameUrl, String name, Integer minPrice, Integer maxPrice,
             List<Integer> shopType, List<String> tradeMark, Sort sort);
 
-    // Danh sách sản phẩm có taxcpde
+    // Danh sách sản phẩm có taxcode
     @Query("""
             select p,  MAX(pd.price) AS maxPrice,
                       COUNT(o.orderstatus) AS orderCount
@@ -143,7 +143,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
               LEFT JOIN OrderDetail od ON pd.id = od.productDetail.id
               LEFT JOIN Order o ON od.order.id = o.id
                 and o.orderstatus LIKE 'Hoàn thành'
-                where p.block = false AND p.store.block = false AND (p.store.taxcode is not null) and
+                where (p.block = false or p.store.block = false) AND (p.store.taxcode is not null) and
                ((p.name like ?1 or p.name like ?2 or p.name like ?3 or p.name like ?4 or p.name like ?5 )
                    or (p.productcategory.name like ?1 or p.productcategory.name like ?2 or p.productcategory.name like ?3 or p.productcategory.name like ?4 or p.productcategory.name like ?5)
                    or (p.trademark.name like ?1 or  p.trademark.name like ?2 or p.trademark.name like ?3 or p.trademark.name like ?4 or p.trademark.name like ?5))
@@ -152,6 +152,12 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
             """)
     Page<Object[]> listProductPerMall(String name1, String name2, String name3, String name4, String name5,
             Pageable pageable);
+
+    // Truy vấn lấy tất cả sản phẩm bị ban
+    @Query("""
+            select p from Product p where p.block = true
+            """)
+    List<Product> listAllProductBan();
 
     @Query(value = """
                                 WITH ProductSales AS (

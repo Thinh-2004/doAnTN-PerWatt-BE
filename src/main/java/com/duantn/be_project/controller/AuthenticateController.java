@@ -7,7 +7,7 @@ import com.duantn.be_project.security.model.InstropecReponsee;
 import com.duantn.be_project.security.service.authenticateService;
 import com.duantn.be_project.security.service.jwtService;
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.openid.connect.sdk.AuthenticationRequest;
+
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

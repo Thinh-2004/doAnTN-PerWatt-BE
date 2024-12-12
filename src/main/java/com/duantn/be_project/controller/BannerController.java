@@ -3,7 +3,6 @@ package com.duantn.be_project.controller;
 import com.duantn.be_project.Repository.BannerRepository;
 import com.duantn.be_project.model.Banner;
 import com.duantn.be_project.model.User;
-import com.duantn.be_project.untils.UploadImages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

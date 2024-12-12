@@ -6,6 +6,8 @@ package com.duantn.be_project.Repository;
 
 import com.duantn.be_project.model.Comment;
 import com.duantn.be_project.model.Product;
+import com.duantn.be_project.model.User;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,22 +21,26 @@ import org.springframework.data.domain.Pageable;
  * @author DELL
  */
 public interface CommentRepository extends JpaRepository<Comment, Integer> {
-    Page<Comment> findByProductAndReplyIsNull(Product product, Pageable pageable);
+        Page<Comment> findByProductAndReplyIsNull(Product product, Pageable pageable);
 
-    int countByProduct(Product product);
+        int countByProduct(Product product);
 
-    ArrayList<Comment> findByReply(Comment comment);
+        int countByProductAndUser(Product product, User user);
 
-    // Bổ sung Thịnh
-    @Query("""
-            select c from Comment c where c.product.id = ?1 and c.reply is null
-            """)
-    List<Comment> commentByIdProduct(Integer idProduct);
+        int countByProductAndReplyIsNull(Product product);
 
-    // tính đánh giá trung bình cửa hàng
-    @Query("""
-            select c.rating from Comment c where c.reply is null and c.store.id = ?1
-            """)
-    List<Integer> evaluateByStore(Integer idStore);
+        ArrayList<Comment> findByReply(Comment comment);
+
+        // Bổ sung Thịnh
+        @Query("""
+                        select c from Comment c where c.product.id = ?1 and c.reply is null
+                        """)
+        List<Comment> commentByIdProduct(Integer idProduct);
+
+        // tính đánh giá trung bình cửa hàng
+        @Query("""
+                        select c.rating from Comment c where c.reply is null and c.store.id = ?1
+                        """)
+        List<Integer> evaluateByStore(Integer idStore);
 
 }

@@ -87,7 +87,6 @@ public class StoreController {
     @PreAuthorize("hasAnyAuthority('Buyer_Manage_Buyer')")
     @PostMapping("/store")
     public ResponseEntity<?> post(@RequestBody Store store) {
-        // TODO: process POST request
         // Bắt lỗi
         ResponseEntity<String> validateRes = validate(store);
         if (validateRes != null) {
@@ -114,7 +113,7 @@ public class StoreController {
         // Gán giá trị tên cửa hàng cho slug
         store.setSlug(slugText.generateUniqueSlug(store.getNamestore()));
         store.setBlock(false);
-        store.setStatus("Hoạt động");
+        store.setStatus("Không hiệu lực");
 
         // Tìm user
         User user = userRepository.findById(store.getUser().getId()).orElseThrow();

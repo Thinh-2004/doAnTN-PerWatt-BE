@@ -1,7 +1,9 @@
 package com.duantn.be_project.controller;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -18,11 +20,13 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.duantn.be_project.Repository.IamgesReportRepository;
 import com.duantn.be_project.Repository.OrderRepository;
 import com.duantn.be_project.Repository.ProductRepository;
 import com.duantn.be_project.Repository.ReportReponsitory;
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Service.FirebaseStorageService;
+import com.duantn.be_project.model.ImagesReport;
 import com.duantn.be_project.model.Order;
 import com.duantn.be_project.model.Product;
 import com.duantn.be_project.model.Report;
@@ -46,6 +50,10 @@ public class ReportController {
     OrderRepository orderRepository;
     @Autowired
     StoreRepository storeRepository;
+    @Autowired
+    ProductRepository productRepository;
+    @Autowired
+    IamgesReportRepository iamgesReportRepository;
     @Autowired
     FirebaseStorageService firebaseStorageService;
 
@@ -154,16 +162,23 @@ public class ReportController {
     @PostMapping("/report/create")
     public ResponseEntity<?> createReport(
             @RequestPart("report") String reportJson,
-            @RequestPart("file") MultipartFile file) {
+            @RequestPart("files") MultipartFile[] files) {
         try {
             // Chuyển JSON thành đối tượng Report
             ObjectMapper mapper = new ObjectMapper();
             Report report = mapper.readValue(reportJson, Report.class);
 
             // Kiểm tra và lấy Product từ cơ sở dữ liệu
+            if (report.getProduct() != null && report.getProduct().getId() != null) {
+                Product product = productRepository.findById(report.getProduct().getId()).orElse(null);
+                report.setProduct(product); // Nếu không tìm thấy, set product là null
+            } else {
+                report.setOrder(null); // Nếu không có ID, set product là null
+            }
+            // Kiểm tra và lấy order từ cơ sở dữ liệu
             if (report.getOrder() != null && report.getOrder().getId() != null) {
-                Order product = orderRepository.findById(report.getOrder().getId()).orElse(null);
-                report.setOrder(product); // Nếu không tìm thấy, set product là null
+                Order order = orderRepository.findById(report.getOrder().getId()).orElse(null);
+                report.setOrder(order); // Nếu không tìm thấy, set product là null
             } else {
                 report.setOrder(null); // Nếu không có ID, set product là null
             }
@@ -176,16 +191,34 @@ public class ReportController {
                 report.setStore(null); // Nếu không có ID, set store là null
             }
 
-            // Xử lý file video
-            if (file != null && !file.isEmpty()) {
-                String media = firebaseStorageService.uploadToFirebase(file, "reports");
-                report.setMedia(media);
-            }
             report.setReplyreport(null);
-
-            // Lưu báo cáo
             report.setCreatedat(LocalDateTime.now());
-            reportReponsitory.save(report);
+            Report savedReport = reportReponsitory.save(report);
+            // Xử lý file video
+            List<String> imageReportUrls = new ArrayList<>();
+            for (MultipartFile file : files) {
+                try {
+                    String media = firebaseStorageService.uploadToFirebase(file, "reports");
+                    if (media != null) {
+                        imageReportUrls.add(media);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body("Failed to upload image: " + e.getMessage());
+                }
+            }
+            // Tạo các đối tượng IamgesReport liên kết với Report
+            List<ImagesReport> imagesReports = new ArrayList<>();
+            for (String mediaFile : imageReportUrls) {
+                ImagesReport imagesReport = new ImagesReport();
+                imagesReport.setMedia(mediaFile);
+                imagesReport.setReport(savedReport);
+                imagesReports.add(imagesReport);
+            }
+
+            // Lưu danh sách ảnh
+            iamgesReportRepository.saveAll(imagesReports);
 
             return ResponseEntity.ok("Báo cáo thành công");
         } catch (Exception e) {
@@ -202,11 +235,7 @@ public class ReportController {
         if (report.getId() == null || report == null) {
             return ResponseEntity.notFound().build();
         }
-        report.setUser(reportRequest.getUser());
-        report.setStore(reportRequest.getStore());
-        report.setOrder(reportRequest.getOrder());
-        report.setContent(reportRequest.getContent());
-        report.setMedia(reportRequest.getMedia());
+      
         report.setStatus(reportRequest.getStatus());
         report.setCreatedat(reportRequest.getCreatedat());
         report.setReplyreport(reportRequest.getReplyreport());

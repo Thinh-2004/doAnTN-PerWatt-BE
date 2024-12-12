@@ -27,6 +27,12 @@ public interface StoreRepository extends JpaRepository<Store, Integer> {
     @Query("select count(s)  from Store s where s.taxcode = ?1 and s.id != ?2")
     Integer checkDuplicate(String taxcode, Integer id);
 
+    // Danh sách các cửa hàng bị ban
+    @Query("""
+            select s from Store s where s.block = true
+            """)
+    List<Store> listAllStoreByBan();
+
     @Query(value = "SELECT s.namestore AS StoreName, SUM(od.quantity * od.price) * 0.9 AS TotalRevenue " +
             "FROM Stores s " +
             "JOIN Products p ON s.id = p.storeId " +

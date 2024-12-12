@@ -57,4 +57,12 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
                         @Param("startDate") String startDate,
                         @Param("endDate") String endDate);
 
+        // Tính số lượng hóa đơn của sản phẩm gốc theo người dùng
+        @Query(value = "select count(DISTINCT o.id) " +
+                        "from orders o " +
+                        "join orderdetails od on o.id = od.orderId " +
+                        "join ProductDetails pd on od.productDetailId = pd.id " +
+                        "where o.orderStatus like N'Hoàn Thành' and userId = ?1 and idProduct = ?2", nativeQuery = true)
+        public Integer countOrderBuyedOfProductByUser(Integer userId, Integer idProduct);
+
 }

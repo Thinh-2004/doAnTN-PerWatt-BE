@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.duantn.be_project.Repository.BlockRepository;
 import com.duantn.be_project.Repository.ProductRepository;
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Repository.VoucherDetailsSellerRepository;
@@ -28,6 +29,8 @@ public class RunWithProject {
     StoreRepository storeRepository;
     @Autowired
     ProductRepository productRepository;
+    @Autowired
+    BlockRepository blockRepository;
 
     // @Async
     @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Ho_Chi_Minh") // Chạy mỗi ngày vào lúc 00:00
@@ -77,7 +80,7 @@ public class RunWithProject {
     @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Ho_Chi_Minh") // Chạy mỗi ngày vào lúc 00:00
     public CompletableFuture<Void> runDateUpdateStore() {
         // Lấy tất cả các store trong cơ sở dữ liệu
-        List<Store> stores = storeRepository.findAll();
+        List<Store> stores = storeRepository.listAllStoreByBan();
 
         // Lấy ngày hiện tại
         LocalDate currentDate = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")); // Lấy ngày hiện tại theo múi giờ của Việt
@@ -95,7 +98,7 @@ public class RunWithProject {
                 // Kiểm tra và cập nhật store nếu endDay bằng ngày hiện tại
                 if (endDay.isEqual(currentDate)) {
                     store.setBlock(false);
-                    store.setStatus("Hoạt động");
+                    store.setStatus("Không hiệu lực");
                     store.setStartday(null);
                     store.setEndday(null);
                     store.setReason(null);
@@ -108,11 +111,11 @@ public class RunWithProject {
         return CompletableFuture.completedFuture(null); // Trả về khi hoàn thành
     }
 
-    // Kiểm tra cửa hàng
+    // Kiểm tra sản phẩm
     @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Ho_Chi_Minh") // Chạy mỗi ngày vào lúc 00:00
     public CompletableFuture<Void> runDateUpdateProduct() {
         // Lấy tất cả các store trong cơ sở dữ liệu
-        List<Product> products = productRepository.findAll();
+        List<Product> products = productRepository.listAllProductBan();
 
         // Lấy ngày hiện tại
         LocalDate currentDate = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")); // Lấy ngày hiện tại theo múi giờ của Việt
@@ -126,17 +129,19 @@ public class RunWithProject {
                         .atZone(ZoneId.of("Asia/Ho_Chi_Minh"))
                         .toLocalDate();
 
-                // Kiểm tra và cập nhật store
+                // Kiểm tra và cập nhật sản phẩm
                 if (endDay.isEqual(currentDate)) {
                     product.setBlock(false);
-                    product.setStatus("Hoạt động");
+                    product.setStatus("Không hiệu lực");
                     product.setStartday(null);
                     product.setEndday(null);
                     product.setReason(null);
                 }
 
-                // Cập nhật lại trạng thái store vào cơ sở dữ liệu
+                // Cập nhật lại trạng thái sản phẩm vào cơ sở dữ liệu
                 productRepository.save(product);
+                // Xóa tất cả block theo sản phẩm được hủy ban
+                blockRepository.deleteByIdProduct(product.getId());
             }
         }
         return CompletableFuture.completedFuture(null); // Trả về khi hoàn thành

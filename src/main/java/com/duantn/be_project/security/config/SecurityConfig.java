@@ -122,13 +122,6 @@ public class SecurityConfig implements WebMvcConfigurer {
                 return httpSecurity.build();
         }
 
-        @Override
-        public void addResourceHandlers(ResourceHandlerRegistry registry) {
-                registry.addResourceHandler("/files/**")
-                                .addResourceLocations("file:" + System.getProperty("user.dir")
-                                                + "/src/main/resources/static/files/");
-        }
-
         @Bean
         JwtAuthenticationConverter jwtAuthenticationConverter() {
                 JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();

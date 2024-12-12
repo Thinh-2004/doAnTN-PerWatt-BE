@@ -79,7 +79,13 @@ public class Product implements Serializable {
     @OneToMany(mappedBy = "product")
     List<VoucherAdminDetail> voucherAdminDetails;
 
-    
+    @JsonIgnore
+    @OneToMany(mappedBy = "product")
+    List<Report> reports;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "product")
+    List<Block> blocks;
 
     String slug;
     Boolean block;
