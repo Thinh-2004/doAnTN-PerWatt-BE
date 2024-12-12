@@ -503,48 +503,42 @@ public class UserController {
             user.setPassword(existingUser.getPassword());
         }
 
-        // Lưu tên ảnh cũ
-        String oldImageDetail = existingUser.getAvatar();
-
         // Xử lý hình ảnh nếu có
         if (avatar != null && !avatar.isEmpty()) {
-            if (existingUser.getAvatar().equalsIgnoreCase(oldImageDetail)) {
-                // Nếu không có hình ảnh mới, giữ nguyên avatar cũ
-                user.setAvatar(existingUser.getAvatar());
-            } else {
-                // Giải mã URL trước
-                String decodedUrl = java.net.URLDecoder.decode(oldImageDetail,
-                        java.nio.charset.StandardCharsets.UTF_8);
+            // Lưu tên ảnh cũ
+            String oldImageDetail = existingUser.getAvatar();
+            // Giải mã URL trước
+            String decodedUrl = java.net.URLDecoder.decode(oldImageDetail,
+                    java.nio.charset.StandardCharsets.UTF_8);
 
-                // Loại bỏ phần https://firebasestorage.googleapis.com/v0/b/ và lấy phần sau o/
-                String filePath = decodedUrl.split("o/")[1]; // Tách phần sau "o/"
+            // Loại bỏ phần https://firebasestorage.googleapis.com/v0/b/ và lấy phần sau o/
+            String filePath = decodedUrl.split("o/")[1]; // Tách phần sau "o/"
 
-                // Loại bỏ phần ?alt=media
-                int queryIndex = filePath.indexOf("?"); // Tìm vị trí của dấu hỏi "?"
-                if (queryIndex != -1) {
-                    filePath = filePath.substring(0, queryIndex); // Cắt bỏ phần sau dấu hỏi
-                }
-                try {
-                    // Lưu hình ảnh mới lên Firebase và lấy URL
-                    String newAvatarUrl = firebaseStorageService.uploadToFirebase(avatar,
-                            "users");
+            // Loại bỏ phần ?alt=media
+            int queryIndex = filePath.indexOf("?"); // Tìm vị trí của dấu hỏi "?"
+            if (queryIndex != -1) {
+                filePath = filePath.substring(0, queryIndex); // Cắt bỏ phần sau dấu hỏi
+            }
+            try {
+                // Lưu hình ảnh mới lên Firebase và lấy URL
+                String newAvatarUrl = firebaseStorageService.uploadToFirebase(avatar,
+                        "users");
 
-                    // Xóa ảnh cũ trên Firebase nếu có
-                    if (oldImageDetail != null && !oldImageDetail.isEmpty()) {
-                        try {
-                            firebaseStorageService.deleteFileFromFirebase(filePath);
-                        } catch (Exception e) {
-                            System.err.println("Không thể xóa ảnh cũ trên Firebase: " + e.getMessage());
-                        }
+                // Xóa ảnh cũ trên Firebase nếu có
+                if (oldImageDetail != null && !oldImageDetail.isEmpty()) {
+                    try {
+                        firebaseStorageService.deleteFileFromFirebase(filePath);
+                    } catch (Exception e) {
+                        System.err.println("Không thể xóa ảnh cũ trên Firebase: " + e.getMessage());
                     }
-
-                    // Cập nhật avatar mới
-                    user.setAvatar(newAvatarUrl);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .body("Không thể lưu hình ảnh: " + e.getMessage());
                 }
+
+                // Cập nhật avatar mới
+                user.setAvatar(newAvatarUrl);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Không thể lưu hình ảnh: " + e.getMessage());
             }
         } else {
             // Nếu không có hình ảnh mới, giữ nguyên avatar cũ

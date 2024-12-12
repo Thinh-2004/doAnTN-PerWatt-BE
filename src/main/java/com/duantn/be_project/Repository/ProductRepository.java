@@ -207,27 +207,37 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
     List<Object[]> findTopSellingProductsByStoreId(@Param("storeId") Integer storeId);
 
     // Doanh thu theo năm seller
-    @Query(value = "SELECT \r\n" + //
-            "    YEAR(o.paymentDate) AS year, \r\n" + //
-            "    SUM(od.quantity * od.price * (1 - pc.vat)) AS revenue \r\n" + //
-            "FROM \r\n" + //
-            "    Orders o \r\n" + //
-            "JOIN \r\n" + //
-            "    OrderDetails od ON o.id = od.orderId \r\n" + //
-            "JOIN \r\n" + //
-            "    ProductDetails pd ON od.productdetailid = pd.id \r\n" + //
-            "JOIN \r\n" + //
-            "\tProducts p on p.id = pd.idProduct\r\n" + //
-            "JOIN \r\n" + //
-            "    ProductCategorys pc ON p.categoryId = pc.id \r\n" + //
-            "WHERE \r\n" + //
-            "    o.storeId = :storeId  \r\n" + //
-            "    AND o.orderStatus = N'hoàn thành' \r\n" + //
-            "GROUP BY \r\n" + //
-            "    YEAR(o.paymentDate) \r\n" + //
-            "ORDER BY \r\n" + //
-            "    year;\r\n" + //
-            "", nativeQuery = true)
+    @Query(value = "SELECT " +
+            "    YEAR(o.paymentDate) AS year, " +
+            "    SUM(od.quantity * od.price * (1 - pc.vat) * " +
+            "        CASE " +
+            "            WHEN o.idVoucher IS NOT NULL THEN " +
+            "                1 - ISNULL(v.discountPrice, 0) / 100.0 " + // Applying discountPrice from Vouchers
+            "            ELSE 1 " +
+            "        END" +
+            "    ) AS revenue, " +
+            "    o.idVoucherAdmin, " + // Added idVoucherAdmin
+            "    o.idVoucher AS voucherId, " + // Added voucherId
+            "    v.discountPrice AS discountPrice " + // Added discountPrice
+            "FROM " +
+            "    Orders o " +
+            "JOIN " +
+            "    OrderDetails od ON o.id = od.orderId " +
+            "JOIN " +
+            "    ProductDetails pd ON od.productdetailid = pd.id " +
+            "JOIN " +
+            "    Products p ON p.id = pd.idProduct " +
+            "JOIN " +
+            "    ProductCategorys pc ON p.categoryId = pc.id " +
+            "LEFT JOIN " +
+            "    Vouchers v ON o.idVoucher = v.id " + // Left join with Vouchers table
+            "WHERE " +
+            "    o.storeId = :storeId " +
+            "    AND o.orderStatus = N'hoàn thành' " + // Filter for completed orders
+            "GROUP BY " +
+            "    YEAR(o.paymentDate), o.idVoucherAdmin, o.idVoucher, v.discountPrice " + // Added new fields in GROUP BY
+            "ORDER BY " +
+            "    year", nativeQuery = true)
     List<Object[]> findRevenueByStoreId(@Param("storeId") Integer storeId);
 
     // all san pham
@@ -268,7 +278,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer> {
                 JOIN
                     ProductCategorys pc ON p.categoryId = pc.id
                 LEFT JOIN
-                    VoucherAdminDetail vad ON pd.id = vad.idProductDetail
+                    VoucherAdminDetail vad ON pd.id = vad.idProduct
                 LEFT JOIN
                     Vouchers v ON vad.idVoucherAdmin = v.id
                 WHERE

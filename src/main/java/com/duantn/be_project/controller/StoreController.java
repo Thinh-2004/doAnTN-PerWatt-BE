@@ -20,13 +20,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.duantn.be_project.Repository.CategoryRepository;
 import com.duantn.be_project.Repository.RolePermissionReponsitory;
-import com.duantn.be_project.Repository.RoleRepository;
+
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Repository.UserRepository;
 import com.duantn.be_project.Service.FirebaseStorageService;
 import com.duantn.be_project.Service.SlugText.SlugText;
 import com.duantn.be_project.model.ProductCategory;
-import com.duantn.be_project.model.Role;
 import com.duantn.be_project.model.RolePermission;
 import com.duantn.be_project.model.Store;
 import com.duantn.be_project.model.User;
