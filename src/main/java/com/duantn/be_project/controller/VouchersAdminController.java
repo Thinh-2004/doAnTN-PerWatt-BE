@@ -248,7 +248,7 @@ public class VouchersAdminController {
     }
 
     ///
-    @PreAuthorize("hasAnyAuthority('Admin_Manage_Promotion','Admin_All_Function','Seller_Manage_Shop')")
+    
     @GetMapping("/products")
     public List<VoucherAdminDetail> getAllRegisteredProducts() {
         // Trả về tất cả sản phẩm đã đăng ký

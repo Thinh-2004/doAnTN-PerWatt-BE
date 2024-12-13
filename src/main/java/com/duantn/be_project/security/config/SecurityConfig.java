@@ -92,8 +92,12 @@ public class SecurityConfig implements WebMvcConfigurer {
                         "/CateProductInStore/{id}",
                         // Comments
                         "/comment/**",
-                        //user
+                        // user
                         "/checkPass",
+                        // voucher admin
+                        "/products",
+                        "/vouchersAdminInPgaeHome",
+                        "/product/quantity/{idproduct}"
 
         };
 
