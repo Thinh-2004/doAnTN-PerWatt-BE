@@ -1,7 +1,6 @@
 package com.duantn.be_project.model;
 
 import java.io.Serializable;
-import java.util.Date;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -10,8 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -25,21 +22,16 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "Wallets")
-public class Wallet implements Serializable {
+@Table(name = "blocks")
+public class Block implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
 
     @ManyToOne
-    @JoinColumn(name = "userid")
-    User user;
+    @JoinColumn(name = "idproduct")
+    Product product;
 
-    Float balance;
-
-    Integer passcode;
-
-    @Temporal(TemporalType.TIMESTAMP)
-    Date createdat;
+    String nameproduct;
 
 }

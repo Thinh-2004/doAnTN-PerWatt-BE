@@ -66,7 +66,7 @@ class authenticateImpl implements authenticateService {
             }
         }
 
-        Boolean role = user.getRole().getNamerole().equals("Admin");
+        Boolean role = user.getRolePermission().getRole().getNamerole().equals("Admin");
 
         // Tạo token sau khi xác thực thành công
         String token = jwtService.generateToken(user);

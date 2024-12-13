@@ -1,6 +1,7 @@
 package com.duantn.be_project.model;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -56,7 +57,6 @@ public class Product implements Serializable {
     @JoinColumn(name = "storeid")
     Store store;
 
-
     // @JsonIgnore
     @JsonManagedReference
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
@@ -71,8 +71,26 @@ public class Product implements Serializable {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     List<ProductDetail> productDetails;
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "product")
+    List<Voucher> vouchers;
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "product")
+    List<VoucherAdminDetail> voucherAdminDetails;
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "product")
+    List<Report> reports;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "product")
+    List<Block> blocks;
 
     String slug;
+    Boolean block;
+    String status;
+    Date startday;
+    Date endday;
+    String reason;
 }

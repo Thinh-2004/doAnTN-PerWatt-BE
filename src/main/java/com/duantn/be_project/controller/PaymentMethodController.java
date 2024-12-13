@@ -19,7 +19,7 @@ public class PaymentMethodController {
     @Autowired
     PaymentMethodRepository paymentMethodRepository;
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @GetMapping("/paymentMethod")
     public ResponseEntity<List<PaymentMethod>> getAll(Model model) {
         return ResponseEntity.ok(paymentMethodRepository.findAll());

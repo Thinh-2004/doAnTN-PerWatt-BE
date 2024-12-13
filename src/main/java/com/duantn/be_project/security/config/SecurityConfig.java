@@ -49,7 +49,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                         "/api-docs/*", "/api-docs" };
 
         // Tự config post
-        private final String[] PUBLIC_ENDPONIT = { "/login", "/user", "/loginByGoogle", "/api/*","/refesh" };
+        private final String[] PUBLIC_ENDPONIT = { "/form/login", "/user", "/loginByGoogle", "/api/*", "/form/refesh" };
 
         // Tự config get
         private final String[] Get_Public_endpoint = {
@@ -57,15 +57,14 @@ public class SecurityConfig implements WebMvcConfigurer {
                         "/category/**",
                         // banner
                         "/banners/**",
-                        //image
+                        // image
                         "imageByProduct/{id}",
-
                         // product
                         "/home/product/list",
                         "/findMore/{name}",
                         "productPerMall/list",
                         "findMore/productPerMall/list",
-                        "/productStore/{slug}",
+                        "/showAllProduct/{slug}",
                         "/countBySlugProduct/{id}",
                         "/product/{slug}",
                         "/countOrderSuccess/{id}",
@@ -87,10 +86,18 @@ public class SecurityConfig implements WebMvcConfigurer {
                         "/store/checkIdUser/{id}",
                         "/store",
                         "/business/{taxcode}",
-                        //warranties
+                        // warranties
                         "/warranties",
                         "/warranties/{id}",
-                        "/CateProductInStore/{id}"
+                        "/CateProductInStore/{id}",
+                        // Comments
+                        "/comment/**",
+                        // user
+                        "/checkPass",
+                        // voucher admin
+                        "/products",
+                        "/vouchersAdminInPgaeHome",
+                        "/product/quantity/{idproduct}"
 
         };
 
@@ -117,13 +124,6 @@ public class SecurityConfig implements WebMvcConfigurer {
                                                 .jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
                 return httpSecurity.build();
-        }
-
-        @Override
-        public void addResourceHandlers(ResourceHandlerRegistry registry) {
-                registry.addResourceHandler("/files/**")
-                                .addResourceLocations("file:" + System.getProperty("user.dir")
-                                                + "/src/main/resources/static/files/");
         }
 
         @Bean

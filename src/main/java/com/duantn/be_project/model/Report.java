@@ -1,17 +1,22 @@
 package com.duantn.be_project.model;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinColumns;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -25,15 +30,11 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "Wallettransactions")
-public class WalletTransaction implements Serializable {
+@Table(name = "Reports")
+public class Report implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-
-    @ManyToOne
-    @JoinColumn(name = "walletid")
-    Wallet wallet;
 
     @ManyToOne
     @JoinColumn(name = "userid")
@@ -43,11 +44,20 @@ public class WalletTransaction implements Serializable {
     @JoinColumn(name = "storeid")
     Store store;
 
-    Float amount;
+    @ManyToOne
+    @JoinColumn(name = "orderid")
+    Order order;
 
-    String transactiontype;
+    @ManyToOne
+    @JoinColumn(name = "idproduct")
+    Product product;
 
-    @Temporal(TemporalType.TIMESTAMP)
-    Date transactiondate;
+    String content;
+    String status;
+    LocalDateTime createdat;
+    String replyreport;
 
+    @JsonManagedReference
+    @OneToMany(mappedBy = "report", fetch = FetchType.LAZY)
+    List<ImagesReport> imagesReports;
 }

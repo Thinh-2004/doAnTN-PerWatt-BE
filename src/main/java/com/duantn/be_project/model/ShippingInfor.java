@@ -32,6 +32,7 @@ public class ShippingInfor implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
     String address;
+    boolean isdefault;
 
     @ManyToOne
     @JoinColumn(name = "userid")

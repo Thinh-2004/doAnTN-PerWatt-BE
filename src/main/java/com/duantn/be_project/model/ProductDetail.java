@@ -45,13 +45,8 @@ public class ProductDetail implements Serializable{
     @OneToMany(mappedBy = "productDetail")
     List<CartItem> cartItems;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "productDetail")
-    List<Voucher> vouchers;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "productDetail")
-    List<VoucherAdminDetail> voucherAdminDetails;
+    
 
     String imagedetail;
 

@@ -19,7 +19,7 @@ public class NotificationController {
     @Autowired
     NotificationRepository notificationRepository;
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @GetMapping("/checkOrder")
     public ResponseEntity<List<Order>> findAll() {
         // Tìm cửa hàng theo storeId
@@ -27,8 +27,9 @@ public class NotificationController {
         return ResponseEntity.ok(storeOptional);
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
-    @GetMapping("/checkOrder/{id}")
+    // API xử lí seller
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
+    @GetMapping("/checkOrderSeller/{id}")
     public ResponseEntity<List<Order>> checkNewOrder(@PathVariable("id") Integer storeId) {
         List<Order> storeOrders = notificationRepository.findAllStoreId(storeId);
 
@@ -37,6 +38,44 @@ public class NotificationController {
         }
 
         return ResponseEntity.ok(storeOrders);
+    }
+
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
+    @GetMapping("/deliveredOrders/{id}")
+    public ResponseEntity<List<Order>> getDeliveredOrders(@PathVariable("id") Integer storeId) {
+        List<Order> deliveredOrders = notificationRepository.findDeliveredOrdersByStoreId(storeId);
+
+        if (deliveredOrders.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        return ResponseEntity.ok(deliveredOrders);
+    }
+
+    // New endpoint for canceled orders
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
+    @GetMapping("/canceledOrders/{id}")
+    public ResponseEntity<List<Order>> getCanceledOrders(@PathVariable("id") Integer storeId) {
+        List<Order> canceledOrders = notificationRepository.findCanceledOrdersByStoreId(storeId);
+
+        if (canceledOrders.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        return ResponseEntity.ok(canceledOrders);
+    }
+
+    // API xử lí buyer
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
+    @GetMapping("/checkOrderBuyer/{userId}")
+    public ResponseEntity<List<Order>> checkReadyToShipOrCanceledOrders(@PathVariable("userId") Integer userId) {
+        List<Order> orders = notificationRepository.findAllReadyToShipOrCanceledOrders(userId);
+
+        if (orders.isEmpty()) {
+            return ResponseEntity.noContent().build(); // HTTP 204 No Content nếu không có đơn hàng
+        }
+
+        return ResponseEntity.ok(orders);
     }
 
 }

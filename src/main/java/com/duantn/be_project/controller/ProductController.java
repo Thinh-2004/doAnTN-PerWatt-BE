@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -28,6 +27,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.duantn.be_project.Repository.BlockRepository;
 import com.duantn.be_project.Repository.CategoryRepository;
 import com.duantn.be_project.Repository.ImageRepository;
 import com.duantn.be_project.Repository.OrderRepository;
@@ -37,20 +37,17 @@ import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Repository.TradeMarkRepository;
 import com.duantn.be_project.Service.FirebaseStorageService;
 import com.duantn.be_project.Service.SlugText.SlugText;
+import com.duantn.be_project.model.Block;
 import com.duantn.be_project.model.Image;
 import com.duantn.be_project.model.Product;
 import com.duantn.be_project.model.ProductDetail;
 import com.duantn.be_project.model.Store;
 import com.duantn.be_project.model.Request_Response.ProductDTO;
-import com.duantn.be_project.untils.FileManagerService;
 import com.duantn.be_project.untils.UploadImages;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.cloud.storage.Blob;
-import com.google.cloud.storage.Bucket;
-import com.google.firebase.cloud.StorageClient;
 
 import jakarta.servlet.ServletContext;
 
@@ -59,7 +56,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import org.springframework.web.bind.annotation.PutMapping;
-
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -77,13 +74,13 @@ public class ProductController {
     @Autowired
     ImageRepository imageRepository;
     @Autowired
-    FileManagerService fileManagerService;
-    @Autowired
     ServletContext servletContext;
     @Autowired
     OrderRepository orderRepository;
     @Autowired
     ProductDetailRepository productDetailRepository;
+    @Autowired
+    BlockRepository blockRepository;
     @Autowired
     UploadImages uploadImages;
     @Autowired
@@ -612,7 +609,181 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/showAllProduct/{slug}")
+    public ResponseEntity<?> showAllProductInStore(
+            @PathVariable("slug") String slug,
+            @RequestParam("pageNo") Optional<Integer> pageNo,
+            @RequestParam("pageSize") Optional<Integer> pageSize,
+            @RequestParam(name = "keyWord", defaultValue = "") String keyWord,
+            @RequestParam(name = "sortBy", defaultValue = "") String sortBy,
+            @RequestParam(name = "soldOutProduct", defaultValue = "false") Boolean soldOutProduct) {
+
+        // Tách từ khóa thành mảng các chuỗi con
+        String[] keywords = keyWord.split(" ");
+
+        // Khởi tạo danh sách để lưu các chuỗi hợp lệ
+        List<String> listSearch = new ArrayList<>();
+
+        // Kiểm tra từng từ khóa trong mảng keywords
+        Arrays.stream(keywords).forEach(string -> {
+            Boolean checkCate = categoryRepository.checkEmptyCategory("%" + string.split(" ") + "%");
+            Boolean checkTradeMark = tradeMarkRepository.checkEmptyTradeMark("%" + string.split(" ") + "%");
+
+            // Nếu tồn tại trong category hoặc trademark, thêm từ khóa vào listSearch
+            if (checkCate || checkTradeMark) {
+                listSearch.add(string);
+            }
+        });
+
+        // In ra danh sách các từ khóa hợp lệ để kiểm tra
+        // System.out.println("Các từ khóa hợp lệ: " + listSearch);
+
+        // Xác định Sort dựa trên sortBy
+        Sort sort = Sort.by(Direction.DESC, "p.id"); // Sử dụng tên trường đúng
+
+        switch (sortBy) {
+            case "newItems":
+                sort = Sort.by(Direction.DESC, "p.id");
+                break;
+            case "oldItems":
+                sort = Sort.by(Direction.ASC, "p.id");
+                break;
+            case "priceASC":
+                sort = Sort.by(Direction.ASC, "maxPrice"); // Sắp xếp theo giá cao nhất tăng dần
+                break;
+            case "priceDESC":
+                sort = Sort.by(Direction.DESC, "maxPrice"); // Sắp xếp theo giá cao nhất giảm dần
+                break;
+            case "bestSeller":
+                sort = Sort.by(Direction.DESC, "orderCount"); // Sắp xếp theo sản phẩm bán chạy
+                break;
+            case "quantityASC":
+                sort = Sort.by(Direction.ASC, "quantityCount");
+                break;
+            case "quantityDESC":
+                sort = Sort.by(Direction.DESC, "quantityCount");
+                break;
+            default:
+                sort = Sort.by(Direction.DESC, "p.id");
+                break;
+        }
+
+        Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20), sort);
+        Page<Object[]> prPage;
+        Integer idCate = null;
+
+        // Kiểm tra keyWord
+        if (keyWord.toLowerCase().matches(".*\bhot\b.*") || keyWord.toLowerCase().contains("yêu thích")
+                || keyWord.toLowerCase().contains("bán chạy") ||
+                keyWord.toLowerCase().contains("phổ biến") || keyWord.toLowerCase().contains("được ưa chuộng")
+                || keyWord.toLowerCase().contains("hàng đầu")
+                || keyWord.toLowerCase().contains("nổi bật")
+                || keyWord.toLowerCase().contains("xu hướng") ||
+                keyWord.toLowerCase().contains("top")
+                || keyWord.toLowerCase().contains("săn đón") ||
+                keyWord.toLowerCase().contains("được quan tâm")
+                || keyWord.toLowerCase().contains("bán nhiều") ||
+                keyWord.toLowerCase().contains("best seller") ||
+                keyWord.toLowerCase().contains("bestseller") ||
+                keyWord.toLowerCase().contains("best-seller") ||
+                keyWord.toLowerCase().contains("được đánh giá cao") ||
+                keyWord.toLowerCase().contains("được mua nhiều")) {
+            sort = Sort.by(Direction.DESC, "orderCount");
+
+            pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20),
+                    sort);
+
+            prPage = productRepository.showAllProductInStore(slug,
+                    "%",
+                    "%",
+                    "%",
+                    "%",
+                    "%",
+                    idCate,
+                    soldOutProduct,
+                    pageable);
+        } else {
+            pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(20),
+                    sort);
+
+            // Kiểm tra nếu keyword có thể chuyển đổi thành số
+            if (!keyWord.isEmpty()) {
+                try {
+                    // Tìm theo category ID danh mục
+                    idCate = Integer.parseInt(keyWord);
+                    prPage = productRepository.showAllProductInStore(slug, "", "", "", "", "", idCate,
+                            soldOutProduct, pageable);
+
+                } catch (NumberFormatException e) {
+                    // Nếu keyword không phải là số thì tìm theo tên hoặc danh mục
+                    // Đảm bảo listSearch có đủ 5 phần tử
+                    while (listSearch.size() < 5) {
+                        listSearch.add(""); // Thêm phần tử rỗng nếu kích thước nhỏ hơn 5
+                    }
+
+                    // Tạo một mảng để lưu các tham số cho hàm tìm kiếm
+                    String[] searchParams = new String[5];
+
+                    for (int i = 0; i < searchParams.length; i++) {
+                        // Kiểm tra xem phần tử có phải là chuỗi không rỗng hay không
+                        if (i < listSearch.size() && !listSearch.get(i).isEmpty()) {
+                            searchParams[i] = "%" + listSearch.get(i) + "%"; // Thêm ký tự '%' nếu không rỗng
+                        } else {
+                            searchParams[i] = ""; // Nếu phần tử rỗng, thêm chuỗi rỗng
+                        }
+                    }
+
+                    // Gọi hàm tìm kiếm với các tham số đã xử lý
+                    prPage = productRepository.showAllProductInStore(slug,
+                            searchParams[0],
+                            searchParams[1],
+                            searchParams[2],
+                            searchParams[3],
+                            searchParams[4],
+                            null,
+                            soldOutProduct,
+                            pageable);
+
+                }
+            } else {
+                prPage = productRepository.showAllProductInStore(slug,
+                        "%",
+                        "%",
+                        "%",
+                        "%",
+                        "%",
+                        null,
+                        soldOutProduct,
+                        pageable);
+            }
+
+        }
+
+        // Tạo danh sách sản phẩm từ dữ liệu trả về
+        List<Product> products = prPage.getContent().stream()
+                .map(obj -> (Product) obj[0]) // Chỉ lấy sản phẩm từ mảng
+                .collect(Collectors.toList());
+
+        // Truy vấn từng id
+        List<ProductDTO> productDTOs = products.stream().map(product -> {
+            List<ProductDetail> productDetails = productDetailRepository.findByIdProduct(product.getId());
+            Integer countOrderSuccess = productDetails.stream()
+                    .mapToInt((detailProduct) -> orderRepository.countOrderBuyed(detailProduct.getId())).sum();
+            return new ProductDTO(product, productDetails, countOrderSuccess);
+        }).collect(Collectors.toList());
+
+        // Tạo Map chỉ chứa số liệu cần thiết
+        Map<String, Object> response = new HashMap<>();
+        response.put("products", productDTOs); // Dánh sách sản phẩm
+        response.put("currentPage", prPage.getNumber() + 1); // Trang hiện tại
+        response.put("totalPage", prPage.getTotalPages()); // Tổng số trang
+        response.put("totalItems", prPage.getTotalElements()); // Tổng số phần tử
+
+        return ResponseEntity.ok(response);
+    }
+
     // GetAllByIdStore
+    // @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @GetMapping("/productStore/{slug}")
     public ResponseEntity<?> getStoreBySlugStore(
             @PathVariable("slug") String slug,
@@ -810,109 +981,7 @@ public class ProductController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
-    // @PostMapping("/productCreate")
-    // public ResponseEntity<?> createProduct(
-    // @RequestPart("product") String productJson,
-    // @RequestPart("productDetails") String productDetailsJson,
-    // @RequestPart("files") MultipartFile[] files) throws JsonMappingException,
-    // JsonProcessingException {
-    // ObjectMapper objectMapper = new ObjectMapper();
-    // Product product;
-    // List<ProductDetail> productDetails;
-
-    // // Chuyển đổi JSON thành đối tượng Product
-    // product = objectMapper.readValue(productJson, Product.class);
-
-    // // Gán tên sản phẩm cho slug
-    // product.setSlug(slugText.generateUniqueSlug(product.getName()));
-
-    // // Lưu Product trước và lấy productId
-    // Product savedProduct = productRepository.save(product);
-    // try {
-    // // Chuyển đổi JSON thành danh sách ProductDetail
-    // TypeReference<List<ProductDetail>> typeRef = new
-    // TypeReference<List<ProductDetail>>() {
-    // };
-    // productDetails = objectMapper.readValue(productDetailsJson, typeRef);
-
-    // // Duyệt qua từng ProductDetail để lưu vào cơ sở dữ liệu trước để lấy id
-    // for (ProductDetail detail : productDetails) {
-    // detail.setProduct(savedProduct); // Gán Product đã lưu vào ProductDetail
-    // ProductDetail savedDetail = productDetailRepository.save(detail); // Lưu tạm
-    // // thời ProductDetail để lấy
-    // // id
-
-    // try {
-    // if (detail.getImagedetail() != null && !detail.getImagedetail().isEmpty()) {
-    // // Chuyển đổi chuỗi base64 thành MultipartFile
-    // MultipartFile imageDetail =
-    // uploadImages.base64ToMultipartFile(detail.getImagedetail());
-    // // Lưu hình ảnh lên server và lấy đường dẫn lưu
-    // String imageDetailPath = uploadImages.saveDetailProductImage(imageDetail,
-    // savedDetail.getId());
-    // savedDetail.setImagedetail(imageDetailPath); // Cập nhật đường dẫn thực tế
-    // // cho imagedetail
-    // } else {
-    // savedDetail.setImagedetail(null); // Cập nhật đường dẫn thực tế cho
-    // // imagedetail
-
-    // }
-
-    // } catch (IOException e) {
-    // e.printStackTrace();
-    // // Xử lý lỗi khi chuyển đổi base64 thành MultipartFile
-    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    // .body("Failed to process image for ProductDetail: " + e.getMessage());
-    // }
-
-    // // Lưu lại ProductDetail sau khi đã cập nhật imagedetail
-    // productDetailRepository.save(savedDetail);
-    // }
-
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // return ResponseEntity.badRequest().body("Invalid data: " + e.getMessage());
-    // }
-
-    // System.out.println("Saved product and details: " + product);
-
-    // // Lưu các ảnh trong files vào server và liên kết với Product
-    // List<String> imageUrls = new ArrayList<>();
-    // for (MultipartFile file : files) {
-    // System.out.println("Received file: " + file.getOriginalFilename());
-
-    // // Lưu file và lấy URL
-    // String imageUrl = fileManagerService.save(file, savedProduct.getId());
-
-    // if (imageUrl != null) {
-    // imageUrls.add(imageUrl);
-    // }
-    // }
-
-    // // Tạo các đối tượng Image và liên kết với Product
-    // List<Image> images = new ArrayList<>();
-    // for (String imageUrl : imageUrls) {
-    // Image image = new Image();
-    // image.setImagename(imageUrl);
-    // image.setProduct(savedProduct);
-    // images.add(image);
-    // }
-
-    // // Lưu danh sách Image vào cơ sở dữ liệu
-    // try {
-    // imageRepository.saveAll(images);
-    // savedProduct.setImages(images);
-    // productRepository.save(savedProduct);
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    // .body("Failed to update product with images: " + e.getMessage());
-    // }
-
-    // return ResponseEntity.ok("Product created successfully with images
-    // anddetails");
-    // }
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @PostMapping("/productCreate")
     public ResponseEntity<?> createProduct(
             @RequestPart("product") String productJson,
@@ -928,6 +997,8 @@ public class ProductController {
 
         // Gán tên sản phẩm cho slug
         product.setSlug(slugText.generateUniqueSlug(product.getName()));
+        product.setBlock(false);
+        product.setStatus("Không hiệu lực");
 
         // Lưu Product trước và lấy productId
         Product savedProduct = productRepository.save(product);
@@ -1009,80 +1080,7 @@ public class ProductController {
     }
 
     // Put Store Product
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
-    // @PutMapping("/productUpdate/{id}")
-    // public ResponseEntity<?> updateProduct(
-    // @PathVariable("id") Integer id,
-    // @RequestPart("product") String productJson,
-    // @RequestPart(value = "files", required = false) MultipartFile[] files) {
-
-    // // Kiểm tra xem sản phẩm có tồn tại không
-    // if (!productRepository.existsById(id)) {
-    // return ResponseEntity.notFound().build();
-    // }
-
-    // // Chuyển đổi chuỗi JSON thành đối tượng Product
-    // ObjectMapper objectMapper = new ObjectMapper();
-    // Product product;
-    // try {
-    // product = objectMapper.readValue(productJson, Product.class);
-    // if (!product.getSlug().isEmpty() || product.getSlug() != null) {
-    // product.setSlug(slugText.generateUniqueSlug(product.getName()));
-    // }
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // return ResponseEntity.badRequest().body("Dữ liệu sản phẩm không hợp lệ: " +
-    // e.getMessage());
-    // }
-
-    // // Lưu sản phẩm đã cập nhật
-    // Product updatedProduct;
-    // try {
-    // updatedProduct = productRepository.save(product);
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    // .body("Không thể cập nhật sản phẩm: " + e.getMessage());
-    // }
-
-    // // Xử lý các tệp mới nếu có
-    // if (files != null && files.length > 0) {
-    // List<String> imageUrls = new ArrayList<>();
-    // for (MultipartFile file : files) {
-    // System.out.println("Đã nhận tệp: " + file.getOriginalFilename());
-
-    // // Lưu tệp và lấy URL hoặc tên tệp
-    // String imageUrl = fileManagerService.save(file, updatedProduct.getId());
-
-    // if (imageUrl != null) {
-    // imageUrls.add(imageUrl);
-    // }
-    // }
-
-    // // Tạo các đối tượng Image cho từng URL hình ảnh mới và liên kết với sản phẩm
-    // List<Image> images = new ArrayList<>();
-    // for (String imageUrl : imageUrls) {
-    // Image image = new Image();
-    // image.setImagename(imageUrl);
-    // image.setProduct(updatedProduct);
-    // images.add(image);
-    // }
-
-    // // Lưu các hình ảnh mới và cập nhật sản phẩm với các đối tượng hình ảnh
-    // try {
-    // imageRepository.saveAll(images); // Đảm bảo bạn có repository để lưu hình ảnh
-    // updatedProduct.getImages().addAll(images); // Thêm hình ảnh mới vào những
-    // hình ảnh hiện có
-    // productRepository.save(updatedProduct); // Lưu sản phẩm đã cập nhật
-    // } catch (Exception e) {
-    // e.printStackTrace();
-    // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-    // .body("Không thể cập nhật sản phẩm với hình ảnh mới: " + e.getMessage());
-    // }
-    // }
-
-    // return ResponseEntity.ok().build();
-    // }
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @PutMapping("/productUpdate/{id}")
     public ResponseEntity<?> updateProduct(
             @PathVariable("id") Integer id,
@@ -1096,12 +1094,15 @@ public class ProductController {
 
         // Chuyển đổi chuỗi JSON thành đối tượng Product
         ObjectMapper objectMapper = new ObjectMapper();
+        // Khởi tạo đối tượng product
         Product product;
+
         try {
             product = objectMapper.readValue(productJson, Product.class);
             if (product.getSlug() != null && !product.getSlug().isEmpty()) {
                 product.setSlug(slugText.generateUniqueSlug(product.getName()));
             }
+
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.badRequest().body("Dữ liệu sản phẩm không hợp lệ: " + e.getMessage());
@@ -1111,6 +1112,7 @@ public class ProductController {
         Product updatedProduct;
         try {
             updatedProduct = productRepository.save(product);
+           
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -1158,7 +1160,7 @@ public class ProductController {
     }
 
     // Delete
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @DeleteMapping("/ProductDelete/{id}")
     public ResponseEntity<?> delete(@PathVariable("id") Integer id) {
         // Kiểm tra xem sản phẩm có tồn tại không
@@ -1237,6 +1239,48 @@ public class ProductController {
         return ResponseEntity.ok().build();
     }
 
+    // Put ban product for admin
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Support')")
+    @PutMapping("/ban/product/{id}")
+    public ResponseEntity<?> updateProduct(
+            @PathVariable("id") Integer id,
+            @RequestBody Product productRequest) {
+
+        // Kiểm tra xem sản phẩm có tồn tại không
+        Product product = productRepository.findById(id).orElse(null);
+        if (product.getId() == null || product == null) {
+            return ResponseEntity.notFound().build();
+        }
+        // Xử lí cập nhật sản phẩm ban
+        product.setBlock(productRequest.getBlock());
+        product.setStatus(productRequest.getStatus());
+        product.setStartday(productRequest.getStartday());
+        product.setEndday(productRequest.getEndday());
+        product.setReason(productRequest.getReason());
+
+        // Xử lý cập nhật blocks ban
+        Block block = new Block();
+        block.setProduct(product);
+        block.setNameproduct(product.getName());
+
+        // Lưu thông tin sản phẩm bị ban
+        Product savedProdcut = productRepository.save(product);
+        // Lưu thông tin tên sản phẩm bị ban
+        blockRepository.save(block);
+
+        return ResponseEntity.ok(savedProdcut);
+    }
+
+    // CheckBan
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
+    @GetMapping("check/ban/shop/{idStore}")
+    public ResponseEntity<Integer> checkBan(
+            @PathVariable("idStore") Integer idStore) {
+        Integer checkban = productRepository.checkBan(idStore);
+
+        return ResponseEntity.ok(checkban);
+    }
+
     // Tìm idStore
     @GetMapping("/searchStore/{id}")
     public ResponseEntity<Store> getIdStoreByIdUser(@PathVariable("id") Integer idUser) {
@@ -1255,7 +1299,7 @@ public class ProductController {
     }
 
     // Get Top 10 Products by Store Id seller
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là admin mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @GetMapping("/top10-products/{storeId}")
     public ResponseEntity<List<Map<String, Object>>> getTopSellingProductsByStoreId(@PathVariable Integer storeId) {
         try {
@@ -1287,7 +1331,7 @@ public class ProductController {
     }
 
     // Phương thức mới để lấy doanh thu theo storeId biểu đồ
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là admin mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @GetMapping("/revenue/{storeId}")
     public ResponseEntity<List<Map<String, Object>>> getRevenueByStoreId(@PathVariable Integer storeId) {
         List<Object[]> revenueData = productRepository.findRevenueByStoreId(storeId);
@@ -1305,7 +1349,7 @@ public class ProductController {
     }
 
     // biểu đồ tròn
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là admin mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @GetMapping("/pie-chart/{storeId}")
     public ResponseEntity<List<Map<String, Object>>> getPieChartData(@PathVariable Integer storeId) {
         // Giả sử bạn có một phương thức để lấy danh sách sản phẩm theo storeId
@@ -1323,7 +1367,7 @@ public class ProductController {
     }
 
     // biểu đồ mixed-chart
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là admin mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @GetMapping("/mixed-chart/{storeId}")
     public ResponseEntity<List<Map<String, Object>>> getMixedChartData(
             @PathVariable Integer storeId,
@@ -1333,19 +1377,19 @@ public class ProductController {
         return ResponseEntity.ok(data);
     }
 
-    //ChooseProduct
-    //voucher
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là admin mới được gọi
+    // ChooseProduct
+    // voucher
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @GetMapping("/productDetails/store/{idStore}")
     public ResponseEntity<List<Map<String, Object>>> getAllProductDetailsByStore(@PathVariable int idStore) {
         // Lấy dữ liệu từ repository
         List<Object[]> productDetails = productRepository.findAllProductDetailsByStore(idStore);
-    
+
         // Kiểm tra nếu danh sách kết quả rỗng
         if (productDetails == null || productDetails.isEmpty()) {
             return ResponseEntity.notFound().build(); // Trả về 404 nếu không tìm thấy
         }
-    
+
         // Chuyển đổi danh sách Object[] thành danh sách Map
         List<Map<String, Object>> mappedDetails = productDetails.stream().map(product -> {
             Map<String, Object> productMap = new HashMap<>();
@@ -1362,7 +1406,7 @@ public class ProductController {
             productMap.put("discount", product[10]); // discount
             return productMap;
         }).collect(Collectors.toList());
-    
+
         // Trả về danh sách sản phẩm dưới dạng JSON
         return ResponseEntity.ok(mappedDetails);
     }

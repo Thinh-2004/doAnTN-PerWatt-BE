@@ -1,6 +1,5 @@
 package com.duantn.be_project.controller;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -8,10 +7,15 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PostAuthorize;
@@ -19,18 +23,20 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.ui.Model;
+
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.duantn.be_project.Repository.RoleRepository;
+import com.duantn.be_project.Repository.RolePermissionReponsitory;
+
 import com.duantn.be_project.Repository.UserRepository;
 import com.duantn.be_project.Service.FirebaseStorageService;
 import com.duantn.be_project.Service.UserService;
-import com.duantn.be_project.model.Role;
+
+import com.duantn.be_project.model.RolePermission;
 import com.duantn.be_project.model.User;
 import com.duantn.be_project.model.Request_Response.TokenRequest;
 import com.duantn.be_project.security.model.ApiResponse;
@@ -61,7 +67,7 @@ public class UserController {
     @Autowired
     UserRepository userRepository;
     @Autowired
-    RoleRepository roleRepository;
+    RolePermissionReponsitory rolePermissionReponsitory;
     @Autowired
     UploadImages uploadImages;
     @Autowired
@@ -76,10 +82,106 @@ public class UserController {
     FirebaseStorageService firebaseStorageService;
 
     // GetAll
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Support')")
     @GetMapping("/user")
-    public ResponseEntity<List<User>> getAll(Model model) {
-        return ResponseEntity.ok(userRepository.findAll());
+    public ResponseEntity<?> getAllUser(
+            @RequestParam("pageNo") Optional<Integer> pageNo,
+            @RequestParam("pageSize") Optional<Integer> pageSize,
+            @RequestParam(name = "keyWord", defaultValue = "") String keyWord,
+            @RequestParam(name = "checkFilter", defaultValue = "") String checkFilter,
+            @RequestParam(name = "sortBy", defaultValue = "") String sortBy) {
+
+        // Thiết lập sort
+        Sort sort = Sort.by(Direction.DESC, "u.id");
+        switch (sortBy) {
+            case "DESCName":
+                sort = Sort.by(Direction.DESC, "u.id");
+                break;
+            case "ASCName":
+                sort = Sort.by(Direction.ASC, "u.id");
+                break;
+            default:
+                sort = Sort.by(Direction.DESC, "u.id");
+                break;
+        }
+        // Thiết lập trang
+        Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(10), sort);
+        // Thiết lập dữ liệu hiển thị theo trang
+        Page<User> uPage = null;
+        // Kiểm tra nếu keyWord trống
+        if (!keyWord.isEmpty()) {
+            // Kiểm tra nếu keyWord là email
+            String emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$";
+            if (keyWord.matches(emailRegex)) {
+                uPage = userRepository.listUser("%" + keyWord + "%", "%", "%", pageable);
+            } else {
+                uPage = userRepository.listUser("%", "%" + keyWord + "%", "%", pageable);
+            }
+
+        } else if (!checkFilter.isEmpty()) {
+            if (checkFilter.equals("Buyer")) {
+                uPage = userRepository.listUser("%", "%", "%" + checkFilter + "%", pageable);
+            } else if (checkFilter.equals("Seller")) {
+                uPage = userRepository.listUser("%", "%", "%" + checkFilter + "%", pageable);
+            }
+        } else {
+            uPage = userRepository.listUser("%", "%", "%", pageable);
+        }
+
+        // Tạo Map để trả dữ liệu
+        Map<String, Object> response = new HashMap<>();
+        response.put("users", uPage.getContent()); // Danh sách sản phẩm
+        response.put("currentPage", uPage.getNumber()); // Trang hiện tại (hiển
+        // thị từ 1)
+        response.put("totalPages", uPage.getTotalPages()); // Tổng số trang
+        response.put("totalItems", uPage.getTotalElements()); // Tổng số sản phẩm
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Support')")
+    @GetMapping("/user/admin")
+    public ResponseEntity<?> getAllUserAdmin(
+            @RequestParam("pageNo") Optional<Integer> pageNo,
+            @RequestParam("pageSize") Optional<Integer> pageSize,
+            @RequestParam(name = "keyWord", defaultValue = "") String keyWord,
+            @RequestParam(name = "checkSelected", required = false) Integer checkSelected,
+            @RequestParam(name = "sortBy", defaultValue = "") String sortBy) {
+
+        Sort sort;
+        switch (sortBy) {
+            case "DESCName":
+                sort = Sort.by(Direction.DESC, "u.id");
+                break;
+            case "ASCName":
+                sort = Sort.by(Direction.ASC, "u.id");
+                break;
+            default:
+                sort = Sort.by(Direction.DESC, "u.id");
+                break;
+        }
+
+        Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(10), sort);
+        Page<User> uPage;
+
+        if (!keyWord.isEmpty()) {
+            String emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$";
+            if (keyWord.matches(emailRegex)) {
+                uPage = userRepository.listUserAdmin("%" + keyWord + "%", "%", pageable);
+            } else {
+                uPage = userRepository.listUserAdmin("%", "%" + keyWord + "%", pageable);
+            }
+        } else if (checkSelected != null) {
+            uPage = userRepository.listUserAdminByIdPermission(checkSelected, pageable);
+        } else {
+            uPage = userRepository.listUserAdmin("%", "%", pageable);
+        }
+
+        Map<String, Object> response = Map.of(
+                "users", uPage.getContent(),
+                "currentPage", uPage.getNumber(),
+                "totalPages", uPage.getTotalPages(),
+                "totalItems", uPage.getTotalElements());
+        return ResponseEntity.ok(response);
     }
 
     // GetByIdUser
@@ -99,7 +201,7 @@ public class UserController {
 
     // GetByIdUser
     // Chỉ được gọi khi email trùng với email trong token
-    @PostAuthorize("returnObject.body.email == authentication.name")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Support')")
     @GetMapping("/userProFile/{id}")
     public ResponseEntity<User> getByIdUser(@PathVariable("id") Integer id) {
         User user = userRepository.findById(id).orElseThrow();
@@ -110,7 +212,6 @@ public class UserController {
     }
 
     // checkmkProfileUser
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer')") // Chỉ vai trò là seller mới được gọi
     @PostMapping("/checkPass")
     public ResponseEntity<Map<String, Object>> checkPass(@RequestBody User userRequest) {
         Map<String, Object> response = new HashMap<>();
@@ -132,7 +233,7 @@ public class UserController {
         }
     }
 
-    @PostMapping("/login")
+    @PostMapping("/form/login")
     public ApiResponse<AuthenticationResponse> login(@RequestBody AuthenticateRequest request) {
 
         AuthenticationResponse result = authenticateService.authenticate(request);
@@ -142,7 +243,7 @@ public class UserController {
     }
 
     // @PreAuthorize("hasAnyAuthority('Seller', 'Buyer', 'Admin')")
-    @PostMapping("/refesh")
+    @PostMapping("/form/refesh")
     ApiResponse<AuthenticationResponse> authenticate(@RequestBody Map<String, String> token)
             throws ParseException, JOSEException {
         AuthenticationResponse result = jwtService.refeshToken(token.get("token"));
@@ -151,8 +252,8 @@ public class UserController {
                 .build();
     }
 
-    @PostMapping("/logout")
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer', 'Admin')")
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer', 'Admin_All_Function', 'Admin_Manage_Category', 'Admin_Manage_Banner', 'Admin_Manage_Revenue', 'Admin_Manage_Support','Admin_Manage_Promotion')")
+    @PostMapping("/form/logout")
     public ApiResponse<Void> logout(@RequestBody Map<String, String> requestBody) throws ParseException, JOSEException {
         String token = requestBody.get("token"); // Lấy token từ body
         if (token == null || token.isEmpty()) {
@@ -168,8 +269,9 @@ public class UserController {
                 .build();
     }
 
-    @PostMapping("/user")
-    public ResponseEntity<?> post(@RequestBody User user) {
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function')")
+    @PostMapping("/manage/create")
+    public ResponseEntity<?> postAdminManage(@RequestBody User user) {
 
         // Kiểm tra email đã tồn tại
         if (userRepository.existsByEmail(user.getEmail())) {
@@ -177,9 +279,9 @@ public class UserController {
         }
 
         // Tìm role
-        Role role = roleRepository.findById(user.getRole().getId())
+        RolePermission rolePermission = rolePermissionReponsitory.findById(user.getRolePermission().getId())
                 .orElseThrow(() -> new RuntimeException("Quyền không tồn tại"));
-        user.setRole(role);
+        user.setRolePermission(rolePermission);
 
         // Mã hóa mật khẩu
         String encodedPassword = passwordEncoder.encode(user.getPassword());
@@ -216,9 +318,9 @@ public class UserController {
         }
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller', 'Buyer','Admin')") // Chỉ vai trò là seller mới được gọi
-    @PutMapping("/user/{id}")
-    public ResponseEntity<?> updateUser(
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function')")
+    @PutMapping("/manage/update/{id}")
+    public ResponseEntity<?> updateUserAdmin(
             @PathVariable("id") Integer id,
             @RequestPart("user") String userJson,
             @RequestPart(value = "avatar", required = false) MultipartFile avatar) {
@@ -311,12 +413,179 @@ public class UserController {
         }
     }
 
-    // delete
-    @PreAuthorize("hasAnyAuthority('Admin')") // Chỉ vai trò là seller mới được gọi
-    @DeleteMapping("/user/{id}")
-    public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
+    @PostMapping("/user")
+    public ResponseEntity<?> post(@RequestBody User user) {
+
+        // Kiểm tra email đã tồn tại
+        if (userRepository.existsByEmail(user.getEmail())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Email đã tồn tại");
+        }
+
+        // Tìm role
+        RolePermission rolePermission = rolePermissionReponsitory.findById(user.getRolePermission().getId())
+                .orElseThrow(() -> new RuntimeException("Quyền không tồn tại"));
+        user.setRolePermission(rolePermission);
+
+        // Mã hóa mật khẩu
+        String encodedPassword = passwordEncoder.encode(user.getPassword());
+        user.setPassword(encodedPassword);
+
+        // Lưu user
+        User savedUser = userRepository.save(user);
+
+        // Lấy ảnh mặc định theo giới tính
+        String defaultAvatar = user.getGender() ? "nam.jpg" : "nu.jpg";
+        Path sourcePath = Paths.get("src/main/resources/static/files/images", defaultAvatar);
+
+        try {
+            // Đọc file
+            byte[] fileContent = Files.readAllBytes(sourcePath);
+
+            // Upload lên Firebase
+            String avatarUserUrl = firebaseStorageService.uploadToFirebaseByUserGender(fileContent,
+                    "users/" + savedUser.getId() + ".jpg");
+
+            if (avatarUserUrl == null) {
+                userRepository.deleteById(savedUser.getId());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi upload ảnh lên Firebase");
+            }
+
+            // Cập nhật avatar
+            savedUser.setAvatar(avatarUserUrl);
+            userRepository.save(savedUser);
+
+            return ResponseEntity.ok(savedUser);
+        } catch (IOException e) {
+            userRepository.deleteById(savedUser.getId());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Không thể xử lý ảnh đại diện");
+        }
+    }
+
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer', 'Admin_All_Function', 'Admin_Manage_Category', 'Admin_Manage_Banner', 'Admin_Manage_Revenue', 'Admin_Manage_Support','Admin_Manage_Promotion')")
+    @PutMapping("/user/{id}")
+    public ResponseEntity<?> updateUser(
+            @PathVariable("id") Integer id,
+            @RequestPart("user") String userJson,
+            @RequestPart(value = "avatar", required = false) MultipartFile avatar) {
+
+        // Kiểm tra xem người dùng có tồn tại không
         if (!userRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
+        }
+
+        // Chuyển đổi
+        ObjectMapper objectMapper = new ObjectMapper();
+        User user;
+
+        try {
+            user = objectMapper.readValue(userJson, User.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("Dữ liệu người dùng không hợp lệ: " + e.getMessage());
+        }
+
+        // Đảm bảo ID của người dùng khớp với biến đường dẫn
+        user.setId(id);
+        User existingUser = userRepository.findById(user.getId()).orElseThrow();
+
+        // Kiểm tra nếu mật khẩu mới không null hoặc không rỗng
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            // Kiểm tra xem mật khẩu mới có trùng với mật khẩu hiện tại hay không
+            if (!user.getPassword().equalsIgnoreCase(existingUser.getPassword())) {
+                // Nếu mật khẩu không trùng, mã hóa mật khẩu mới
+                user.setPassword(passwordEncoder.encode(user.getPassword()));
+            } else {
+                // Nếu mật khẩu trùng, giữ nguyên mật khẩu hiện tại
+                user.setPassword(existingUser.getPassword());
+            }
+        } else {
+            // Nếu mật khẩu mới là null hoặc rỗng, giữ nguyên mật khẩu hiện tại
+            user.setPassword(existingUser.getPassword());
+        }
+
+        // Xử lý hình ảnh nếu có
+        if (avatar != null && !avatar.isEmpty()) {
+            // Lưu tên ảnh cũ
+            String oldImageDetail = existingUser.getAvatar();
+            // Giải mã URL trước
+            String decodedUrl = java.net.URLDecoder.decode(oldImageDetail,
+                    java.nio.charset.StandardCharsets.UTF_8);
+
+            // Loại bỏ phần https://firebasestorage.googleapis.com/v0/b/ và lấy phần sau o/
+            String filePath = decodedUrl.split("o/")[1]; // Tách phần sau "o/"
+
+            // Loại bỏ phần ?alt=media
+            int queryIndex = filePath.indexOf("?"); // Tìm vị trí của dấu hỏi "?"
+            if (queryIndex != -1) {
+                filePath = filePath.substring(0, queryIndex); // Cắt bỏ phần sau dấu hỏi
+            }
+            try {
+                // Lưu hình ảnh mới lên Firebase và lấy URL
+                String newAvatarUrl = firebaseStorageService.uploadToFirebase(avatar,
+                        "users");
+
+                // Xóa ảnh cũ trên Firebase nếu có
+                if (oldImageDetail != null && !oldImageDetail.isEmpty()) {
+                    try {
+                        firebaseStorageService.deleteFileFromFirebase(filePath);
+                    } catch (Exception e) {
+                        System.err.println("Không thể xóa ảnh cũ trên Firebase: " + e.getMessage());
+                    }
+                }
+
+                // Cập nhật avatar mới
+                user.setAvatar(newAvatarUrl);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Không thể lưu hình ảnh: " + e.getMessage());
+            }
+        } else {
+            // Nếu không có hình ảnh mới, giữ nguyên avatar cũ
+            user.setAvatar(existingUser.getAvatar());
+        }
+
+        // Lưu người dùng đã cập nhật
+        try {
+            User updatedUser = userRepository.save(user);
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Không thể cập nhật người dùng: " + e.getMessage());
+        }
+    }
+
+    // delete
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function')")
+    @DeleteMapping("/manage/delete/{id}")
+    public ResponseEntity<?> delete(@PathVariable("id") Integer id) {
+        // Tìm hình ảnh trong cơ sở dữ liệu
+        User user = userRepository.findById(id).orElse(null);
+        if (!userRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        // Xóa hình ảnh khỏi Firebase Storage
+        try {
+            // Giải mã URL trước
+            String decodedUrl = java.net.URLDecoder.decode(user.getAvatar(),
+                    java.nio.charset.StandardCharsets.UTF_8);
+
+            // Loại bỏ phần https://firebasestorage.googleapis.com/v0/b/ và lấy phần sau o/
+            String filePath = decodedUrl.split("o/")[1]; // Tách phần sau "o/"
+
+            // Loại bỏ phần ?alt=media
+            int queryIndex = filePath.indexOf("?"); // Tìm vị trí của dấu hỏi "?"
+            if (queryIndex != -1) {
+                filePath = filePath.substring(0, queryIndex); // Cắt bỏ phần sau dấu hỏi
+            }
+
+            // Gọi Firebase Storage Service để xóa file
+            firebaseStorageService.deleteFileFromFirebase(filePath); // Xóa file khỏi Firebase
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Không thể xóa hình ảnh khỏi Firebase: " + e.getMessage());
         }
         userRepository.deleteById(id);
         return ResponseEntity.ok().build();
@@ -345,11 +614,12 @@ public class UserController {
                 if (user == null) {
                     // Nếu người dùng chưa tồn tại, tạo mới và lưu vào cơ sở dữ liệu
                     user = new User();
-                    Role role = new Role();
-                    role.setId(3);
+                    RolePermission rolePermission = new RolePermission();
+                    rolePermission.setId(6);
+
                     user.setEmail(email);
                     user.setFullname(name);
-                    user.setRole(role); // Đặt chức vụ là Buyer khi được tạo tài khoản
+                    user.setRolePermission(rolePermission); // Đặt chức vụ là Buyer khi được tạo tài khoản
                     user.setAvatar(pictureUrl);
 
                     // Lưu user tạm để lấy id

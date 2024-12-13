@@ -1,9 +1,9 @@
 package com.duantn.be_project.controller;
 
 import java.io.IOException;
-import java.util.Comparator;
+
 import java.util.List;
-import java.util.Optional;
+
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,7 +22,6 @@ import com.duantn.be_project.model.ProductCategory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PutMapping;
 
@@ -42,6 +41,14 @@ public class CategoryController {
         return ResponseEntity.ok(productCategories);
     }
 
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function','Admin_Manage_Category')")
+    @GetMapping("/category/list")
+    public ResponseEntity<List<ProductCategory>> getAllForAdmin(Model model) {
+        List<ProductCategory> productCategories = categoryRepository.findAllByDESC();
+        // productCategories.sort(Comparator.comparing((ProductCategory pc) -> pc.getName()));
+        return ResponseEntity.ok(productCategories);
+    }
+
     @GetMapping("/category/hot")
     public ResponseEntity<List<ProductCategory>> getCategory(Model model) {
         List<ProductCategory> productCategories = categoryRepository.sortByPCAZ();
@@ -49,7 +56,7 @@ public class CategoryController {
     }
 
     // GetAllById
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function','Admin_Manage_Category')")
     @GetMapping("/category/{id}")
     public ResponseEntity<ProductCategory> getById(@PathVariable("id") Integer id) {
         ProductCategory productCategory = categoryRepository.findById(id).orElseThrow();
@@ -60,7 +67,7 @@ public class CategoryController {
     }
 
     // Post
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function','Admin_Manage_Category')")
     @PostMapping("/category")
     public ResponseEntity<?> createCategory(
             @RequestParam("name") String name,
@@ -91,7 +98,7 @@ public class CategoryController {
     }
 
     // Put
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function','Admin_Manage_Category')")
     @PutMapping("category/{id}")
     public ResponseEntity<?> updateCategory(
             @PathVariable("id") Integer id,
@@ -152,7 +159,7 @@ public class CategoryController {
         return ResponseEntity.ok(savedCategory);
     }
 
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function','Admin_Manage_Category')")
     @DeleteMapping("/category/{id}")
     public ResponseEntity<?> delete(@PathVariable("id") Integer id) {
         // TODO: process PUT request

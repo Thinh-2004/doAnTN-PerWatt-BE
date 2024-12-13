@@ -3,10 +3,13 @@ package com.duantn.be_project.controller;
 import com.duantn.be_project.model.VoucherAdmin;
 import com.duantn.be_project.model.VoucherAdminCategory;
 import com.duantn.be_project.model.VoucherAdminDetail;
+import com.duantn.be_project.model.OrderDetail;
+import com.duantn.be_project.model.Product;
 import com.duantn.be_project.model.ProductCategory;
 import com.duantn.be_project.model.ProductDetail;
 import com.duantn.be_project.Repository.VouchersAdminRepository;
 import com.duantn.be_project.Repository.CategoryRepository;
+import com.duantn.be_project.Repository.OrderDetailRepository;
 import com.duantn.be_project.Repository.ProductDetailRepository;
 import com.duantn.be_project.Repository.VoucherAdminCategoryRepository;
 import com.duantn.be_project.Repository.VoucherAdminDetailRepository;
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -35,13 +39,16 @@ public class VouchersAdminController {
     private ProductDetailRepository productDetailRepository;
 
     @Autowired
+    private OrderDetailRepository orderDetailRepository;
+
+    @Autowired
     private VoucherAdminDetailRepository voucherAdminDetailRepository;
 
     @Autowired
     private VoucherAdminCategoryRepository voucherAdminCategoryRepository;
 
     // Lấy tất cả voucher
-    @PreAuthorize("hasAnyAuthority('Admin', 'Seller')")
+    @PreAuthorize("hasAnyAuthority('Admin_Manage_Promotion','Admin_All_Function','Seller_Manage_Shop')")
     @GetMapping("/vouchersAdmin")
     public ResponseEntity<List<VoucherAdmin>> getAllVouchers() {
         List<VoucherAdmin> vouchers = vouchersAdminRepository.findAll();
@@ -51,8 +58,17 @@ public class VouchersAdminController {
         return ResponseEntity.ok(vouchers);
     }
 
+    @GetMapping("/vouchersAdminInPgaeHome")
+    public ResponseEntity<List<VoucherAdmin>> getAllVouchersInPageHome() {
+        List<VoucherAdmin> vouchers = vouchersAdminRepository.findAll();
+        // if (vouchers.isEmpty()) {
+        // return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        // }
+        return ResponseEntity.ok(vouchers);
+    }
+
     // Thêm mới voucher
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_Manage_Promotion','Admin_All_Function')")
     @PostMapping("/vouchersAdmin/create")
     public ResponseEntity<VoucherAdmin> createVoucher(@RequestBody VoucherAdmin voucher) {
         if (voucher.getVoucherAdminDetails() != null) {
@@ -75,19 +91,19 @@ public class VouchersAdminController {
     }
 
     // Lấy voucher theo idVoucherAdmin
-    @PreAuthorize("hasAnyAuthority('Admin')")
-    @GetMapping("/vouchersAdmin/{idVoucherAdmin}")
-    public ResponseEntity<VoucherAdmin> getVoucherById(@PathVariable Integer idVoucherAdmin) {
-        return vouchersAdminRepository.findById(idVoucherAdmin)
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
+    @GetMapping("/vouchersAdmin/{id}")
+    public ResponseEntity<VoucherAdmin> getVoucherById(@PathVariable Integer id) {
+        return vouchersAdminRepository.findById(id)
                 .map(voucher -> ResponseEntity.ok(voucher))
                 .orElseGet(() -> {
-                    System.out.println("Voucher với ID " + idVoucherAdmin + " không tồn tại.");
+                    System.out.println("Voucher với ID " + id + " không tồn tại.");
                     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
                 });
     }
 
     // Lấy danh sách danh mục khuyến mãi
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_Manage_Promotion','Admin_All_Function')")
     @GetMapping("/voucher-categories")
     public ResponseEntity<List<VoucherAdminCategory>> getVoucherCategories() {
         List<VoucherAdminCategory> categories = voucherAdminCategoryRepository.findAll();
@@ -98,7 +114,7 @@ public class VouchersAdminController {
     }
 
     // Cập nhật trạng thái của VoucherAdmin
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_Manage_Promotion','Admin_All_Function')")
     @PutMapping("/vouchersAdmin/{id}/status")
     public ResponseEntity<?> updateVoucherStatus(@PathVariable int id, @RequestBody Map<String, String> statusUpdate) {
         String newStatus = statusUpdate.get("status");
@@ -119,8 +135,8 @@ public class VouchersAdminController {
         });
     }
 
-    // Cập nhật voucher
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    // // Cập nhật voucher
+    @PreAuthorize("hasAnyAuthority('Admin_Manage_Promotion','Admin_All_Function')")
     @PutMapping("/vouchersAdmin/{id}")
     public ResponseEntity<VoucherAdmin> updateVoucher(@PathVariable int id, @RequestBody VoucherAdmin voucher) {
         return vouchersAdminRepository.findById(id)
@@ -144,7 +160,7 @@ public class VouchersAdminController {
     }
 
     // Xóa voucher theo ID
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_Manage_Promotion','Admin_All_Function')")
     @DeleteMapping("/vouchersAdmin/{id}")
     @Transactional
     public ResponseEntity<?> deleteVoucherById(@PathVariable int id) {
@@ -170,34 +186,34 @@ public class VouchersAdminController {
         }
     }
 
-    // Lấy sản phẩm theo ID
-    @PreAuthorize("hasAnyAuthority('Admin')")
-    @GetMapping("/products")
-    public ResponseEntity<List<ProductDetail>> getProductsByIds(@RequestParam List<Integer> ids) {
-        List<ProductDetail> products = productDetailRepository.findAllById(ids);
-        if (products.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
-        return ResponseEntity.ok(products);
-    }
+    // // Lấy sản phẩm theo ID
+    // @PreAuthorize("hasAnyAuthority('Admin')")
+    // @GetMapping("/products")
+    // public ResponseEntity<List<ProductDetail>> getProductsByIds(@RequestParam
+    // List<Integer> ids) {
+    // List<ProductDetail> products = productDetailRepository.findAllById(ids);
+    // if (products.isEmpty()) {
+    // return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+    // }
+    // return ResponseEntity.ok(products);
+    // }
 
-    // Lấy chi tiết voucher theo voucherId
-    @PreAuthorize("hasAnyAuthority('Admin')")
-    @GetMapping("/voucherAdminDetails/{voucherAdminId}")
-    public ResponseEntity<List<VoucherAdminDetail>> getVoucherAdminDetails(
-            @PathVariable("voucherAdminId") Integer voucherAdminId) {
-        List<VoucherAdminDetail> details = voucherAdminDetailRepository.findByVoucherAdminId(voucherAdminId);
-        if (details.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
-        return ResponseEntity.ok(details);
-    }
+    // // Lấy chi tiết voucher theo voucherId
+    // @PreAuthorize("hasAnyAuthority('Admin')")
+    // @GetMapping("/voucherAdminDetails/{voucherAdminId}")
+    // public ResponseEntity<List<VoucherAdminDetail>> getVoucherAdminDetails(
+    // @PathVariable("voucherAdminId") Integer voucherAdminId) {
+    // List<VoucherAdminDetail> details =
+    // voucherAdminDetailRepository.findByVoucherAdminId(voucherAdminId);
+    // if (details.isEmpty()) {
+    // return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+    // }
+    // return ResponseEntity.ok(details);
+    // }
 
-    
-    
-
-    // Cập nhật trạng thái voucher mỗi ngày lúc 00:00 @Scheduled(cron = "0 0 0 * *
-    // ?")
+    // // Cập nhật trạng thái voucher mỗi ngày lúc 00:00 @Scheduled(cron = "0 0 0 *
+    // *
+    // // ?")
     @Scheduled(cron = "0 0/2 * * * ?")
     public void updateVoucherStatuses() {
         List<VoucherAdmin> vouchers = vouchersAdminRepository.findAll();
@@ -228,6 +244,63 @@ public class VouchersAdminController {
                 voucher.setStatus(newStatus);
                 vouchersAdminRepository.save(voucher);
             }
+        }
+    }
+
+    ///
+    
+    @GetMapping("/products")
+    public List<VoucherAdminDetail> getAllRegisteredProducts() {
+        // Trả về tất cả sản phẩm đã đăng ký
+        return voucherAdminDetailRepository.findAll();
+    }
+
+    @GetMapping("/product/quantity/{idproduct}")
+    public Integer getQuantityByProductId(@PathVariable("idproduct") Integer productId) {
+        // Lấy danh sách chi tiết đơn hàng dựa trên productId
+        List<OrderDetail> orderDetails = orderDetailRepository.findByProductDetailProductId(productId);
+
+        // Tính tổng quantity từ các OrderDetail
+        return orderDetails.stream()
+                .mapToInt(OrderDetail::getQuantity)
+                .sum(); // Trả về tổng số lượng
+    }
+
+    @PreAuthorize("hasAnyAuthority('Admin_Manage_Promotion','Admin_All_Function','Seller_Manage_Shop')")
+    @GetMapping("/flash-sales")
+    public ResponseEntity<List<Map<String, Object>>> getAllVoucherAdminDetailsWithProduct() {
+        try {
+            // Lấy tất cả VoucherAdminDetails từ cơ sở dữ liệu
+            List<VoucherAdminDetail> voucherAdminDetails = voucherAdminDetailRepository.findAll();
+
+            if (voucherAdminDetails.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            }
+
+            List<Map<String, Object>> result = new ArrayList<>();
+
+            // Duyệt qua các VoucherAdminDetail và thêm thông tin vào response
+            for (VoucherAdminDetail voucherAdminDetail : voucherAdminDetails) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("voucherAdminDetail", voucherAdminDetail);
+
+                // Thêm thông tin sản phẩm từ VoucherAdminDetail (giả sử bạn có thông tin sản
+                // phẩm trong VoucherAdminDetail)
+                if (voucherAdminDetail.getProduct() != null) {
+                    response.put("product", voucherAdminDetail.getProduct()); // Trả về thông tin sản phẩm từ
+                                                                              // VoucherAdminDetail
+                } else {
+                    response.put("product", null);
+                }
+
+                result.add(response);
+            }
+
+            return ResponseEntity.ok(result);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 

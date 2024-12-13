@@ -19,17 +19,16 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.duantn.be_project.Repository.CategoryRepository;
-import com.duantn.be_project.Repository.RoleRepository;
+import com.duantn.be_project.Repository.RolePermissionReponsitory;
+
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Repository.UserRepository;
-import com.duantn.be_project.Repository.WalletRepository;
 import com.duantn.be_project.Service.FirebaseStorageService;
 import com.duantn.be_project.Service.SlugText.SlugText;
 import com.duantn.be_project.model.ProductCategory;
-import com.duantn.be_project.model.Role;
+import com.duantn.be_project.model.RolePermission;
 import com.duantn.be_project.model.Store;
 import com.duantn.be_project.model.User;
-import com.duantn.be_project.model.Wallet;
 import com.duantn.be_project.untils.UploadImages;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -38,6 +37,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PutMapping;
 
 @CrossOrigin("*")
@@ -48,15 +48,13 @@ public class StoreController {
     @Autowired
     UserRepository userRepository;
     @Autowired
-    RoleRepository roleRepository;
+    RolePermissionReponsitory rolePermissionReponsitory;
     @Autowired
     UploadImages uploadImages;
     @Autowired
     CategoryRepository categoryRepository;
     @Autowired
     SlugText slugText;
-    @Autowired
-    WalletRepository walletRepository;
     @Autowired
     FirebaseStorageService firebaseStorageService;
 
@@ -85,10 +83,9 @@ public class StoreController {
     }
 
     // Post
-    @PreAuthorize("hasAnyAuthority('Buyer')")
+    @PreAuthorize("hasAnyAuthority('Buyer_Manage_Buyer')")
     @PostMapping("/store")
     public ResponseEntity<?> post(@RequestBody Store store) {
-        // TODO: process POST request
         // Bắt lỗi
         ResponseEntity<String> validateRes = validate(store);
         if (validateRes != null) {
@@ -114,21 +111,14 @@ public class StoreController {
 
         // Gán giá trị tên cửa hàng cho slug
         store.setSlug(slugText.generateUniqueSlug(store.getNamestore()));
+        store.setBlock(false);
+        store.setStatus("Không hiệu lực");
 
         // Tìm user
         User user = userRepository.findById(store.getUser().getId()).orElseThrow();
-        if (user.getRole().getId() == 3) {
-            Role newRole = roleRepository.findById(2).orElseThrow();
-            user.setRole(newRole);
-        }
-
-        Wallet wallet = walletRepository.findByUserIdStoreId(user.getId());
-        if (wallet == null) {
-            wallet = new Wallet(); // Khởi tạo đối tượng Wallet mới
-            wallet.setUser(store.getUser());
-            wallet.setBalance(0f);
-            wallet.setCreatedat(new Date());
-            walletRepository.save(wallet);
+        if (user.getRolePermission().getId() == 6) {
+            RolePermission newRolePermission = rolePermissionReponsitory.findById(5).orElseThrow();
+            user.setRolePermission(newRolePermission);
         }
 
         userRepository.save(user); // Cập nhật lại role khi tạo store
@@ -137,7 +127,7 @@ public class StoreController {
         return ResponseEntity.ok(savedStore);
     }
 
-    @PreAuthorize("hasAnyAuthority('Seller')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop')")
     @PutMapping("/store/{id}")
     public ResponseEntity<?> put(@PathVariable("id") Integer id, @RequestPart("store") String storeJson,
             @RequestPart(value = "imgbackgound", required = false) MultipartFile imgbackgound) {
@@ -232,7 +222,7 @@ public class StoreController {
     }
 
     // Delete
-    @PreAuthorize("hasAnyAuthority('Admin')") // Chỉ vai trò là seller mới được gọi
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Support')")
     @DeleteMapping("/store/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") Integer id) {
         // TODO: process PUT request
@@ -262,8 +252,28 @@ public class StoreController {
         }
     }
 
+    // put for admin
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Support')")
+    @PutMapping("/store/ban/{id}")
+    public ResponseEntity<?> putStoreForAdmin(@PathVariable("id") Integer id, @RequestBody Store storeRequest) {
+        Store store = storeRepository.findById(id).orElse(null);
+        if (store.getId() == null || store == null) {
+            return ResponseEntity.notFound().build();
+        }
+        // cập nhật lại thông tin
+        store.setBlock(storeRequest.getBlock());
+        store.setStatus(storeRequest.getStatus());
+        store.setStartday(storeRequest.getStartday());
+        store.setEndday(storeRequest.getEndday());
+        store.setReason(storeRequest.getReason());
+
+        Store savedStore = storeRepository.save(store);
+        return ResponseEntity.ok(savedStore);
+
+    }
+
     // all sản phẩm bán chạy store (ProductList)
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Revenue')")
     @GetMapping("/product-sales")
     public List<Map<String, Object>> getProductSalesByStore() {
         // Gọi phương thức findProductSalesByStore từ StoreRepository
@@ -271,14 +281,14 @@ public class StoreController {
     }
 
     // Doanh thu cửa all cửa hàng bên admin (ProductList)
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Revenue')")
     @GetMapping("/revenue/net-store-revenue")
     public List<Map<String, Object>> getNetRevenueByStore() {
         return storeRepository.findNetRevenueByStore();
     }
 
     // Doanh thu theo năm
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Revenue')")
     @GetMapping("/revenue-by-year")
     public ResponseEntity<List<Map<String, Object>>> getRevenueByYear() {
         List<Map<String, Object>> revenueData = storeRepository.findRevenueByYear();
@@ -287,24 +297,28 @@ public class StoreController {
     }
 
     // Doanh thu theo tháng Dashboard
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Revenue')")
     @GetMapping("/revenue-by-month")
-    public ResponseEntity<List<Map<String, Object>>> getVATByMonth() {
-        List<Map<String, Object>> vatData = storeRepository.findTotalVATByMonth(); // Cập nhật phương thức trong
-                                                                                   // repository
+    public ResponseEntity<List<Map<String, Object>>> getVATByMonth(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+
+        List<Map<String, Object>> vatData = storeRepository.findTotalVATByMonth(startDate, endDate);
         return ResponseEntity.ok(vatData);
     }
 
     // Doanh thu theo ngày
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Revenue')")
     @GetMapping("/revenue-by-day")
-    public ResponseEntity<List<Map<String, Object>>> getRevenueByDay() {
-        List<Map<String, Object>> revenueData = storeRepository.findRevenueByDay();
+    public ResponseEntity<List<Map<String, Object>>> getRevenueByDay(
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        List<Map<String, Object>> revenueData = storeRepository.findRevenueByDay(startDate, endDate);
         return ResponseEntity.ok(revenueData);
     }
 
     // Tổng cửa hàng được tạo (card số lượng cửa hàng) Dashboard
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Revenue')")
     @GetMapping("/total-stores-count")
     public ResponseEntity<Map<String, Long>> getTotalStoresCount() {
         long totalStoresCount = storeRepository.countTotalStores();
@@ -314,7 +328,7 @@ public class StoreController {
     }
 
     // Số lượng cửa hàng theo tháng
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Revenue')")
     @GetMapping("/stores-by-month")
     public ResponseEntity<List<Map<String, Object>>> getCountStoresByMonth() {
         List<Map<String, Object>> storeCountData = storeRepository.countStoresByMonth();
@@ -322,7 +336,7 @@ public class StoreController {
     }
 
     // Số lượng cửa hàng theo ngày
-    @PreAuthorize("hasAnyAuthority('Admin')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Revenue')")
     @GetMapping("/stores-by-day")
     public ResponseEntity<List<Map<String, Object>>> getCountStoresByDay() {
         List<Map<String, Object>> storeCountData = storeRepository.countStoresByDay();

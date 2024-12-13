@@ -2,6 +2,8 @@ package com.duantn.be_project.Repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import com.duantn.be_project.model.Store;
 
 import java.util.List;
@@ -24,6 +26,12 @@ public interface StoreRepository extends JpaRepository<Store, Integer> {
     // Kiểm tra taxcode khi update store
     @Query("select count(s)  from Store s where s.taxcode = ?1 and s.id != ?2")
     Integer checkDuplicate(String taxcode, Integer id);
+
+    // Danh sách các cửa hàng bị ban
+    @Query("""
+            select s from Store s where s.block = true
+            """)
+    List<Store> listAllStoreByBan();
 
     @Query(value = "SELECT s.namestore AS StoreName, SUM(od.quantity * od.price) * 0.9 AS TotalRevenue " +
             "FROM Stores s " +
@@ -90,10 +98,21 @@ public interface StoreRepository extends JpaRepository<Store, Integer> {
 
     // Doanh thu từng cửa hàng
     @Query(value = """
-                        SELECT
+            SELECT
+                YEAR(o.paymentdate) AS Year,
                 s.namestore AS StoreName,
-            	 s.slug AS slugStore,
-                SUM(od.quantity * od.price * (1 - pc.vat)) AS NetRevenue
+                s.slug AS slugStore,
+                SUM(od.quantity * od.price * (1 - pc.vat) *
+                    CASE
+                        WHEN o.idVoucher IS NOT NULL THEN
+                            1 - ISNULL(v.discountPrice, 0) / 100.0  -- Áp dụng discountPrice từ bảng Vouchers cho từng sản phẩm
+                        ELSE 1
+                    END
+                ) AS NetRevenue,
+                COUNT(DISTINCT o.id) AS OrderCount, -- Đếm số lượng đơn hàng duy nhất
+                o.idVoucherAdmin,  -- Thêm cột idVoucherAdmin
+                o.idVoucher AS voucherId,  -- Thêm cột idVoucher từ bảng Orders
+                v.discountPrice AS discountPrice   -- Thêm cột discountPrice từ bảng Vouchers
             FROM
                 Stores s
             JOIN
@@ -106,67 +125,128 @@ public interface StoreRepository extends JpaRepository<Store, Integer> {
                 OrderDetails od ON pd.id = od.productDetailId
             JOIN
                 Orders o ON od.orderId = o.id
+            LEFT JOIN
+                Vouchers v ON o.idVoucher = v.id  -- Kết nối với bảng Vouchers để lấy thông tin discountPrice
             WHERE
-                o.orderStatus = 'Hoàn thành' -- Chỉ tính những đơn hàng đã hoàn thành
+                o.orderStatus = 'Hoàn thành'
             GROUP BY
-                s.namestore -- Nhóm theo cửa hàng
-            	,s.slug
+                YEAR(o.paymentdate),  -- Nhóm theo năm
+                s.namestore,
+                s.slug,
+                o.idVoucherAdmin,  -- Nhóm theo idVoucherAdmin để có thể hiển thị
+                o.idVoucher,  -- Nhóm theo idVoucher
+                v.discountPrice  -- Nhóm theo discountPrice
             ORDER BY
-                NetRevenue DESC; -- Sắp xếp theo doanh thu sau thuế giảm dần
-
-                        """, nativeQuery = true)
+                Year DESC,  -- Sắp xếp theo năm giảm dần
+                NetRevenue DESC
+            """, nativeQuery = true)
     List<Map<String, Object>> findNetRevenueByStore();
 
     // Doanh thu theo năm
-    @Query(value = "SELECT \n" + //
-            "    DATEPART(YEAR, o.paymentDate) AS [Year],\n" + //
-            "    SUM(od.quantity * od.price * pc.vat) AS TotalRevenue\n" + //
-            "FROM \n" + //
-            "    Orders o\n" + //
-            "INNER JOIN \n" + //
-            "    OrderDetails od ON o.id = od.orderId\n" + //
-            "INNER JOIN \n" + //
-            "    ProductDetails pd ON od.productDetailId = pd.id\n" + //
-            "INNER JOIN \n" + //
-            "\tProducts p on p.id = pd.idProduct\n" + //
-            "INNER JOIN \n" + //
-            "    ProductCategorys pc ON p.categoryId = pc.id\n" + //
-            "WHERE \n" + //
-            "    o.orderStatus = 'Hoàn thành'\n" + //
-            "GROUP BY \n" + //
-            "    DATEPART(YEAR, o.paymentDate)\n" + //
-            "ORDER BY \n" + //
+    @Query(value = "SELECT " +
+            "    DATEPART(YEAR, o.paymentDate) AS [Year], " +
+            "    SUM(od.quantity * od.price * pc.vat * " +
+            "        CASE " +
+            "            WHEN o.idVoucher IS NOT NULL THEN " +
+            "                1 - ISNULL(v.discountPrice, 0) / 100.0 " + // Áp dụng discountPrice từ bảng Vouchers
+            "            ELSE 1 " +
+            "        END " +
+            "    ) AS TotalRevenue, " + // Tổng thuế đã thu
+            "    o.idVoucherAdmin AS VoucherAdmin, " + // Thêm cột idVoucherAdmin
+            "    o.idVoucher AS VoucherId, " + // Thêm cột idVoucher
+            "    v.discountPrice AS DiscountPrice " + // Thêm cột discountPrice từ bảng Vouchers
+            "FROM " +
+            "    Orders o " +
+            "INNER JOIN " +
+            "    OrderDetails od ON o.id = od.orderId " +
+            "INNER JOIN " +
+            "    ProductDetails pd ON od.productDetailId = pd.id " +
+            "INNER JOIN " +
+            "    Products p ON p.id = pd.idProduct " +
+            "INNER JOIN " +
+            "    ProductCategorys pc ON p.categoryId = pc.id " +
+            "LEFT JOIN " +
+            "    Vouchers v ON o.idVoucher = v.id " + // Kết nối với bảng Vouchers để lấy discountPrice
+            "WHERE " +
+            "    o.orderStatus = 'Hoàn thành' " +
+            "GROUP BY " +
+            "    DATEPART(YEAR, o.paymentDate), o.idVoucherAdmin, o.idVoucher, v.discountPrice " +
+            "ORDER BY " +
             "    [Year];", nativeQuery = true)
     List<Map<String, Object>> findRevenueByYear();
 
+    // Doanh thu theo tháng
     @Query(value = "SELECT " +
-            "DATEPART(YEAR, o.paymentDate) AS [Year], " +
-            "DATEPART(MONTH, o.paymentDate) AS [Month], " +
-            "SUM(od.quantity * od.price * pc.vat ) AS TotalVATCollected " +
+            "    DATEPART(YEAR, o.paymentDate) AS [Year], " +
+            "    DATEPART(MONTH, o.paymentDate) AS [Month], " +
+            "    s.nameStore AS StoreName, " +
+            "    o.idVoucherAdmin AS VoucherAdmin, " + // Thêm cột idVoucherAdmin
+            "    o.idVoucher AS VoucherId, " + // Thêm cột idVoucher
+            "    v.discountPrice AS DiscountPrice, " + // Thêm cột discountPrice từ bảng Vouchers
+            "    SUM( " +
+            "         od.quantity * od.price * pc.vat * " +
+            "        CASE " +
+            "            WHEN o.idVoucher IS NOT NULL THEN " +
+            "                1 - ISNULL(v.discountPrice, 0) / 100.0 " + // Áp dụng discountPrice từ bảng Vouchers
+            "            ELSE 1 " +
+            "        END " +
+            "    ) AS TotalVATCollected, " + // Tính tổng doanh thu
+            "    od.price AS PriceDetail, " +
+            "    od.quantity AS QuantityDetail, " +
+            "    pc.vat AS VAT " +
             "FROM Orders o " +
             "INNER JOIN OrderDetails od ON o.id = od.orderId " +
             "INNER JOIN ProductDetails pd ON od.productDetailId = pd.id " +
-            "INNER JOIN Products p on p.id = pd.idProduct " +
+            "INNER JOIN Products p ON p.id = pd.idProduct " +
             "INNER JOIN ProductCategorys pc ON p.categoryId = pc.id " +
             "INNER JOIN Stores s ON p.storeId = s.id " +
+            "LEFT JOIN Vouchers v ON o.idVoucher = v.id " + // Kết nối với bảng Vouchers
             "WHERE o.orderStatus = 'Hoàn thành' " +
-            "GROUP BY DATEPART(YEAR, o.paymentDate), DATEPART(MONTH, o.paymentDate) " +
-            "ORDER BY [Year], [Month]", nativeQuery = true)
-    List<Map<String, Object>> findTotalVATByMonth();
+            "AND (:startDate IS NULL OR o.paymentDate >= :startDate) " + // Điều kiện cho startDate
+            "AND (:endDate IS NULL OR o.paymentDate <= :endDate) " + // Điều kiện cho endDate
+            "GROUP BY " +
+            "    DATEPART(YEAR, o.paymentDate), " +
+            "    DATEPART(MONTH, o.paymentDate), " +
+            "    s.nameStore, " +
+            "    od.price, " +
+            "    od.quantity, " +
+            "    pc.vat, " +
+            "    o.idVoucherAdmin, " +
+            "    o.idVoucher, " +
+            "    v.discountPrice " + // Thêm vào GROUP BY để nhóm theo idVoucher và discountPrice
+            "ORDER BY " +
+            "    [Year], " +
+            "    [Month], " +
+            "    StoreName", nativeQuery = true)
+    List<Map<String, Object>> findTotalVATByMonth(@Param("startDate") String startDate,
+            @Param("endDate") String endDate);
 
     // Doanh thu theo ngày
     @Query(value = "SELECT " +
             "CAST(o.paymentDate AS DATE) AS OrderDate, " +
-            "SUM(od.quantity * od.price * pc.vat ) AS TotalRevenue " +
+            "SUM(od.quantity * od.price * pc.vat * " +
+            "CASE " +
+            "WHEN o.idVoucher IS NOT NULL THEN " +
+            "1 - ISNULL(v.discountPrice, 0) / 100.0 " + // Apply discountPrice from Vouchers
+            "ELSE 1 " +
+            "END) AS TotalRevenue , " +
+            "o.idVoucherAdmin AS VoucherAdmin, " + // Add VoucherAdmin
+            "o.idVoucher AS VoucherId, " + // Add VoucherId
+            "v.discountPrice AS DiscountPrice " + // Add DiscountPrice from Vouchers
             "FROM Orders o " +
             "INNER JOIN OrderDetails od ON o.id = od.orderId " +
             "INNER JOIN ProductDetails pd ON od.productDetailId = pd.id " +
-            "INNER JOIN Products p on p.id = pd.idProduct " +
+            "INNER JOIN Products p ON p.id = pd.idProduct " +
             "INNER JOIN ProductCategorys pc ON p.categoryId = pc.id " +
+            "LEFT JOIN Vouchers v ON o.idVoucher = v.id " + // Join Vouchers table for discountPrice
             "WHERE o.orderStatus = 'Hoàn thành' " +
-            "GROUP BY CAST(o.paymentDate AS DATE) " +
+            "AND (:startDate IS NULL OR o.paymentDate >= :startDate) " +
+            "AND (:endDate IS NULL OR o.paymentDate <= :endDate) " +
+            "GROUP BY CAST(o.paymentDate AS DATE), o.idVoucherAdmin, o.idVoucher, v.discountPrice " +
             "ORDER BY OrderDate", nativeQuery = true)
-    List<Map<String, Object>> findRevenueByDay();
+    List<Map<String, Object>> findRevenueByDay(
+            @Param("startDate") String startDate,
+            @Param("endDate") String endDate);
 
     // Đếm sô lượng cửa hàng được tạo theo tháng
     @Query(value = "SELECT YEAR(createdTime) AS Year, MONTH(createdTime) AS Month, COUNT(*) AS TotalStores " +

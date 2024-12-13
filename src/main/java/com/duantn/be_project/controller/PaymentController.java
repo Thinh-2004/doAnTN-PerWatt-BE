@@ -37,7 +37,7 @@ import com.duantn.be_project.model.Request_Response.PaymentResDTO;
 import com.duantn.be_project.model.Request_Response.TotalMoneyDTO;
 
 @RestController
-@PreAuthorize("hasAnyAuthority('Seller', 'Buyer')")
+@PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
 @RequestMapping("/api/payment")
 public class PaymentController {
     @Autowired

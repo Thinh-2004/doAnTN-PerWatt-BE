@@ -1,8 +1,10 @@
 package com.duantn.be_project.security.service;
 
 import com.duantn.be_project.Repository.InvalidatedTokenRepository;
+import com.duantn.be_project.Repository.RolePermissionReponsitory;
 import com.duantn.be_project.Repository.UserRepository;
 import com.duantn.be_project.model.Role;
+import com.duantn.be_project.model.RolePermission;
 import com.duantn.be_project.model.User;
 import com.duantn.be_project.model.Request_Response.authenticate.InvalidatedToken;
 import com.duantn.be_project.security.model.AuthenticationResponse;
@@ -12,20 +14,15 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import lombok.AllArgsConstructor;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
-
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.UUID;
 
@@ -47,6 +44,8 @@ class jwtServiceImpl implements jwtService {
 
     private final UserRepository userRepository;
     private final InvalidatedTokenRepository invalidatedTokenRepository;
+    @Autowired
+    RolePermissionReponsitory rolePermissionReponsitory;
 
     @Value("${jwt.secretKey}")
     private String SignerKey;
@@ -169,9 +168,10 @@ class jwtServiceImpl implements jwtService {
 
     private String buildScope(User user) {
         StringJoiner stringJoiner = new StringJoiner(" ");
-        if (user.getRole() != null) {
-            Role role = user.getRole();
-            stringJoiner.add(role.getNamerole());
+        if (user.getRolePermission() != null) {
+            String nameRole = user.getRolePermission().getRole().getNamerole();
+            String PermissionRole = user.getRolePermission().getPermission().getName();
+            stringJoiner.add(nameRole + "_" + PermissionRole);
 
             // if (role.getRolepermissions() != null &&
             // !role.getRolepermissions().isEmpty()) {
