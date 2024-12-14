@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.duantn.be_project.Repository.OrderDetailRepository;
 import com.duantn.be_project.Repository.OrderRepository;
 import com.duantn.be_project.Repository.ProductDetailRepository;
 import com.duantn.be_project.model.Order;
@@ -33,6 +34,8 @@ public class OrderController {
     @Autowired
     OrderRepository orderRepository;
     @Autowired
+    OrderDetailRepository orderDetailRepository;
+    @Autowired
     ProductDetailRepository productRepository;
 
     @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
@@ -49,6 +52,25 @@ public class OrderController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(order);
+    }
+
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
+    @GetMapping("/order/delete/{id}")
+    public ResponseEntity<Order> delete2(@PathVariable("id") Integer id) {
+        // Tìm đơn hàng theo id
+        Order order = orderRepository.findById(id).orElseThrow();
+
+        if (order == null) {
+            return ResponseEntity.notFound().build(); // Trả về 404 nếu không tìm thấy đơn hàng
+        }
+
+        // Xoá chi tiết đơn hàng trước khi xoá đơn hàng
+        orderDetailRepository.deleteByOrderId(id); // Giả sử có phương thức deleteByOrderId trong orderDetailRepository
+
+        // Sau khi xóa chi tiết đơn hàng, xoá đơn hàng
+        orderRepository.delete(order); // Xoá đơn hàng
+
+        return ResponseEntity.ok(order); // Trả về đơn hàng đã được xoá
     }
 
     @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")

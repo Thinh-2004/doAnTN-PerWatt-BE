@@ -1,6 +1,7 @@
 package com.duantn.be_project.controller;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.duantn.be_project.Repository.ShippingInfosRepository;
 import com.duantn.be_project.model.ShippingInfor;
 
+import jakarta.transaction.Transactional;
+
 @CrossOrigin("*")
 @RestController
 public class ShippingInfosController {
@@ -36,6 +39,18 @@ public class ShippingInfosController {
     }
 
     @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
+    @GetMapping("/shippingInfoId/{id}")
+    public ResponseEntity<ShippingInfor> getById(@PathVariable("id") Integer id) {
+        Optional<ShippingInfor> shippingInfor = shippingInfosRepository.findById(id);
+
+        if (!shippingInfor.isPresent()) {
+            return ResponseEntity.notFound().build(); 
+        }
+
+        return ResponseEntity.ok(shippingInfor.get());
+    }
+
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @PostMapping("/shippingInfoCreate")
     public ResponseEntity<ShippingInfor> post(@RequestBody ShippingInfor shippingInfor) {
         ShippingInfor savedShippingInfor = shippingInfosRepository.save(shippingInfor);
@@ -46,6 +61,26 @@ public class ShippingInfosController {
     @PutMapping("/shippingInfoUpdate/{id}")
     public ResponseEntity<ShippingInfor> update(@PathVariable Integer id, @RequestBody ShippingInfor shippingInfor) {
         shippingInfor.setId(id);
+        ShippingInfor updatedShippingInfor = shippingInfosRepository.save(shippingInfor);
+        return ResponseEntity.ok(updatedShippingInfor);
+    }
+
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
+    @PutMapping("/shippingInfoUpdateDefault/{id}")
+    @Transactional
+    public ResponseEntity<ShippingInfor> updateDefault(@PathVariable Integer id,
+            @RequestBody ShippingInfor shippingInfor) {
+        if (shippingInfor.getUser() == null) {
+            return ResponseEntity.badRequest().body(null);
+        }
+
+        Integer userId = shippingInfor.getUser().getId();
+        shippingInfosRepository.updateIsDefaultFalseByUserId(userId);
+
+        shippingInfor.setId(id);
+        shippingInfor.setIsdefault(true);
+        shippingInfor.setAddress(shippingInfor.getAddress());
+
         ShippingInfor updatedShippingInfor = shippingInfosRepository.save(shippingInfor);
         return ResponseEntity.ok(updatedShippingInfor);
     }

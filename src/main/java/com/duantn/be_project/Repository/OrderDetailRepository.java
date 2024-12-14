@@ -9,4 +9,7 @@ import com.duantn.be_project.model.OrderDetail;
 public interface OrderDetailRepository extends JpaRepository<OrderDetail, Integer> {
     @Query("select od from OrderDetail od where od.order.id = ?1")
     List<OrderDetail> findAllOrderDetailByIdOrder(Integer idOrder);
+
+    void deleteByOrderId(Integer orderId);
+
 }

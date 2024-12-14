@@ -80,7 +80,6 @@ public class MoMoPaymentController {
     @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @PostMapping("/createMoMoOrder")
     public ResponseEntity<Order> createOrderVnPay(@RequestBody OrderRequest orderRequest) {
-        System.out.println("API called");
         Order order = new Order();
         PaymentMethod paymentMethod = new PaymentMethod();
         paymentMethod.setId(8);
@@ -90,7 +89,7 @@ public class MoMoPaymentController {
         order.setStore(orderRequest.getOrder().getStore());
         order.setPaymentdate(orderRequest.getOrder().getPaymentdate());
         order.setOrderstatus(orderRequest.getOrder().getOrderstatus());
-
+        order.setTotalamount(orderRequest.getOrder().getTotalamount());
         Order savedOrder = orderRepository.save(order);
 
         if (orderRequest.getOrderDetails() != null) {
@@ -117,7 +116,6 @@ public class MoMoPaymentController {
                 }
             }
         }
-        System.out.println("Order and details saved");
 
         return ResponseEntity.ok(savedOrder);
     }

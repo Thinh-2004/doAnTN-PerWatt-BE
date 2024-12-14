@@ -26,6 +26,7 @@ import com.duantn.be_project.Repository.CartRepository;
 import com.duantn.be_project.Repository.OrderDetailRepository;
 import com.duantn.be_project.Repository.OrderRepository;
 import com.duantn.be_project.Repository.ProductDetailRepository;
+import com.duantn.be_project.Repository.VoucherDetailsSellerRepository;
 import com.duantn.be_project.config.Config;
 import com.duantn.be_project.model.CartItem;
 import com.duantn.be_project.model.Order;
@@ -48,6 +49,8 @@ public class PaymentController {
     CartRepository cartRepository;
     @Autowired
     ProductDetailRepository productDetailRepository;
+    @Autowired
+    VoucherDetailsSellerRepository voucherDetailsSellerRepository;
 
     @PostMapping("/create_payment")
     public ResponseEntity<PaymentResDTO> createPayment(
@@ -123,10 +126,8 @@ public class PaymentController {
         return ResponseEntity.ok().headers(headers).body(paymentResDTO);
     }
 
-    // Tạo đơn auto ra vnpay
     @PostMapping("/createVnPayOrder")
     public ResponseEntity<Order> createOrderVnPay(@RequestBody OrderRequest orderRequest) {
-        // Tạo đối tượng đơn hàng mới từ yêu cầu
         Order order = new Order();
         PaymentMethod paymentMethod = new PaymentMethod();
         paymentMethod.setId(6);
@@ -136,11 +137,11 @@ public class PaymentController {
         order.setStore(orderRequest.getOrder().getStore());
         order.setPaymentdate(orderRequest.getOrder().getPaymentdate());
         order.setOrderstatus(orderRequest.getOrder().getOrderstatus());
-
-        // Lưu đơn hàng và lấy đối tượng đơn hàng đã lưu
+        order.setTotalamount(orderRequest.getOrder().getTotalamount());
         Order savedOrder = orderRepository.save(order);
+        order.setVoucher(orderRequest.getOrder().getVoucher());
 
-        // Lưu các chi tiết đơn hàng và cập nhật số lượng sản phẩm
+        voucherDetailsSellerRepository.updateVoucherQuantity("z-day");
         if (orderRequest.getOrderDetails() != null) {
             for (OrderDetail detailRequest : orderRequest.getOrderDetails()) {
                 OrderDetail detail = new OrderDetail();
@@ -148,24 +149,25 @@ public class PaymentController {
                 detail.setProductDetail(detailRequest.getProductDetail());
                 detail.setQuantity(detailRequest.getQuantity());
                 detail.setPrice(detailRequest.getPrice());
-                orderDetailRepository.save(detail); // Lưu chi tiết đơn hàng vào cơ sở dữ liệu
+                detail.setStatus(null);
+                orderDetailRepository.save(detail);
 
                 ProductDetail productDetail = productDetailRepository.findById(detailRequest.getProductDetail().getId())
                         .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
                 if (productDetail.getQuantity() < detailRequest.getQuantity()) {
-                    return ResponseEntity.badRequest().body(null); // Hoặc xử lý trường hợp không đủ hàng tồn kho
+                    return ResponseEntity.badRequest().body(null);
                 }
                 productDetail.setQuantity(productDetail.getQuantity() - detailRequest.getQuantity());
-                productDetailRepository.save(productDetail); // Lưu cập nhật số lượng sản phẩm
+                productDetailRepository.save(productDetail);
 
                 CartItem cartItem = cartRepository.findByProductDetailAndUser(detailRequest.getProductDetail(),
                         savedOrder.getUser());
                 if (cartItem != null) {
-                    cartRepository.delete(cartItem); // Xóa CartItem để tránh trùng lặp
+                    cartRepository.delete(cartItem);
                 }
             }
         }
 
-        return ResponseEntity.ok(savedOrder); // Trả về đối tượng đơn hàng đã lưu
+        return ResponseEntity.ok(savedOrder);
     }
 }

@@ -9,8 +9,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PostAuthorize;
@@ -53,6 +59,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PutMapping;
 
 @CrossOrigin("*")
@@ -78,8 +85,104 @@ public class UserController {
     // GetAll
     @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Support')")
     @GetMapping("/user")
-    public ResponseEntity<List<User>> getAll(Model model) {
-        return ResponseEntity.ok(userRepository.findAll());
+    public ResponseEntity<?> getAllUser(
+            @RequestParam("pageNo") Optional<Integer> pageNo,
+            @RequestParam("pageSize") Optional<Integer> pageSize,
+            @RequestParam(name = "keyWord", defaultValue = "") String keyWord,
+            @RequestParam(name = "checkFilter", defaultValue = "") String checkFilter,
+            @RequestParam(name = "sortBy", defaultValue = "") String sortBy) {
+
+        // Thiết lập sort
+        Sort sort = Sort.by(Direction.DESC, "u.id");
+        switch (sortBy) {
+            case "DESCName":
+                sort = Sort.by(Direction.DESC, "u.id");
+                break;
+            case "ASCName":
+                sort = Sort.by(Direction.ASC, "u.id");
+                break;
+            default:
+                sort = Sort.by(Direction.DESC, "u.id");
+                break;
+        }
+        // Thiết lập trang
+        Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(10), sort);
+        // Thiết lập dữ liệu hiển thị theo trang
+        Page<User> uPage = null;
+        // Kiểm tra nếu keyWord trống
+        if (!keyWord.isEmpty()) {
+            // Kiểm tra nếu keyWord là email
+            String emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$";
+            if (keyWord.matches(emailRegex)) {
+                uPage = userRepository.listUser("%" + keyWord + "%", "%", "%", pageable);
+            } else {
+                uPage = userRepository.listUser("%", "%" + keyWord + "%", "%", pageable);
+            }
+
+        } else if (!checkFilter.isEmpty()) {
+            if (checkFilter.equals("Buyer")) {
+                uPage = userRepository.listUser("%", "%", "%" + checkFilter + "%", pageable);
+            } else if (checkFilter.equals("Seller")) {
+                uPage = userRepository.listUser("%", "%", "%" + checkFilter + "%", pageable);
+            }
+        } else {
+            uPage = userRepository.listUser("%", "%", "%", pageable);
+        }
+
+        // Tạo Map để trả dữ liệu
+        Map<String, Object> response = new HashMap<>();
+        response.put("users", uPage.getContent()); // Danh sách sản phẩm
+        response.put("currentPage", uPage.getNumber()); // Trang hiện tại (hiển
+        // thị từ 1)
+        response.put("totalPages", uPage.getTotalPages()); // Tổng số trang
+        response.put("totalItems", uPage.getTotalElements()); // Tổng số sản phẩm
+        return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Support')")
+    @GetMapping("/user/admin")
+    public ResponseEntity<?> getAllUserAdmin(
+            @RequestParam("pageNo") Optional<Integer> pageNo,
+            @RequestParam("pageSize") Optional<Integer> pageSize,
+            @RequestParam(name = "keyWord", defaultValue = "") String keyWord,
+            @RequestParam(name = "checkSelected", required = false) Integer checkSelected,
+            @RequestParam(name = "sortBy", defaultValue = "") String sortBy) {
+
+        Sort sort;
+        switch (sortBy) {
+            case "DESCName":
+                sort = Sort.by(Direction.DESC, "u.id");
+                break;
+            case "ASCName":
+                sort = Sort.by(Direction.ASC, "u.id");
+                break;
+            default:
+                sort = Sort.by(Direction.DESC, "u.id");
+                break;
+        }
+
+        Pageable pageable = PageRequest.of(pageNo.orElse(0), pageSize.orElse(10), sort);
+        Page<User> uPage;
+
+        if (!keyWord.isEmpty()) {
+            String emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$";
+            if (keyWord.matches(emailRegex)) {
+                uPage = userRepository.listUserAdmin("%" + keyWord + "%", "%", pageable);
+            } else {
+                uPage = userRepository.listUserAdmin("%", "%" + keyWord + "%", pageable);
+            }
+        } else if (checkSelected != null) {
+            uPage = userRepository.listUserAdminByIdPermission(checkSelected, pageable);
+        } else {
+            uPage = userRepository.listUserAdmin("%", "%", pageable);
+        }
+
+        Map<String, Object> response = Map.of(
+                "users", uPage.getContent(),
+                "currentPage", uPage.getNumber(),
+                "totalPages", uPage.getTotalPages(),
+                "totalItems", uPage.getTotalElements());
+        return ResponseEntity.ok(response);
     }
 
     // GetByIdUser

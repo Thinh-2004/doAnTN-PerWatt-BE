@@ -1,10 +1,12 @@
 package com.duantn.be_project.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.duantn.be_project.model.Voucher;
 import com.duantn.be_project.model.VoucherDetail;
@@ -34,5 +36,12 @@ public interface VoucherDetailsSellerRepository extends JpaRepository<VoucherDet
                             """)
 
     void deleteByVoucherStatus(String statusVoucher);
+
+    
+
+    @Transactional
+    @Modifying
+    @Query(value = "UPDATE Vouchers SET quantityVoucher = quantityVoucher - 1 WHERE slug = :slug AND quantityVoucher > 0", nativeQuery = true)
+    void updateVoucherQuantity(@Param("slug") String slug);
 
 }

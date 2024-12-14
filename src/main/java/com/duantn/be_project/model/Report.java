@@ -1,12 +1,14 @@
 package com.duantn.be_project.model;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinColumns;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -22,22 +24,26 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "Orderdetails")
-public class OrderDetail implements Serializable {
+@Table(name = "Reports")
+public class Report implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    Integer quantity;
 
     @ManyToOne
-    @JoinColumn(name = "orderid")
-    Order order;
+    @JoinColumn(name = "userid")
+    User user;
 
     @ManyToOne
-    @JoinColumn(name = "productdetailid")
-    ProductDetail productDetail;
-    
-    Float price;
+    @JoinColumn(name = "storeid")
+    Store store;
 
+    @ManyToOne
+    @JoinColumn(name = "productid")
+    Product product;
+
+    String content;
+    String media;
     String status;
+    LocalDateTime createAt;
 }
