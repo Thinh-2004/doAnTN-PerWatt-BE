@@ -168,9 +168,9 @@ class jwtServiceImpl implements jwtService {
 
     private String buildScope(User user) {
         StringJoiner stringJoiner = new StringJoiner(" ");
-        if (user.getRolepPermission() != null) {
-            String nameRole = user.getRolepPermission().getRole().getNamerole();
-            String PermissionRole = user.getRolepPermission().getPermission().getName();
+        if (user.getRolePermission() != null) {
+            String nameRole = user.getRolePermission().getRole().getNamerole();
+            String PermissionRole = user.getRolePermission().getPermission().getName();
             stringJoiner.add(nameRole + "_" + PermissionRole);
 
             // if (role.getRolepermissions() != null &&

@@ -42,7 +42,7 @@ public class MoMoService {
         // Tạo rawHash với requestId duy nhất và extraData đã mã hóa
         String rawHash = "accessKey=" + ACCESS_KEY +
                 "&amount=" + amount +
-                "&extraData=" + extraData + // Sử dụng extraData đã mã hóa
+                "&extraData=" + "" + // Sử dụng extraData đã mã hóa
                 "&ipnUrl=" + NOTIFY_URL +
                 "&orderId=" + orderId +
                 "&orderInfo=" + orderInfo +
@@ -63,7 +63,7 @@ public class MoMoService {
         paymentRequest.setRedirectUrl(RETURN_URL);
         paymentRequest.setIpnUrl(NOTIFY_URL);
         paymentRequest.setRequestType(REQUEST_TYPE);
-        paymentRequest.setExtraData(extraData); // Sử dụng extraData đã mã hóa
+        paymentRequest.setExtraData(""); // Sử dụng extraData đã mã hóa
         paymentRequest.setLang("vi");
 paymentRequest.setSignature(signature);
 

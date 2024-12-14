@@ -33,7 +33,6 @@ public class ShippingInfor implements Serializable {
     Integer id;
     String address;
     boolean isdefault;
-    
     @ManyToOne
     @JoinColumn(name = "userid")
     User user;

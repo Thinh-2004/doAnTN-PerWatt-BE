@@ -1,6 +1,7 @@
 package com.duantn.be_project.model;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -82,6 +83,14 @@ public class Product implements Serializable {
     @OneToMany(mappedBy = "product")
     List<Report> reports;
 
+    @JsonIgnore
+    @OneToMany(mappedBy = "product")
+    List<Block> blocks;
+
     String slug;
-    String block;
+    Boolean block;
+    String status;
+    Date startday;
+    Date endday;
+    String reason;
 }

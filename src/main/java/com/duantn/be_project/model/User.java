@@ -43,7 +43,7 @@ public class User implements Serializable {
 
     @ManyToOne
     @JoinColumn(name = "rolepermissionid")
-    RolePermission rolepPermission;
+    RolePermission rolePermission;
 
     String address;
     String phone;

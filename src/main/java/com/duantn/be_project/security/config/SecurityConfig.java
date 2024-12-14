@@ -64,7 +64,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                         "/findMore/{name}",
                         "productPerMall/list",
                         "findMore/productPerMall/list",
-                        "/productStore/{slug}",
+                        "/showAllProduct/{slug}",
                         "/countBySlugProduct/{id}",
                         "/product/{slug}",
                         "/countOrderSuccess/{id}",
@@ -92,8 +92,12 @@ public class SecurityConfig implements WebMvcConfigurer {
                         "/CateProductInStore/{id}",
                         // Comments
                         "/comment/**",
-                        //user
-                        "/checkPass"
+                        // user
+                        "/checkPass",
+                        // voucher admin
+                        "/products",
+                        "/vouchersAdminInPgaeHome",
+                        "/product/quantity/{idproduct}"
 
         };
 
@@ -120,13 +124,6 @@ public class SecurityConfig implements WebMvcConfigurer {
                                                 .jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
                 return httpSecurity.build();
-        }
-
-        @Override
-        public void addResourceHandlers(ResourceHandlerRegistry registry) {
-                registry.addResourceHandler("/files/**")
-                                .addResourceLocations("file:" + System.getProperty("user.dir")
-                                                + "/src/main/resources/static/files/");
         }
 
         @Bean

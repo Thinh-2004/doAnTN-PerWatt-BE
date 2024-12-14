@@ -69,5 +69,9 @@ public class Store implements Serializable {
 
     String taxcode;
     String slug;
-    String block;
+    Boolean block;
+    String status;
+    Date startday;
+    Date endday;
+    String reason;
 }

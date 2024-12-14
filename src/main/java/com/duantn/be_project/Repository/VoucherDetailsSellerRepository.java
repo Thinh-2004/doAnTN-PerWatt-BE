@@ -37,8 +37,6 @@ public interface VoucherDetailsSellerRepository extends JpaRepository<VoucherDet
 
     void deleteByVoucherStatus(String statusVoucher);
 
-    
-
     @Transactional
     @Modifying
     @Query(value = "UPDATE Vouchers SET quantityVoucher = quantityVoucher - 1 WHERE slug = :slug AND quantityVoucher > 0", nativeQuery = true)

@@ -12,7 +12,6 @@ import com.duantn.be_project.Repository.RolePermissionReponsitory;
 import com.duantn.be_project.model.RolePermission;
 
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @CrossOrigin("*")
@@ -21,7 +20,7 @@ public class RolePermissionController {
     @Autowired
     RolePermissionReponsitory rolePermissionReponsitory;
 
-    @PreAuthorize("hasAnyAuthority('Admin_All_Function')")
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Support')")
     @GetMapping("/role/permission/list")
     public ResponseEntity<List<RolePermission>> getMethodName() {
         List<RolePermission> rolePermissions = rolePermissionReponsitory.listRolePermissions();

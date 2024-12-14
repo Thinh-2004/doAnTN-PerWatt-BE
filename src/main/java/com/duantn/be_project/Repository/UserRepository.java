@@ -14,17 +14,17 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     boolean existsByEmail(String email);
 
     @Query("""
-            select u from User u where (u.email like ?1 and u.fullname like ?2 and u.rolepPermission.role.namerole like ?3) and u.rolepPermission.role.namerole not like 'Admin'
+            select u from User u where (u.email like ?1 and u.fullname like ?2 and u.rolePermission.role.namerole like ?3) and u.rolePermission.role.namerole not like 'Admin'
             """)
     Page<User> listUser(String email, String fullname, String roleName, Pageable pageable);
 
     @Query("""
-            select u from User u where (u.email like ?1 and u.fullname like ?2) and u.rolepPermission.role.namerole like 'Admin'
+            select u from User u where (u.email like ?1 and u.fullname like ?2) and u.rolePermission.role.namerole like 'Admin'
             """)
     Page<User> listUserAdmin(String email, String fullname, Pageable pageable);
 
     @Query("""
-        select u from User u where (u.rolepPermission.permission.id = ?1) and u.rolepPermission.role.namerole like 'Admin'
+        select u from User u where (u.rolePermission.permission.id = ?1) and u.rolePermission.role.namerole like 'Admin'
         """)
 Page<User> listUserAdminByIdPermission(Integer idPermission, Pageable pageable);
 }

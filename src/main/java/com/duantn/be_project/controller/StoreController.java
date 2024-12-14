@@ -20,13 +20,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.duantn.be_project.Repository.CategoryRepository;
 import com.duantn.be_project.Repository.RolePermissionReponsitory;
-import com.duantn.be_project.Repository.RoleRepository;
+
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Repository.UserRepository;
 import com.duantn.be_project.Service.FirebaseStorageService;
 import com.duantn.be_project.Service.SlugText.SlugText;
 import com.duantn.be_project.model.ProductCategory;
-import com.duantn.be_project.model.Role;
 import com.duantn.be_project.model.RolePermission;
 import com.duantn.be_project.model.Store;
 import com.duantn.be_project.model.User;
@@ -87,7 +86,6 @@ public class StoreController {
     @PreAuthorize("hasAnyAuthority('Buyer_Manage_Buyer')")
     @PostMapping("/store")
     public ResponseEntity<?> post(@RequestBody Store store) {
-        // TODO: process POST request
         // Bắt lỗi
         ResponseEntity<String> validateRes = validate(store);
         if (validateRes != null) {
@@ -113,12 +111,14 @@ public class StoreController {
 
         // Gán giá trị tên cửa hàng cho slug
         store.setSlug(slugText.generateUniqueSlug(store.getNamestore()));
+        store.setBlock(false);
+        store.setStatus("Không hiệu lực");
 
         // Tìm user
         User user = userRepository.findById(store.getUser().getId()).orElseThrow();
-        if (user.getRolepPermission().getId() == 6) {
+        if (user.getRolePermission().getId() == 6) {
             RolePermission newRolePermission = rolePermissionReponsitory.findById(5).orElseThrow();
-            user.setRolepPermission(newRolePermission);
+            user.setRolePermission(newRolePermission);
         }
 
         userRepository.save(user); // Cập nhật lại role khi tạo store
@@ -250,6 +250,26 @@ public class StoreController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Mã không hợp lệ");
         }
+    }
+
+    // put for admin
+    @PreAuthorize("hasAnyAuthority('Admin_All_Function', 'Admin_Manage_Support')")
+    @PutMapping("/store/ban/{id}")
+    public ResponseEntity<?> putStoreForAdmin(@PathVariable("id") Integer id, @RequestBody Store storeRequest) {
+        Store store = storeRepository.findById(id).orElse(null);
+        if (store.getId() == null || store == null) {
+            return ResponseEntity.notFound().build();
+        }
+        // cập nhật lại thông tin
+        store.setBlock(storeRequest.getBlock());
+        store.setStatus(storeRequest.getStatus());
+        store.setStartday(storeRequest.getStartday());
+        store.setEndday(storeRequest.getEndday());
+        store.setReason(storeRequest.getReason());
+
+        Store savedStore = storeRepository.save(store);
+        return ResponseEntity.ok(savedStore);
+
     }
 
     // all sản phẩm bán chạy store (ProductList)

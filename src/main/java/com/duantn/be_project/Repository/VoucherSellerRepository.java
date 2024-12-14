@@ -67,7 +67,7 @@ public interface VoucherSellerRepository extends JpaRepository<Voucher, Integer>
 
         // tìm kiếm theo tên để update
         @Query("""
-                                                select v from Voucher v where v.slug like ?1
+                        select v from Voucher v where v.slug like ?1
                         """)
         List<Voucher> findBySlug(String slug);
 

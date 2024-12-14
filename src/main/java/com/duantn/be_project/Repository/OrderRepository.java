@@ -33,7 +33,7 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
         // biểu đồ doanh thu tháng
         @Query(value = "SELECT " +
                         "FORMAT(o.paymentdate, 'yyyy-MM-dd') AS month, " +
-                        "SUM(od.quantity * od.price * (1 - pc.vat)) AS revenue, " +
+                        "pc.vat AS productVAT, " +
                         "COUNT(o.id) AS orders, " +
                         "p.name AS productName, " +
                         "pd.nameDetail AS productDetailName, " +
@@ -41,20 +41,42 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
                         "pd.id AS productDetailId, " +
                         "od.id AS orderDetailId, " +
                         "SUM(od.quantity) AS totalQuantity, " +
-                        "SUM(od.quantity * od.price) AS totalProductRevenue " +
+                        "SUM(od.price) AS totalProductRevenue, " +
+                        "o.idvoucheradmin AS voucherAdminId, " +
+                        "o.idvoucher AS voucherId, " +
+                        "v.discountprice AS discountPrice " + // Get the discount price from Vouchers table
                         "FROM Orders o " +
-                        "JOIN OrderDetails od ON o.id = od.orderId  " +
+                        "JOIN OrderDetails od ON o.id = od.orderId " +
                         "JOIN ProductDetails pd ON od.productdetailid = pd.id " +
                         "JOIN Products p ON pd.idProduct = p.id " +
                         "JOIN ProductCategorys pc ON p.categoryId = pc.id " +
+                        "LEFT JOIN Vouchers v ON o.idvoucher = v.id " + // Left join with Vouchers table
                         "WHERE o.storeId = :storeId " +
                         "AND o.orderStatus = 'Hoàn thành' " +
                         "AND (:startDate IS NULL OR o.paymentdate >= :startDate) " +
                         "AND (:endDate IS NULL OR o.paymentdate <= :endDate) " +
-                        "GROUP BY FORMAT(o.paymentdate, 'yyyy-MM-dd'), p.name, pd.nameDetail, p.id, pd.id, od.id", nativeQuery = true)
+                        "GROUP BY " +
+                        "FORMAT(o.paymentdate, 'yyyy-MM-dd'), " +
+                        "pc.vat, " +
+                        "p.name, " +
+                        "pd.nameDetail, " +
+                        "p.id, " +
+                        "pd.id, " +
+                        "od.id, " +
+                        "o.idvoucheradmin, " +
+                        "o.idvoucher, " +
+                        "v.discountprice", nativeQuery = true)
         List<Map<String, Object>> findRevenueByMonthWithProducts(
                         @Param("storeId") Integer storeId,
                         @Param("startDate") String startDate,
                         @Param("endDate") String endDate);
+
+        // Tính số lượng hóa đơn của sản phẩm gốc theo người dùng
+        @Query(value = "select count(DISTINCT o.id) " +
+                        "from orders o " +
+                        "join orderdetails od on o.id = od.orderId " +
+                        "join ProductDetails pd on od.productDetailId = pd.id " +
+                        "where o.orderStatus like N'Hoàn Thành' and userId = ?1 and idProduct = ?2", nativeQuery = true)
+        public Integer countOrderBuyedOfProductByUser(Integer userId, Integer idProduct);
 
 }

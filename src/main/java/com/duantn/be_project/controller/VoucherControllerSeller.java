@@ -368,8 +368,8 @@ public class VoucherControllerSeller {
             return ResponseEntity.notFound().build(); // Nếu không tìm thấy, trả về 404
         }
 
-        // Kiểm tra trùng tên voucher hoặc id
-        for (Product getById : voucherRequest.getProducts()) {
+          // Kiểm tra trùng tên voucher hoặc id
+          for (Product getById : voucherRequest.getProducts()) {
             Integer checkTrungNameVoucher = voucherSellerRepository.checkTrungNameVoucherAndIdProductDetail(
                     "%" + voucherRequest.getVoucher().getVouchername() + "%",
                     getById.getId());

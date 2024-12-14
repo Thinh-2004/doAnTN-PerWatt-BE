@@ -1,9 +1,6 @@
 package com.duantn.be_project.controller;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +17,6 @@ import com.duantn.be_project.Service.FirebaseStorageService;
 import com.duantn.be_project.model.Image;
 
 import jakarta.servlet.ServletContext;
-import jakarta.transaction.Transactional;
 
 import org.springframework.web.bind.annotation.GetMapping;
 
