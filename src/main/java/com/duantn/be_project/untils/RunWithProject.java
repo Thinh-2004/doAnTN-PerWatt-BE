@@ -1,6 +1,7 @@
 package com.duantn.be_project.untils;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -11,10 +12,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.duantn.be_project.Repository.BlockRepository;
+import com.duantn.be_project.Repository.OrderRepository;
 import com.duantn.be_project.Repository.ProductRepository;
 import com.duantn.be_project.Repository.StoreRepository;
 import com.duantn.be_project.Repository.VoucherDetailsSellerRepository;
 import com.duantn.be_project.Repository.VoucherSellerRepository;
+import com.duantn.be_project.model.Order;
 import com.duantn.be_project.model.Product;
 import com.duantn.be_project.model.Store;
 import com.duantn.be_project.model.Voucher;
@@ -31,6 +34,8 @@ public class RunWithProject {
     ProductRepository productRepository;
     @Autowired
     BlockRepository blockRepository;
+    @Autowired
+    OrderRepository orderRepository;
 
     // @Async
     @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Ho_Chi_Minh") // Chạy mỗi ngày vào lúc 00:00
@@ -123,7 +128,7 @@ public class RunWithProject {
 
         // Kiểm tra và cập nhật trạng thái của từng store
         for (Product product : products) {
-            if (product.getEndday() != null) {
+            if (product.getEndday() != null && !product.getStartday().equals(product.getEndday())) {
                 // Chuyển đổi từ Date sang LocalDate với múi giờ đúng
                 LocalDate endDay = product.getEndday().toInstant()
                         .atZone(ZoneId.of("Asia/Ho_Chi_Minh"))
@@ -142,6 +147,39 @@ public class RunWithProject {
                 productRepository.save(product);
                 // Xóa tất cả block theo sản phẩm được hủy ban
                 blockRepository.deleteByIdProduct(product.getId());
+            }
+        }
+        return CompletableFuture.completedFuture(null); // Trả về khi hoàn thành
+    }
+
+    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Ho_Chi_Minh") // Chạy mỗi ngày vào lúc 00:00
+    public CompletableFuture<Void> runDateUpdateStusOrder() {
+        // Lấy tất cả các đơn hàng đang chờ nhận
+        List<Order> orders = orderRepository.listAllOrderAwaiting();
+
+        // Lấy ngày hiện tại và thời gian hiện tại
+        LocalDateTime currentDateTime = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")); // Lấy ngày giờ hiện tại theo
+                                                                                          // múi giờ của Việt Nam
+
+        // Kiểm tra và cập nhật trạng thái của từng đơn hàng
+        for (Order order : orders) {
+            // Kiểm tra nếu awaitingdeliverydate không phải là null
+            if (order.getAwaitingdeliverydate() != null) {
+                // Chuyển đổi từ Date sang LocalDateTime với múi giờ đúng
+                LocalDateTime awaitingDeliveryDateTime = order.getAwaitingdeliverydate().toInstant()
+                        .atZone(ZoneId.of("Asia/Ho_Chi_Minh"))
+                        .toLocalDateTime();
+
+                // Kiểm tra nếu ngày hiện tại lớn hơn 1 phút so với awaitingdeliverydate
+                if (currentDateTime.isAfter(awaitingDeliveryDateTime.plusDays(7))) {
+                    // Cập nhật trạng thái order từ "Chờ nhận hàng" thành "Hoàn thành"
+                    if ("Chờ nhận hàng".equals(order.getOrderstatus())) {
+                        order.setOrderstatus("Hoàn thành");
+                    }
+                }
+
+                // Cập nhật lại trạng thái order vào cơ sở dữ liệu
+                orderRepository.save(order);
             }
         }
         return CompletableFuture.completedFuture(null); // Trả về khi hoàn thành

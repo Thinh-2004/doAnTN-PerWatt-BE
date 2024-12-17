@@ -11,6 +11,14 @@ import com.duantn.be_project.model.Order;
 
 public interface OrderRepository extends JpaRepository<Order, Integer> {
 
+        @Query("""
+                select o from Order o where o.user.id = ?1
+                        """)
+        List<Order> checkAddVoucher(Integer idUser);
+
+        @Query("select p from Order p where p.awaitingdeliverydate is not null")
+        List<Order> listAllOrderAwaiting();
+
         @Query("select p from Order p where p.user.id = ?1 ")
         List<Order> findAllByUserId(Integer idUser);
 

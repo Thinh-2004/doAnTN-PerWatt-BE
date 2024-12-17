@@ -88,6 +88,7 @@ public class ProductController {
     @Autowired
     FirebaseStorageService firebaseStorageService;
 
+
     // Tìm kiếm và phân trang
     @GetMapping("/home/product/list")
     public ResponseEntity<?> List(
@@ -1166,6 +1167,11 @@ public class ProductController {
         // Kiểm tra xem sản phẩm có tồn tại không
         if (!productRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
+        }
+
+        List<Block> listBlockByIdProduct = blockRepository.listBlockByIdProduct(id);
+        if(!listBlockByIdProduct.isEmpty() || listBlockByIdProduct != null){
+            blockRepository.deleteByIdProduct(id);
         }
 
         // Lấy thông tin sản phẩm để lấy danh sách hình ảnh

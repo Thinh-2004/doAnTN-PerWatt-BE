@@ -43,6 +43,9 @@ public class Order implements Serializable {
     @Temporal(TemporalType.TIMESTAMP)
     Date receivedate;
 
+    @Temporal(TemporalType.TIMESTAMP)
+    Date awaitingdeliverydate;
+
     @ManyToOne
     @JoinColumn(name = "paymentmethodid")
     PaymentMethod paymentmethod;

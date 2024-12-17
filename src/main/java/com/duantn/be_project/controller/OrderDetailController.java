@@ -86,6 +86,14 @@ public class OrderDetailController {
     }
 
     @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
+    @GetMapping("/gmail/{id}")
+    public ResponseEntity<List<OrderDetail>> gmail(@PathVariable("id") Integer id) {
+        List<OrderDetail> orderDetails = orderDetailRepository.findAllOrderDetailByIdOrder(id);
+
+        return ResponseEntity.ok(orderDetails);
+    }
+
+    @PreAuthorize("hasAnyAuthority('Seller_Manage_Shop', 'Buyer_Manage_Buyer')")
     @PostMapping("/api/orderCreate")
     public ResponseEntity<Order> createOrder(@RequestBody OrderRequest orderRequest) {
         Order order = new Order();
@@ -100,8 +108,14 @@ public class OrderDetailController {
         order.setTotalamount(orderRequest.getOrder().getTotalamount());
         order.setVoucher(orderRequest.getOrder().getVoucher());
         order.setReceivedate(orderRequest.getOrder().getReceivedate());
-        
-        voucherDetailsSellerRepository.updateVoucherQuantity("z-day");
+
+        if (orderRequest.getOrder().getVoucher() != null && orderRequest.getOrder().getVoucher().getId() != null) {
+            Integer voucherId = orderRequest.getOrder().getVoucher().getId();
+            Voucher voucher = voucherDetailsSellerRepository.slugVoucherById(voucherId);
+            String slug = voucher.getSlug();
+            voucherDetailsSellerRepository.updateVoucherQuantity(slug);
+            voucherDetailsSellerRepository.deleteByVoucherDetailSlug(slug);
+        }
 
         Order savedOrder = orderRepository.save(order);
 

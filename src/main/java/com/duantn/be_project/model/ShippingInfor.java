@@ -41,4 +41,7 @@ public class ShippingInfor implements Serializable {
     @JsonIgnore
     @OneToMany(mappedBy = "shippinginfor")
     List<Order> orders;
+
+    String wardid;
+    Integer districtid;
 }

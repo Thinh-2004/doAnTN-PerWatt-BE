@@ -69,6 +69,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                         "/product/{slug}",
                         "/countOrderSuccess/{id}",
                         "/searchStore/{id}",
+                        "/productStore/{slug}",
                         // productDetail
                         "/sidlerMinMax/{name}",
                         "/detailProduct",
@@ -97,7 +98,9 @@ public class SecurityConfig implements WebMvcConfigurer {
                         // voucher admin
                         "/products",
                         "/vouchersAdminInPgaeHome",
-                        "/product/quantity/{idproduct}"
+                        "/product/quantity/{idproduct}",
+                        //order
+                        "/check/add/voucher/{idUser}"
 
         };
 
