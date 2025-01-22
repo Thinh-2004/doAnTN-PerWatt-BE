@@ -609,6 +609,8 @@ public class UserController {
                 String name = (String) payload.get("name");
                 String pictureUrl = (String) payload.get("picture");
 
+                System.out.println(payload);
+
                 // Kiểm tra xem người dùng đã tồn tại trong cơ sở dữ liệu chưa
                 User user = userRepository.findByEmail(email);
                 if (user == null) {
